@@ -9,10 +9,10 @@ import time
 import json
 import pickle
 import logging
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from configparser import ConfigParser
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Optional, Tuple
 from dataclasses import dataclass
 from requests import Session
 from fantraxapi import FantraxAPI
@@ -54,6 +54,14 @@ class Formation:
     def __str__(self) -> str:
         return f"{self.gk}-{self.def_}-{self.mid}-{self.fwd}"
 
+@dataclass
+class PlayerStatus:
+    """Represents a player's current status for lineup decisions"""
+    is_starting: bool
+    game_time: Optional[datetime]
+    is_locked: bool
+    opponent: Optional[str]
+
 class LineupOptimizer:
     def __init__(self, league_id: str, team_id: str, cookie_path: str):
         self.league_id = league_id
@@ -61,7 +69,7 @@ class LineupOptimizer:
         self.cookie_path = cookie_path
         self.session = self._init_session()
         self.api = FantraxAPI(league_id, session=self.session)
-        self.starting_players: Set[str] = set()  # Set of player IDs who are starting
+        self.player_statuses: Dict[str, PlayerStatus] = {}  # player_id -> PlayerStatus
         self.last_check_time = None
 
     def _init_session(self) -> Session:
@@ -77,8 +85,8 @@ class LineupOptimizer:
             logging.error(f"Failed to load cookies: {e}")
             raise
 
-    def get_starting_players(self) -> Set[str]:
-        """Fetch and parse the starting players page"""
+    def update_player_statuses(self) -> None:
+        """Fetch and parse the starting players page to update player statuses"""
         try:
             # Make request to get starting players
             response = self.session.get(
@@ -92,22 +100,57 @@ class LineupOptimizer:
             )
             data = response.json()
             
-            # Parse response and extract starting player IDs
-            starting_ids = set()
+            # Get current time in UTC
+            now = datetime.now(timezone.utc)
+            self.last_check_time = now
+            
+            # Clear existing statuses
+            self.player_statuses.clear()
+            
+            # Parse response and update player statuses
             if "statsTable" in data["responses"][0]["data"]:
                 for player in data["responses"][0]["data"]["statsTable"]:
-                    if player.get("starter"):  # Need to confirm actual field name
-                        starting_ids.add(player["scorerId"])
+                    player_id = player["scorerId"]
+                    
+                    # Parse game time if available
+                    game_time = None
+                    opponent = None
+                    if "opponent" in player:
+                        # Example: "vs MUN<br/>4:00PM" or similar
+                        opp_info = player["opponent"].split("<br/>")
+                        if len(opp_info) == 2:
+                            opponent = opp_info[0]
+                            try:
+                                # Convert game time string to datetime
+                                time_str = opp_info[1]
+                                game_time = datetime.strptime(f"{now.date()} {time_str}", "%Y-%m-%d %I:%M%p")
+                                game_time = game_time.replace(tzinfo=timezone.utc)
+                            except ValueError:
+                                logging.warning(f"Could not parse game time: {opp_info[1]}")
+                    
+                    # Determine if player is locked
+                    is_locked = False
+                    if game_time:
+                        # Lock players 1 minute before game time
+                        if now >= (game_time - timedelta(minutes=1)):
+                            is_locked = True
+                    
+                    self.player_statuses[player_id] = PlayerStatus(
+                        is_starting=bool(player.get("starter")),  # Confirm actual field name
+                        game_time=game_time,
+                        is_locked=is_locked,
+                        opponent=opponent
+                    )
             
-            self.starting_players = starting_ids
-            self.last_check_time = datetime.now()
-            
-            logging.info(f"Found {len(starting_ids)} starting players")
-            return starting_ids
+            starting_count = sum(1 for status in self.player_statuses.values() if status.is_starting)
+            logging.info(f"Found {starting_count} starting players")
             
         except Exception as e:
-            logging.error(f"Error fetching starting players: {e}")
-            return set()
+            logging.error(f"Error updating player statuses: {e}")
+            
+    def get_player_status(self, player_id: str) -> Optional[PlayerStatus]:
+        """Get status for a specific player"""
+        return self.player_statuses.get(player_id)
 
     def get_current_formation(self, roster) -> Formation:
         """Calculate current formation from roster"""
@@ -134,8 +177,8 @@ class LineupOptimizer:
                     counts[pos] += 1
         return counts
 
-    def is_valid_swap(self, starter, bench, current_formation: Formation) -> bool:
-        """Check if swapping these players maintains a legal formation
+    def can_swap_players(self, starter, bench, current_formation: Formation) -> Tuple[bool, str]:
+        """Check if two players can be swapped based on formation and game status
         
         Args:
             starter: Player to move to bench
@@ -143,8 +186,20 @@ class LineupOptimizer:
             current_formation: Current formation before swap
         
         Returns:
-            bool: True if swap maintains a legal 11-player formation
+            Tuple[bool, str]: (can_swap, reason)
+            - can_swap: True if players can be swapped
+            - reason: Explanation if swap is not allowed
         """
+        # Check if starter is locked
+        starter_status = self.get_player_status(starter.player.id)
+        if starter_status and starter_status.is_locked:
+            return False, f"Cannot move {starter.player.name} to bench - player is locked (game in progress)"
+
+        # Check if bench player is locked
+        bench_status = self.get_player_status(bench.player.id)
+        if bench_status and bench_status.is_locked:
+            return False, f"Cannot move {bench.player.name} to starting lineup - player is locked (game in progress)"
+            
         # Create new formation after swap
         new_formation = Formation(
             current_formation.gk,
@@ -172,11 +227,11 @@ class LineupOptimizer:
         elif bench.pos.short_name == "F":
             new_formation.fwd += 1
 
-        # Check if new formation is legal (maintains 11 players and position limits)
-        is_legal = new_formation.is_legal()
-        if not is_legal:
-            logging.debug(f"Invalid formation after swap: {new_formation} (must have exactly 11 players)")
-        return is_legal
+        # Check if new formation is legal
+        if not new_formation.is_legal():
+            return False, f"Invalid formation after swap: {new_formation} (must have exactly 11 players with valid position counts)"
+            
+        return True, "Swap is valid"
 
     def optimize_lineup(self):
         """Main optimization logic"""
@@ -191,32 +246,54 @@ class LineupOptimizer:
                 logging.error(f"Current formation {current_formation} is invalid! Must have exactly 11 players with valid position counts.")
                 return
 
-            # Get latest starting players
-            starting_players = self.get_starting_players()
+            # Update player statuses
+            self.update_player_statuses()
             
             # Track needed swaps
             swaps = []
             
             # Check starters who aren't in starting lineup
             for starter in roster.get_starters():
-                if starter.player and starter.player.id not in starting_players:
+                if not starter.player:
+                    continue
+                    
+                starter_status = self.get_player_status(starter.player.id)
+                if not starter_status or not starter_status.is_starting:
                     # Find eligible bench replacement
                     for bench in roster.get_bench_players():
-                        if (bench.player and 
-                            bench.player.id in starting_players and
-                            self.is_valid_swap(starter, bench, current_formation)):
-                            swaps.append((starter, bench))
-                            break
+                        if not bench.player:
+                            continue
+                            
+                        bench_status = self.get_player_status(bench.player.id)
+                        if bench_status and bench_status.is_starting:
+                            # Check if swap is valid
+                            can_swap, reason = self.can_swap_players(starter, bench, current_formation)
+                            if can_swap:
+                                swaps.append((starter, bench))
+                                logging.info(f"Planning swap: {starter.player.name} ({starter.pos.short_name}) -> bench, "
+                                          f"{bench.player.name} ({bench.pos.short_name}) -> starting")
+                                break
+                            else:
+                                logging.debug(f"Invalid swap ({starter.player.name} <-> {bench.player.name}): {reason}")
+
+            if not swaps:
+                logging.info("No valid swaps found")
+                return
 
             # Execute swaps
             for starter, bench in swaps:
                 try:
-                    logging.info(f"Swapping {starter.player.name} with {bench.player.name}")
+                    starter_status = self.get_player_status(starter.player.id)
+                    bench_status = self.get_player_status(bench.player.id)
+                    
+                    logging.info(f"Swapping {starter.player.name} (vs {starter_status.opponent if starter_status else 'Unknown'}) "
+                               f"with {bench.player.name} (vs {bench_status.opponent if bench_status else 'Unknown'})")
+                    
                     success = self.api.swap_players(self.team_id, starter.player.id, bench.player.id)
                     if success:
-                        logging.info("Swap successful")
+                        logging.info("✅ Swap successful")
                     else:
-                        logging.error("Swap failed")
+                        logging.error("❌ Swap failed")
                 except Exception as e:
                     logging.error(f"Error making swap: {e}")
 
