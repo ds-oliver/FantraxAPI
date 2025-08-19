@@ -105,7 +105,7 @@ class Player:
         self.suspended = False
         if "icons" in data:
             for icon in data["icons"]:
-                if icon["typeId"] in ["1", "2", "6"]: # DtD, Out, IR
+                if icon["typeId"] in ["1", "2", "6", "30"]: # DtD, Out, IR, Knee
                     self.injured = True
                 elif icon["typeId"] == "6":
                     self.suspended = True
@@ -422,15 +422,95 @@ class Roster:
     def __init__(self, api, data, team_id):
         self._api = api
         self.team = self._api.team(team_id)
-        self.active = data["miscData"]["statusTotals"][0]["total"]
-        self.reserve = data["miscData"]["statusTotals"][1]["total"]
-        self.max = data["miscData"]["statusTotals"][1]["max"]
-        self.injured = data["miscData"]["statusTotals"][2]["total"]
+        
+        # Safely handle different roster data structures
+        try:
+            status_totals = data.get("miscData", {}).get("statusTotals", [])
+            
+            # Set defaults
+            self.active = 0
+            self.reserve = 0
+            self.max = 0
+            self.injured = 0
+            
+            # Safely extract values based on available data
+            if len(status_totals) > 0:
+                self.active = status_totals[0].get("total", 0)
+            if len(status_totals) > 1:
+                self.reserve = status_totals[1].get("total", 0)
+                self.max = status_totals[1].get("max", 0)
+            if len(status_totals) > 2:
+                self.injured = status_totals[2].get("total", 0)
+                
+        except Exception as e:
+            # Fallback to safe defaults if data structure is unexpected
+            print(f"Warning: Unexpected roster data structure: {e}")
+            self.active = 0
+            self.reserve = 0
+            self.max = 0
+            self.injured = 0
+        
         self.rows = []
-        for group in data["tables"]:
-            for row in group["rows"]:
-                if "scorer" in row or row["statusId"] == "1":
-                    self.rows.append(RosterRow(self._api, row))
+        try:
+            for group in data.get("tables", []):
+                for row in group.get("rows", []):
+                    if "scorer" in row or row.get("statusId") == "1":
+                        self.rows.append(RosterRow(self._api, row))
+        except Exception as e:
+            print(f"Warning: Error processing roster rows: {e}")
+            self.rows = []
+
+    def get_player_by_name(self, player_name: str):
+        """Find a player by name (case-insensitive partial match).
+        
+        Parameters:
+            player_name (str): Player name to search for
+            
+        Returns:
+            RosterRow or None: The roster row containing the player, or None if not found
+        """
+        player_name_lower = player_name.lower()
+        for row in self.rows:
+            if row.player and player_name_lower in row.player.name.lower():
+                return row
+        return None
+
+    def get_starters(self):
+        """Get all players currently in starting positions.
+        
+        Returns:
+            list: List of RosterRow objects for starters
+        """
+        starters = []
+        for row in self.rows:
+            if row.player:
+                if row.pos_id != "0":
+                    starters.append(row)
+        return starters
+
+    def get_bench_players(self):
+        """Get all players currently on the bench.
+        
+        Returns:
+            list: List of RosterRow objects for bench players
+        """
+        bench = []
+        for row in self.rows:
+            if row.player:
+                if row.pos_id == "0":
+                    bench.append(row)
+        return bench
+
+    def get_players_by_position(self, position_short_name: str):
+        """Get all players at a specific position.
+        
+        Parameters:
+            position_short_name (str): Position abbreviation (e.g., "F", "D", "G")
+            
+        Returns:
+            list: List of RosterRow objects for players at that position
+        """
+        return [row for row in self.rows if row.player and row.pos.short_name == position_short_name]
 
     def __repr__(self):
         return self.__str__()
@@ -474,5 +554,4 @@ class RosterRow:
             return f"{self.pos.short_name}: {self.player}{f' vs {self.opponent}' if self.opponent else ''}"
         else:
             return f"{self.pos.short_name}: Empty"
-
 

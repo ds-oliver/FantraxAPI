@@ -174,3 +174,41 @@ class FantraxAPI:
 
     def roster_info(self, team_id):
         return Roster(self, self._request("getTeamRosterInfo", teamId=team_id), team_id)
+
+    def submit_lineup_changes(self, changes: List[Dict[str, str]], apply_to_future: bool = True) -> dict:
+        """Submit lineup changes to Fantrax.
+        
+        Args:
+            changes: List of changes, each containing:
+                {
+                    "scorerId": "player_id",
+                    "move_type": "RESERVE_TO_ACTIVE" or "ACTIVE_TO_RESERVE"
+                }
+            apply_to_future: Whether to apply changes to future periods
+            
+        Returns:
+            dict: Response from Fantrax API containing confirmation and status
+            
+        Raises:
+            FantraxException: If the changes are invalid or API request fails
+        """
+        lineup_changes = [
+            {
+                "scorerId": change["scorerId"],
+                "text": "Reserve to Active" if change["move_type"] == "RESERVE_TO_ACTIVE" else "Active to Reserve"
+            }
+            for change in changes
+        ]
+        
+        data = {
+            "lineupChanges": lineup_changes,
+            "applyToFuturePeriods": apply_to_future
+        }
+        
+        response = self._request("submitLineupChanges", **data)
+        
+        # Check if changes were accepted
+        if response.get("fantasyResponse", {}).get("msgType") != "CONFIRM":
+            raise FantraxException("Lineup changes were not accepted")
+            
+        return response
