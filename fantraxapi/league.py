@@ -58,14 +58,56 @@ class LeagueService:
                 - claimTypes: Available claim types (FREE_FOR_ALL, BIDDING)
                 - claimGroupsEnabled: Whether claim groups are enabled
                 - showBidColumn: Whether FAAB bidding is enabled
+                - pendingClaims: List of pending claims with details
         """
-        response = self._request("getTeamRosterInfo", teamId=team_id, view="CLAIMS")
+        # Get basic claim info
+        info_response = self._request("getTeamRosterInfo", teamId=team_id, view="CLAIMS")
         info = {
-            "numPendingClaims": response.get("numPendingClaims", 0),
-            "claimTypes": response.get("claimTypes", {}),
-            "claimGroupsEnabled": response.get("miscData", {}).get("claimGroupsEnabled", False),
-            "showBidColumn": response.get("miscData", {}).get("showBidColumn", False)
+            "numPendingClaims": info_response.get("numPendingClaims", 0),
+            "claimTypes": info_response.get("claimTypes", {}),
+            "claimGroupsEnabled": info_response.get("miscData", {}).get("claimGroupsEnabled", False),
+            "showBidColumn": info_response.get("miscData", {}).get("showBidColumn", False)
         }
+        
+        # Get detailed pending claims via roster view
+        claims_response = self._request("getTeamRosterInfo", teamId=team_id, view="PENDING_CLAIMS")
+        pending_claims = []
+
+        if "tables" in claims_response:
+            for table in claims_response["tables"]:
+                if "txSets" in table:
+                    for claim in table["txSets"]:
+                        pending_claims.append({
+                            "id": claim.get("txSetId"),
+                            "type": table.get("claimType"),
+                            "process_date": table.get("processDate"),
+                            "process_date_raw": table.get("processDateRaw"),
+                            "submitted_date": claim.get("dateSubmitted"),
+                            "submitted_date_raw": claim.get("dateSubmittedRaw"),
+                            "bid_amount": claim.get("bid", 0),
+                            "priority": claim.get("priority"),
+                            "group": claim.get("group"),
+                            "claim_player": ({
+                                "id": claim["claimScorer"].get("scorerId"),
+                                "name": claim["claimScorer"].get("name"),
+                                "position": claim["claimScorer"].get("posShortNames"),
+                                "team": claim["claimScorer"].get("teamName"),
+                                "to_position": claim.get("toPositionName"),
+                                "to_status": claim.get("toStatusName")
+                            } if "claimScorer" in claim else None),
+                            "drop_player": ({
+                                "id": claim["dropOrMoveScorer"].get("scorerId"),
+                                "name": claim["dropOrMoveScorer"].get("name"),
+                                "position": claim["dropOrMoveScorer"].get("posShortNames"),
+                                "team": claim["dropOrMoveScorer"].get("teamName"),
+                                "from_position": claim.get("fromPositionName"),
+                                "from_status": claim.get("fromStatusName")
+                            } if "dropOrMoveScorer" in claim else None)
+                        })
+
+        info["pendingClaims"] = pending_claims
+        # Prefer computed count if available
+        info["numPendingClaims"] = len(pending_claims)
         return info
 
 

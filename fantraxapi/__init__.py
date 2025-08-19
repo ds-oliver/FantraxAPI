@@ -3,6 +3,7 @@ import importlib.metadata
 from fantraxapi.fantrax import FantraxAPI
 from fantraxapi.trades import TradesService
 from fantraxapi.league import LeagueService
+from fantraxapi.waivers import WaiversService
 from fantraxapi.exceptions import FantraxException
 from fantraxapi.objs import DraftPick, Matchup, Player, Position, Record, ScoringPeriod, Standings, Team, Trade, TradeBlock, TradePlayer, Transaction
 
@@ -35,4 +36,5 @@ __all__ = [
     "Transaction",
     "TradesService",
     "LeagueService",
+    "WaiversService",
 ]

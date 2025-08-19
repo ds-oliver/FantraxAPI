@@ -7,6 +7,7 @@ from fantraxapi.exceptions import FantraxException, Unauthorized
 from fantraxapi.objs import ScoringPeriod, Team, Standings, Trade, TradeBlock, Position, Transaction, Roster
 from fantraxapi.trades import TradesService
 from fantraxapi.league import LeagueService
+from fantraxapi.waivers import WaiversService
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class FantraxAPI:
         # Feature services
         self.trades = TradesService(self._request, self)
         self.league = LeagueService(self._request, self)
+        self.waivers = WaiversService(self._request, self)
 
     @property
     def teams(self) -> List[Team]:
