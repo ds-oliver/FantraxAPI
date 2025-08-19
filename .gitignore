@@ -132,3 +132,5 @@ dmypy.json
 
 # Custom exclusions
 fantraxloggedin.cookie
+# Private example responses
+private_examples/**

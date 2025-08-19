@@ -5,6 +5,8 @@ from json.decoder import JSONDecodeError
 from requests.exceptions import RequestException
 from fantraxapi.exceptions import FantraxException, Unauthorized
 from fantraxapi.objs import ScoringPeriod, Team, Standings, Trade, TradeBlock, Position, Transaction, Roster
+from fantraxapi.trades import TradesService
+from fantraxapi.league import LeagueService
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,9 @@ class FantraxAPI:
         self._session = Session() if session is None else session
         self._teams = None
         self._positions = None
+        # Feature services
+        self.trades = TradesService(self._request, self)
+        self.league = LeagueService(self._request, self)
 
     @property
     def teams(self) -> List[Team]:
@@ -117,15 +122,10 @@ class FantraxAPI:
         return Standings(self, response["tableList"][0], week=week)
 
     def pending_trades(self) -> List[Trade]:
-        response = self._request("getPendingTransactions")
-        trades = []
-        if "tradeInfoList" in response:
-            for trade in response["tradeInfoList"]:
-                trades.append(Trade(self, trade))
-        return trades
+        return self.trades.list_pending()
 
     def trade_block(self):
-        return [TradeBlock(self, block) for block in self._request("getTradeBlocks")["tradeBlocks"] if len(block) > 2]
+        return self.trades.get_trade_block()
 
     def transactions(self, count=100) -> List[Transaction]:
         response = self._request("getTransactionDetailsHistory", maxResultsPerPage=str(count))
