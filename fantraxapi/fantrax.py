@@ -175,40 +175,129 @@ class FantraxAPI:
     def roster_info(self, team_id):
         return Roster(self, self._request("getTeamRosterInfo", teamId=team_id), team_id)
 
-    def submit_lineup_changes(self, changes: List[Dict[str, str]], apply_to_future: bool = True) -> dict:
-        """Submit lineup changes to Fantrax.
+    def make_lineup_changes(self, team_id: str, changes: dict, apply_to_future_periods: bool = True) -> bool:
+        """Make lineup changes for a team.
         
-        Args:
-            changes: List of changes, each containing:
-                {
-                    "scorerId": "player_id",
-                    "move_type": "RESERVE_TO_ACTIVE" or "ACTIVE_TO_RESERVE"
-                }
-            apply_to_future: Whether to apply changes to future periods
-            
+        Parameters:
+            team_id (str): The team ID to make changes for
+            changes (dict): Dictionary mapping player IDs to new positions/status
+                          Format: {"player_id": {"posId": "position_id", "stId": "status_id"}}
+            apply_to_future_periods (bool): Whether to apply changes to future periods
+        
         Returns:
-            dict: Response from Fantrax API containing confirmation and status
+            bool: True if changes were successful
             
         Raises:
-            FantraxException: If the changes are invalid or API request fails
+            FantraxException: If the lineup change fails
         """
-        lineup_changes = [
-            {
-                "scorerId": change["scorerId"],
-                "text": "Reserve to Active" if change["move_type"] == "RESERVE_TO_ACTIVE" else "Active to Reserve"
-            }
-            for change in changes
-        ]
+        # First, get current roster to build the complete fieldMap
+        roster = self.roster_info(team_id)
+        current_field_map = {}
         
-        data = {
-            "lineupChanges": lineup_changes,
-            "applyToFuturePeriods": apply_to_future
+        # Build current field map from existing roster
+        for row in roster.rows:
+            if row.player:
+                current_field_map[row.player.id] = {
+                    "posId": row.pos_id,
+                    "stId": "1" if row.pos_id != "0" else "2"  # 1=starter, 2=bench
+                }
+        
+        # Apply the requested changes
+        for player_id, new_config in changes.items():
+            if player_id in current_field_map:
+                current_field_map[player_id].update(new_config)
+        
+        # Phase 1: Confirm changes
+        confirm_data = {
+            "rosterLimitPeriod": 2,  # This appears to be a constant from your example
+            "fantasyTeamId": team_id,
+            "daily": False,
+            "adminMode": False,
+            "confirm": True,
+            "applyToFuturePeriods": apply_to_future_periods,
+            "fieldMap": current_field_map
         }
         
-        response = self._request("submitLineupChanges", **data)
+        try:
+            self._request("confirmOrExecuteTeamRosterChanges", **confirm_data)
+        except FantraxException as e:
+            raise FantraxException(f"Failed to confirm lineup changes: {e}")
         
-        # Check if changes were accepted
-        if response.get("fantasyResponse", {}).get("msgType") != "CONFIRM":
-            raise FantraxException("Lineup changes were not accepted")
+        # Phase 2: Execute changes
+        execute_data = {
+            "rosterLimitPeriod": 2,
+            "fantasyTeamId": team_id,
+            "daily": False,
+            "adminMode": False,
+            "confirm": False,
+            "applyToFuturePeriods": apply_to_future_periods,
+            "fieldMap": current_field_map
+        }
+        
+        try:
+            self._request("confirmOrExecuteTeamRosterChanges", **execute_data)
+        except FantraxException as e:
+            raise FantraxException(f"Failed to execute lineup changes: {e}")
+        
+        return True
+
+    def swap_players(self, team_id: str, player1_id: str, player2_id: str) -> bool:
+        """Swap two players between starter and bench positions.
+        
+        Parameters:
+            team_id (str): The team ID
+            player1_id (str): First player ID
+            player2_id (str): Second player ID
             
-        return response
+        Returns:
+            bool: True if swap was successful
+        """
+        roster = self.roster_info(team_id)
+        
+        # Find current status of both players
+        player1_status = None
+        player2_status = None
+        
+        for row in roster.rows:
+            if row.player:
+                if row.player.id == player1_id:
+                    player1_status = "1" if row.pos_id != "0" else "2"
+                elif row.player.id == player2_id:
+                    player2_status = "1" if row.pos_id != "0" else "2"
+        
+        if player1_status is None or player2_status is None:
+            raise FantraxException("One or both players not found on roster")
+        
+        # Swap their statuses
+        changes = {
+            player1_id: {"stId": player2_status},
+            player2_id: {"stId": player1_status}
+        }
+        
+        return self.make_lineup_changes(team_id, changes)
+
+    def move_to_starters(self, team_id: str, player_ids: list) -> bool:
+        """Move specified players to starter positions.
+        
+        Parameters:
+            team_id (str): The team ID
+            player_ids (list): List of player IDs to move to starters
+            
+        Returns:
+            bool: True if moves were successful
+        """
+        changes = {player_id: {"stId": "1"} for player_id in player_ids}
+        return self.make_lineup_changes(team_id, changes)
+
+    def move_to_bench(self, team_id: str, player_ids: list) -> bool:
+        """Move specified players to bench positions.
+        
+        Parameters:
+            team_id (str): The team ID
+            player_ids (list): List of player IDs to move to bench
+            
+        Returns:
+            bool: True if moves were successful
+        """
+        changes = {player_id: {"stId": "2"} for player_id in player_ids}
+        return self.make_lineup_changes(team_id, changes)
