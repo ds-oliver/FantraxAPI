@@ -1,3 +1,4 @@
+# bootstrap_cookie.py
 import pickle
 import time
 from selenium import webdriver
