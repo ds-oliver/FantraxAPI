@@ -103,21 +103,23 @@ class LineupOptimizer:
             logging.error(f"Failed to load cookies: {e}")
             raise
 
+    def fetch_player_page(self, page: int = 1) -> dict:
+        """Fetch a single page of player data"""
+        response = self.session.get(
+            "https://www.fantrax.com/fxpa/req",
+            params={
+                "leagueId": self.league_id,
+                "statusOrTeamFilter": "ALL",
+                "miscDisplayType": "10",  # Starting players
+                "pageNumber": str(page),
+                "maxResultsPerPage": "100"  # Get more results per page
+            }
+        )
+        return response.json()
+
     def update_player_statuses(self) -> None:
         """Fetch and parse the starting players page to update player statuses"""
         try:
-            # Make request to get starting players
-            response = self.session.get(
-                "https://www.fantrax.com/fxpa/req",
-                params={
-                    "leagueId": self.league_id,
-                    "statusOrTeamFilter": "ALL",
-                    "miscDisplayType": "10",  # Starting players
-                    "pageNumber": "1"
-                }
-            )
-            data = response.json()
-            
             # Get current time in UTC
             now = datetime.now(timezone.utc)
             self.last_check_time = now
@@ -125,9 +127,38 @@ class LineupOptimizer:
             # Clear existing statuses
             self.player_statuses.clear()
             
-            # Parse response and update player statuses
-            if "statsTable" in data["responses"][0]["data"]:
-                for player in data["responses"][0]["data"]["statsTable"]:
+            # Fetch first page
+            data = self.fetch_player_page(1)
+            
+            # Check pagination info
+            paginated_info = data["responses"][0]["data"].get("paginatedResultSet", {})
+            total_results = paginated_info.get("totalNumResults", 0)
+            total_pages = paginated_info.get("totalNumPages", 0)
+            results_per_page = paginated_info.get("maxResultsPerPage", 20)
+            
+            logging.info(f"Found {total_results} total players across {total_pages} pages "
+                        f"(Results per page: {results_per_page})")
+            
+            # Process all pages
+            all_players = []
+            current_page = 1
+            
+            while current_page <= total_pages:
+                if current_page > 1:
+                    data = self.fetch_player_page(current_page)
+                
+                if "statsTable" in data["responses"][0]["data"]:
+                    stats_table = data["responses"][0]["data"]["statsTable"]
+                    all_players.extend(stats_table)
+                    logging.info(f"Fetched page {current_page}/{total_pages} "
+                               f"({len(stats_table)} players)")
+                
+                current_page += 1
+            
+            logging.info(f"Processing {len(all_players)} total players")
+            
+            # Process all players
+            for player in all_players:
                     player_id = player["scorerId"]
                     
                     # Parse game time if available
