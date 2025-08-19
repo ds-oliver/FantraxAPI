@@ -57,10 +57,28 @@ class Formation:
 @dataclass
 class PlayerStatus:
     """Represents a player's current status for lineup decisions"""
-    is_starting: bool
+    is_starting: Optional[bool]  # None means we don't know yet (game too far away)
+    is_benched: Optional[bool]   # None means we don't know yet
     game_time: Optional[datetime]
     is_locked: bool
     opponent: Optional[str]
+
+    def is_confirmed_not_starting(self) -> bool:
+        """Returns True if we know for sure the player isn't starting"""
+        # Player is confirmed not starting if either:
+        # 1. We have starting lineup info and they're not in it
+        # 2. We have bench info and they're confirmed on bench
+        return (
+            (self.is_starting is not None and not self.is_starting) or
+            (self.is_benched is not None and self.is_benched)
+        )
+
+    def is_game_soon(self, current_time: datetime) -> bool:
+        """Returns True if game is within next 2 hours"""
+        if not self.game_time:
+            return False
+        time_until_game = self.game_time - current_time
+        return time_until_game.total_seconds() <= 7200  # 2 hours in seconds
 
 class LineupOptimizer:
     def __init__(self, league_id: str, team_id: str, cookie_path: str):
@@ -135,8 +153,25 @@ class LineupOptimizer:
                         if now >= (game_time - timedelta(minutes=1)):
                             is_locked = True
                     
+                    # Parse status from miscDisplayType
+                    # 10 = Starting
+                    # 11 = Bench
+                    # 12 = Expected to play
+                    misc_type = player.get("miscDisplayType")
+                    
+                    is_starting = None
+                    is_benched = None
+                    
+                    if misc_type == "10":  # Starting
+                        is_starting = True
+                        is_benched = False
+                    elif misc_type == "11":  # Bench
+                        is_starting = False
+                        is_benched = True
+                    
                     self.player_statuses[player_id] = PlayerStatus(
-                        is_starting=bool(player.get("starter")),  # Confirm actual field name
+                        is_starting=is_starting,
+                        is_benched=is_benched,
                         game_time=game_time,
                         is_locked=is_locked,
                         opponent=opponent
@@ -233,6 +268,95 @@ class LineupOptimizer:
             
         return True, "Swap is valid"
 
+    def find_optimal_swaps(self, roster) -> List[Tuple[any, any, str]]:
+        """Find optimal swaps based on game times and starting status
+        
+        Returns:
+            List of (starter, bench, reason) tuples representing optimal swaps
+        """
+        swaps = []
+        current_formation = self.get_current_formation(roster)
+        current_time = datetime.now(timezone.utc)
+        
+        # Collect all players and their statuses
+        starter_players = []  # [(player_row, status)]
+        bench_players = []    # [(player_row, status)]
+        
+        # Get all starters and their statuses
+        for starter in roster.get_starters():
+            if not starter.player:
+                continue
+            status = self.get_player_status(starter.player.id)
+            starter_players.append((starter, status))
+                
+        # Get all bench players and their statuses
+        for bench in roster.get_bench_players():
+            if not bench.player:
+                continue
+            status = self.get_player_status(bench.player.id)
+            bench_players.append((bench, status))
+        
+        # Priority 1: Replace confirmed non-starters in upcoming games with players from later games
+        for starter, starter_status in starter_players:
+            # Only look at players whose games are coming up soon (within 2 hours)
+            if starter_status and starter_status.is_game_soon(current_time):
+                # If we know they're not starting
+                if starter_status.is_confirmed_not_starting():
+                    best_bench = None
+                    best_reason = None
+                    latest_game_time = None
+                    
+                    for bench, bench_status in bench_players:
+                        # Look for players with later game times where lineups aren't out yet
+                        if bench_status and bench_status.game_time:
+                            # Skip if bench player's game is also soon
+                            if bench_status.is_game_soon(current_time):
+                                continue
+                                
+                            can_swap, reason = self.can_swap_players(starter, bench, current_formation)
+                            if can_swap:
+                                # Prefer players from the latest possible game
+                                if (not latest_game_time or 
+                                    (bench_status.game_time > latest_game_time)):
+                                    
+                                    if starter.pos.short_name == bench.pos.short_name:
+                                        best_bench = bench
+                                        best_reason = f"Direct position match - replacing confirmed non-starter ({starter_status.opponent}) with player from later game ({bench_status.opponent})"
+                                        latest_game_time = bench_status.game_time
+                                    elif not best_bench:
+                                        best_bench = bench
+                                        best_reason = f"Position flexible swap - replacing confirmed non-starter ({starter_status.opponent}) with player from later game ({bench_status.opponent})"
+                                        latest_game_time = bench_status.game_time
+                    
+                    if best_bench:
+                        swaps.append((starter, best_bench, best_reason))
+                        bench_players.remove((best_bench, self.get_player_status(best_bench.player.id)))
+        
+        # Priority 2: Replace non-starters with confirmed starters
+        for starter, starter_status in starter_players:
+            if starter_status and starter_status.is_confirmed_not_starting():
+                # Find best bench replacement that's confirmed starting
+                best_bench = None
+                best_reason = None
+                
+                for bench, bench_status in bench_players:
+                    if bench_status and bench_status.is_starting:
+                        can_swap, reason = self.can_swap_players(starter, bench, current_formation)
+                        if can_swap:
+                            if starter.pos.short_name == bench.pos.short_name:
+                                best_bench = bench
+                                best_reason = f"Direct position match - replacing non-starter with confirmed starter"
+                                break
+                            elif not best_bench:
+                                best_bench = bench
+                                best_reason = f"Position flexible swap - replacing non-starter with confirmed starter"
+                
+                if best_bench:
+                    swaps.append((starter, best_bench, best_reason))
+                    bench_players.remove((best_bench, self.get_player_status(best_bench.player.id)))
+                
+        return swaps
+
     def optimize_lineup(self):
         """Main optimization logic"""
         try:
@@ -249,51 +373,49 @@ class LineupOptimizer:
             # Update player statuses
             self.update_player_statuses()
             
-            # Track needed swaps
-            swaps = []
+            # Find optimal swaps
+            optimal_swaps = self.find_optimal_swaps(roster)
             
-            # Check starters who aren't in starting lineup
-            for starter in roster.get_starters():
-                if not starter.player:
-                    continue
-                    
-                starter_status = self.get_player_status(starter.player.id)
-                if not starter_status or not starter_status.is_starting:
-                    # Find eligible bench replacement
-                    for bench in roster.get_bench_players():
-                        if not bench.player:
-                            continue
-                            
-                        bench_status = self.get_player_status(bench.player.id)
-                        if bench_status and bench_status.is_starting:
-                            # Check if swap is valid
-                            can_swap, reason = self.can_swap_players(starter, bench, current_formation)
-                            if can_swap:
-                                swaps.append((starter, bench))
-                                logging.info(f"Planning swap: {starter.player.name} ({starter.pos.short_name}) -> bench, "
-                                          f"{bench.player.name} ({bench.pos.short_name}) -> starting")
-                                break
-                            else:
-                                logging.debug(f"Invalid swap ({starter.player.name} <-> {bench.player.name}): {reason}")
-
-            if not swaps:
+            if not optimal_swaps:
                 logging.info("No valid swaps found")
                 return
+                
+            # Log planned swaps
+            logging.info("\nPlanned substitutions:")
+            for starter, bench, reason in optimal_swaps:
+                starter_status = self.get_player_status(starter.player.id)
+                bench_status = self.get_player_status(bench.player.id)
+                
+                # Get status strings
+                def get_status_str(status):
+                    if not status:
+                        return "Unknown"
+                    status_parts = []
+                    if status.is_starting is True:
+                        status_parts.append("Starting")
+                    elif status.is_starting is False:
+                        status_parts.append("Not Starting")
+                    if status.is_benched is True:
+                        status_parts.append("On Bench")
+                    return ", ".join(status_parts) if status_parts else "Status Unknown"
+                
+                starter_status_str = get_status_str(starter_status)
+                bench_status_str = get_status_str(bench_status)
+                
+                logging.info(f"- {starter.player.name} ({starter.pos.short_name}) -> bench "
+                           f"[vs {starter_status.opponent if starter_status else 'Unknown'}, {starter_status_str}]")
+                logging.info(f"  {bench.player.name} ({bench.pos.short_name}) -> starting "
+                           f"[vs {bench_status.opponent if bench_status else 'Unknown'}, {bench_status_str}]")
+                logging.info(f"  Reason: {reason}\n")
 
             # Execute swaps
-            for starter, bench in swaps:
+            for starter, bench, _ in optimal_swaps:
                 try:
-                    starter_status = self.get_player_status(starter.player.id)
-                    bench_status = self.get_player_status(bench.player.id)
-                    
-                    logging.info(f"Swapping {starter.player.name} (vs {starter_status.opponent if starter_status else 'Unknown'}) "
-                               f"with {bench.player.name} (vs {bench_status.opponent if bench_status else 'Unknown'})")
-                    
                     success = self.api.swap_players(self.team_id, starter.player.id, bench.player.id)
                     if success:
-                        logging.info("✅ Swap successful")
+                        logging.info(f"✅ Successfully swapped {starter.player.name} with {bench.player.name}")
                     else:
-                        logging.error("❌ Swap failed")
+                        logging.error(f"❌ Failed to swap {starter.player.name} with {bench.player.name}")
                 except Exception as e:
                     logging.error(f"Error making swap: {e}")
 
