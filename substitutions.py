@@ -162,13 +162,17 @@ def show_roster_analysis(league_id: str, team_id: str = None):
 
     # Load authenticated session
     session = Session()
+    config = load_config()
+    cookie_path = config["cookie_path"]
+    
     try:
-        with open("deploy/fantraxloggedin.cookie", "rb") as f:
+        with open(cookie_path, "rb") as f:
             for cookie in pickle.load(f):
                 session.cookies.set(cookie["name"], cookie["value"])
+        print("✅ Cookie session loaded successfully")
     except FileNotFoundError:
-        print("❌ Cookie file not found! Please run the bootstrap script first:")
-        print("  cd utils && python bootstrap_cookie.py")
+        print(f"❌ Cookie file not found at {cookie_path}! Please run the bootstrap script first:")
+        print("  python bootstrap_cookie.py")
         return
     except Exception as e:
         print(f"❌ Error loading cookie: {e}")
