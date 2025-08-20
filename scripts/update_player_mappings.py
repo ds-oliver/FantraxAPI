@@ -7,6 +7,7 @@ import pickle
 from pathlib import Path
 import pandas as pd
 import requests
+import time
 from thefuzz import fuzz
 from unidecode import unidecode
 import yaml
@@ -19,19 +20,45 @@ def load_fantrax_players(league_id: str, session: requests.Session) -> list:
     api = FantraxAPI(league_id, session=session)
     return api.get_all_players()
 
-def load_team_mappings(config_dir: Path) -> dict:
-    """Load team code mappings."""
+def load_team_mappings(config_dir: Path) -> tuple[dict, dict]:
+    """
+    Load team mappings from both files.
+    Returns:
+        Tuple of (code_mappings, club_mappings) where:
+        - code_mappings: Dict mapping team codes to standard codes
+        - club_mappings: Dict mapping team names to standard codes
+    """
+    # Load team code mappings
     with open(config_dir / "team_mappings.yaml") as f:
-        mappings = yaml.safe_load(f)
+        code_mappings = yaml.safe_load(f)
     
-    # Create reverse lookup (variation -> standard)
-    reverse_map = {}
-    for standard, variations in mappings.items():
+    # Create reverse lookup for codes (variation -> standard)
+    reverse_code_map = {}
+    for standard, variations in code_mappings.items():
         for var in variations:
-            reverse_map[var] = standard
+            reverse_code_map[var] = standard
         # Also map standard code to itself
-        reverse_map[standard] = standard
-    return reverse_map
+        reverse_code_map[standard] = standard
+        
+    # Load club team mappings
+    with open(config_dir / "club_team_mappings.yaml") as f:
+        club_mappings = yaml.safe_load(f)
+        
+    # Create reverse lookup for club names (any name -> standard code)
+    reverse_club_map = {}
+    for code, data in club_mappings.items():
+        # Add all possible names for this club
+        names = [
+            data["long_name"],
+            data["short_name"],
+            *(data.get("long_name_variations", [])),
+            *(data.get("short_name_variations", [])),
+            *(data.get("nicknames", []))
+        ]
+        for name in names:
+            reverse_club_map[name.lower()] = code
+            
+    return reverse_code_map, reverse_club_map
 
 def load_ffscout_data(data_dir: Path) -> pd.DataFrame:
     """Load the most recent FFScout data."""
@@ -41,15 +68,88 @@ def load_ffscout_data(data_dir: Path) -> pd.DataFrame:
     latest = max(files, key=lambda p: p.stat().st_mtime)
     return pd.read_parquet(latest)
 
-def extract_name_and_info(full_str: str) -> tuple[str, str]:
-    """Extract name and team/position info from strings like 'Name (TEAM - POS)'."""
+def load_sofascore_data() -> pd.DataFrame:
+    """Load SofaScore player data from their API."""
+    # Premier League season ID for 2023-24
+    SEASON_ID = 76986  # Updated to correct season ID
+    
+    # API configuration
+    base_url = "https://www.sofascore.com/api/v1/unique-tournament/17/season"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+        "Accept": "*/*",
+        "Referer": "https://www.sofascore.com/tournament/football/england/premier-league/17",
+        "Cache-Control": "no-cache",
+        "x-requested-with": "b548fe"
+    }
+    
+    try:
+        players = []
+        page = 1
+        while True:
+            # Calculate offset for pagination
+            offset = (page - 1) * 20
+            
+            # Build URL with pagination and sorting
+            url = f"{base_url}/{SEASON_ID}/statistics"
+            params = {
+                "limit": 20,
+                "offset": offset,
+                "order": "-rating",  # Sort by rating descending
+                "accumulation": "total",
+                "group": "summary"
+            }
+            
+            # Make request
+            response = requests.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Extract player data from this page
+            for player in data.get("results", []):
+                players.append({
+                    "player_id": int(player["player"]["id"]),  # Convert to Python int
+                    "player_name": player["player"]["name"],
+                    "team_name": player["team"]["name"]
+                })
+            
+            # Check if we've reached the last page
+            if page >= data.get("pages", 1):
+                break
+                
+            page += 1
+            
+            # Add a small delay to avoid rate limiting
+            time.sleep(0.5)
+        
+        print(f"Loaded {len(players)} players from {page} pages")
+        return pd.DataFrame(players)
+    except Exception as e:
+        print(f"Error loading SofaScore data: {e}")
+        return pd.DataFrame()
+
+def extract_name_and_info(full_str: str) -> tuple[str, str, str, str]:
+    """
+    Extract name, team, and position info from strings like 'Name (TEAM - POS)'.
+    Returns:
+        Tuple of (name, team, position, original_info)
+    """
     if not full_str:
-        return "", ""
+        return "", "", "", ""
     
     parts = full_str.split("(", 1)
     name = parts[0].strip()
     info = parts[1].strip(")").strip() if len(parts) > 1 else ""
-    return name, info
+    
+    # Split info into team and position if possible
+    team = ""
+    position = ""
+    if " - " in info:
+        team, position = info.split(" - ", 1)
+    else:
+        team = info
+        
+    return name, team.strip(), position.strip(), info
 
 def normalize_name(name: str, remove_accents: bool = False) -> str:
     """
@@ -80,11 +180,25 @@ def normalize_name(name: str, remove_accents: bool = False) -> str:
     
     return name
 
+def standardize_team(team: str, code_mappings: dict, club_mappings: dict) -> str:
+    """
+    Convert a team name or code to standard code.
+    Example: 'TOTTENHAM HOTSPUR' -> 'TOT'
+    """
+    team = team.strip().lower()
+    # Try code mappings first
+    std_team = code_mappings.get(team, team)
+    # If no match in code mappings, try club mappings
+    if std_team == team:
+        std_team = club_mappings.get(team, team)
+    return std_team.upper()
+
 def find_matches(
     name: str, 
     team_code: str,
     candidates: list[tuple[str, str]],  # List of (name, team_code) tuples
-    team_mappings: dict,
+    code_mappings: dict,
+    club_mappings: dict,
     threshold: int = 75
 ) -> list[tuple[str, int, str, str]]:
     """
@@ -94,27 +208,28 @@ def find_matches(
         name: Player name to match
         team_code: Player's team code
         candidates: List of (name, team_code) tuples
-        team_mappings: Dict mapping team codes to standard codes
+        code_mappings: Dict mapping team codes to standard codes
+        club_mappings: Dict mapping team names to standard codes
         threshold: Minimum match score
     
     Returns:
-        List of tuples (candidate_name, score, info, team_code) sorted by score descending
+        List of tuples (candidate_name, score, display_info, team_code) sorted by score descending
     """
     matches = []
-    name_only, name_info = extract_name_and_info(name)
+    name_only, team, pos, _ = extract_name_and_info(name)
     norm_name = normalize_name(name_only)
     norm_name_no_accents = normalize_name(name_only, remove_accents=True)
     
     # Standardize the player's team code
-    std_team = team_mappings.get(team_code.lower(), team_code.lower())
+    std_team = standardize_team(team_code or team, code_mappings, club_mappings)
     
     for candidate, cand_team in candidates:
-        cand_name, cand_info = extract_name_and_info(candidate)
+        cand_name, cand_team_info, cand_pos, cand_orig_info = extract_name_and_info(candidate)
         norm_cand = normalize_name(cand_name)
         norm_cand_no_accents = normalize_name(cand_name, remove_accents=True)
         
         # Standardize candidate's team code
-        std_cand_team = team_mappings.get(cand_team.lower(), cand_team.lower())
+        std_cand_team = standardize_team(cand_team or cand_team_info, code_mappings, club_mappings)
         
         # Try exact matches first (with and without accents)
         if norm_name == norm_cand:
@@ -145,7 +260,11 @@ def find_matches(
             
         final_score = int(base_score)
         if final_score >= threshold:
-            matches.append((candidate, final_score, cand_info, cand_team))
+            # Create display info with standardized team code and original position
+            display_info = f"{std_cand_team}"
+            if cand_pos:
+                display_info += f" - {cand_pos}"
+            matches.append((candidate, final_score, display_info, std_cand_team))
             
     # Sort by score descending
     matches.sort(key=lambda x: x[1], reverse=True)
@@ -190,13 +309,18 @@ def update_mappings(
     print(f"Found {len(fantrax_players)} players in Fantrax")
     
     # Load team mappings
-    team_mappings = load_team_mappings(config_dir)
-    print("Loaded team code mappings")
+    code_mappings, club_mappings = load_team_mappings(config_dir)
+    print("Loaded team mappings")
     
     # Load FFScout data if available
     ffscout_df = load_ffscout_data(data_dir / "silver/scout_picks")
     if not ffscout_df.empty:
         print(f"Loaded FFScout data with {len(ffscout_df)} players")
+        
+    # Load SofaScore data
+    sofascore_df = load_sofascore_data()
+    if not sofascore_df.empty:
+        print(f"Loaded SofaScore data with {len(sofascore_df)} players")
     
     # Track statistics
     stats = {
@@ -205,8 +329,12 @@ def update_mappings(
         "new_mappings": 0,
         "ffscout_matches": 0,
         "no_ffscout_match": 0,
-        "exact_matches": 0,
-        "manual_matches": 0
+        "ffscout_exact_matches": 0,
+        "ffscout_manual_matches": 0,
+        "sofascore_matches": 0,
+        "no_sofascore_match": 0,
+        "sofascore_exact_matches": 0,
+        "sofascore_manual_matches": 0
     }
     
     # List to collect players needing manual matching
@@ -228,9 +356,12 @@ def update_mappings(
             # Update Fantrax info
             mapping.fantrax_name = player.name
             stats["existing_mappings"] += 1
-            # Only continue if we already have an FFScout match
+            # Skip if we already have both FFScout and SofaScore matches
             if mapping.ffscout_name:
                 stats["ffscout_matches"] += 1
+            if mapping.sofascore_id:
+                stats["sofascore_matches"] += 1
+            if mapping.ffscout_name and mapping.sofascore_id:
                 continue
         else:
             # Create new mapping
@@ -243,6 +374,9 @@ def update_mappings(
                 other_names=[]
             )
             stats["new_mappings"] += 1
+            
+        # This player needs FFScout matching
+        stats["no_ffscout_match"] += 1
         
         # Add name variations
         if player.first_name and player.last_name:
@@ -254,7 +388,7 @@ def update_mappings(
             ])
         
         # Try to match with FFScout data
-        if not ffscout_df.empty:
+        if not ffscout_df.empty and not mapping.ffscout_name:
             # Create list of (name, team_code) tuples for matching
             ffscout_candidates = []
             for _, row in ffscout_df.iterrows():
@@ -268,7 +402,7 @@ def update_mappings(
                 player.name,
                 player.team.lower(),
                 ffscout_candidates,
-                team_mappings,
+                code_mappings, club_mappings,
                 threshold=70  # Lower threshold to see more potential matches
             )
             
@@ -279,15 +413,15 @@ def update_mappings(
                     # Found a confident match
                     mapping.ffscout_name = matches[0][0]
                     stats["ffscout_matches"] += 1
-                    stats["exact_matches"] += 1
+                    stats["ffscout_exact_matches"] += 1
+                    stats["no_ffscout_match"] -= 1  # Remove from unmatched count
                 else:
                     # No exact match found, collect for manual matching if score >= 75
                     matches_for_review = [m for m in matches if m[1] >= 75]
                     if matches_for_review:
-                        unmatched_players.append((player, mapping, matches_for_review))
+                        unmatched_players.append((player, mapping, ("ffscout", matches_for_review)))
                     else:
-                        unmatched_players.append((player, mapping, []))
-                    stats["no_ffscout_match"] += 1
+                        unmatched_players.append((player, mapping, ("ffscout", [])))
                     
             if mapping.ffscout_name:
                 # Add FFScout display name as alternate if different
@@ -298,6 +432,43 @@ def update_mappings(
                     display_name = display_names.iloc[0]
                     if display_name and display_name != mapping.ffscout_name:
                         mapping.other_names.append(display_name)
+                        
+        # Try to match with SofaScore data
+        if not sofascore_df.empty and not mapping.sofascore_id:
+            # Create list of (name, team_name) tuples for matching
+            sofascore_candidates = []
+            for _, row in sofascore_df.iterrows():
+                sofascore_candidates.append((row["player_name"], row["team_name"]))
+            
+            # Try to find all potential matches
+            matches = find_matches(
+                player.name,
+                player.team.lower(),
+                sofascore_candidates,
+                code_mappings, club_mappings,
+                threshold=70  # Lower threshold to see more potential matches
+            )
+            
+            # Process matches
+            if matches:
+                best_score = matches[0][1]
+                if best_score >= 95:
+                    # Found a confident match
+                    match_name = matches[0][0]
+                    # Get SofaScore ID for the matched name
+                    match_id = int(sofascore_df[sofascore_df["player_name"] == match_name]["player_id"].iloc[0])
+                    mapping.sofascore_id = match_id
+                    mapping.sofascore_name = match_name
+                    stats["sofascore_matches"] += 1
+                    stats["sofascore_exact_matches"] += 1
+                    stats["no_sofascore_match"] -= 1  # Remove from unmatched count
+                else:
+                    # No exact match found, collect for manual matching if score >= 75
+                    matches_for_review = [m for m in matches if m[1] >= 75]
+                    if matches_for_review:
+                        unmatched_players.append((player, mapping, ("sofascore", matches_for_review)))
+                    else:
+                        unmatched_players.append((player, mapping, ("sofascore", [])))
         
         # Remove duplicates from other names
         mapping.other_names = list(set(mapping.other_names))
@@ -311,18 +482,20 @@ def update_mappings(
         print(f"Found {len(unmatched_players)} players without exact matches")
         print("Only showing potential matches with score >= 75")
         
-        for player, mapping, matches in unmatched_players:
+        for player, mapping, (source, matches) in unmatched_players:
             if not matches:  # Skip if no potential matches found in phase 1
                 continue
                 
             # Use the matches we already found in phase 1
             if matches:
-                print(f"\nPotential FFScout matches for {player.name} ({player.team} - {player.position}):")
-                for i, (match_name, score, _, team_code) in enumerate(matches[:5], 1):
-                    std_team = team_mappings.get(team_code.lower(), team_code.lower())
-                    print(f"  {i}. {match_name} ({team_code.upper()}) [score: {score}, std team: {std_team.upper()}]")
+                # Standardize player's team for display
+                std_player_team = standardize_team(player.team, code_mappings, club_mappings)
+                print(f"\nPotential {source.title()} matches for {player.name} ({std_player_team} - {player.position}):")
+                for i, (match_name, score, display_info, std_team) in enumerate(matches[:5], 1):
+                    print(f"  {i}. {match_name} ({display_info}) [score: {score}]")
                 print("  0. None of these")
-                print("\nNote: It's normal if none match - FFScout only includes likely starters")
+                if source == "ffscout":
+                    print("\nNote: It's normal if none match - FFScout only includes likely starters")
                 
                 while True:
                     try:
@@ -332,9 +505,19 @@ def update_mappings(
                         choice = int(choice)
                         if 0 <= choice <= len(matches[:5]):
                             if choice > 0:
-                                mapping.ffscout_name = matches[choice-1][0]
-                                stats["ffscout_matches"] += 1
-                                stats["manual_matches"] += 1
+                                match_name = matches[choice-1][0]
+                                if source == "ffscout":
+                                    mapping.ffscout_name = match_name
+                                    stats["ffscout_matches"] += 1
+                                    stats["ffscout_manual_matches"] += 1
+                                    stats["no_ffscout_match"] -= 1
+                                else:  # sofascore
+                                    match_id = int(sofascore_df[sofascore_df["player_name"] == match_name]["player_id"].iloc[0])
+                                    mapping.sofascore_id = match_id
+                                    mapping.sofascore_name = match_name
+                                    stats["sofascore_matches"] += 1
+                                    stats["sofascore_manual_matches"] += 1
+                                    stats["no_sofascore_match"] -= 1
                             break
                     except ValueError:
                         pass
@@ -347,23 +530,30 @@ def update_mappings(
     print(f"Total Fantrax players: {stats['total_players']}")
     print(f"Existing mappings updated: {stats['existing_mappings']}")
     print(f"New mappings created: {stats['new_mappings']}")
-    print(f"FFScout matches found: {stats['ffscout_matches']}")
-    print(f"  - Exact matches: {stats['exact_matches']}")
-    print(f"  - Manual matches: {stats['manual_matches']}")
+    print("\nFFScout matches:")
+    print(f"Total matches found: {stats['ffscout_matches']}")
+    print(f"  - Exact matches: {stats['ffscout_exact_matches']}")
+    print(f"  - Manual matches: {stats['ffscout_manual_matches']}")
     print(f"Players without FFScout match: {stats['no_ffscout_match']}")
     print(f"FFScout match rate: {stats['ffscout_matches']/stats['total_players']*100:.1f}%")
     print("Note: Low FFScout match rate is expected as FFScout only includes likely starters")
+    print("\nSofaScore matches:")
+    print(f"Total matches found: {stats['sofascore_matches']}")
+    print(f"  - Exact matches: {stats['sofascore_exact_matches']}")
+    print(f"  - Manual matches: {stats['sofascore_manual_matches']}")
+    print(f"Players without SofaScore match: {stats['no_sofascore_match']}")
+    print(f"SofaScore match rate: {stats['sofascore_matches']/stats['total_players']*100:.1f}%")
     print("=" * 50)
+    
+    # Save all mappings to file
+    manager.save_mappings()
     print(f"\nSaved mappings to: {output_file}")
 
 def main():
+    # Your Premier League league ID
+    LEAGUE_ID = "o90qdw15mc719reh"
+    
     parser = argparse.ArgumentParser(description="Update player mappings from various sources")
-    parser.add_argument(
-        "--league-id",
-        type=str,
-        required=True,
-        help="Fantrax league ID"
-    )
     parser.add_argument(
         "--data-dir",
         type=str,
@@ -390,7 +580,7 @@ def main():
     args = parser.parse_args()
     
     update_mappings(
-        args.league_id,
+        LEAGUE_ID,
         Path(args.data_dir),
         Path(args.output),
         args.cookie_file,

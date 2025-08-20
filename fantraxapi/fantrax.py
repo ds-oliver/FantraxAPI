@@ -12,6 +12,7 @@ from fantraxapi.objs import (
 from fantraxapi.trades import TradesService
 from fantraxapi.league import LeagueService
 from fantraxapi.waivers import WaiversService
+from fantraxapi.drops import DropsService
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ class FantraxAPI:
         self.trades = TradesService(self._request, self)
         self.league = LeagueService(self._request, self)
         self.waivers = WaiversService(self._request, self)
+        self.drops = DropsService(self)
 
     @property
     def teams(self) -> List[Team]:

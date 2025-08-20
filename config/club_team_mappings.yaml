@@ -1,0 +1,255 @@
+---
+# Premier League team mappings
+# Format:
+# standard_code:  # The short code used in Fantrax
+#   long_name: Full official name
+#   short_name: Common short name
+#   variations:  # Other names used by different sources
+#     - Alternative names
+#     - Different spellings
+#     - Historical names
+
+# Team code mappings with variations
+# Structure:
+#   STANDARD_CODE:
+#     long_name: Official full name
+#     short_name: Standard 3-letter code
+#     long_name_variations:  # Alternative full names
+#       - Full name variations
+#       - Historical full names
+#     short_name_variations:  # Alternative short codes/names
+#       - Alternative codes
+#       - Common abbreviations
+#     nicknames:  # Team nicknames and informal names
+#       - The Something
+#       - Common nickname
+
+ARS:
+  long_name: Arsenal
+  short_name: ARS
+  long_name_variations:
+    - Arsenal Football Club
+    - Arsenal FC
+  short_name_variations: []
+  nicknames:
+    - The Arsenal
+    - The Gunners
+
+AVL:
+  long_name: Aston Villa
+  short_name: AVL
+  long_name_variations:
+    - Aston Villa Football Club
+    - Aston Villa FC
+  short_name_variations:
+    - Villa
+  nicknames:
+    - The Villa
+    - The Villans
+
+BOU:
+  long_name: AFC Bournemouth
+  short_name: BOU
+  long_name_variations:
+    - Athletic Football Club Bournemouth
+    - Bournemouth FC
+  short_name_variations:
+    - Bournemouth
+  nicknames:
+    - The Cherries
+
+BRE:
+  long_name: Brentford
+  short_name: BRE
+  long_name_variations:
+    - Brentford Football Club
+    - Brentford FC
+  short_name_variations: []
+  nicknames:
+    - The Bees
+
+BHA:
+  long_name: Brighton & Hove Albion
+  short_name: BHA
+  long_name_variations:
+    - Brighton and Hove Albion
+    - Brighton and Hove Albion FC
+    - Brighton & Hove Albion FC
+  short_name_variations:
+    - Brighton
+  nicknames:
+    - The Seagulls
+
+BUR:
+  long_name: Burnley
+  short_name: BUR
+  long_name_variations:
+    - Burnley Football Club
+    - Burnley FC
+  short_name_variations: []
+  nicknames:
+    - The Clarets
+
+CHE:
+  long_name: Chelsea
+  short_name: CHE
+  long_name_variations:
+    - Chelsea Football Club
+    - Chelsea FC
+  short_name_variations: []
+  nicknames:
+    - The Blues
+    - The Pensioners
+
+CRY:
+  long_name: Crystal Palace
+  short_name: CRY
+  long_name_variations:
+    - Crystal Palace Football Club
+    - Crystal Palace FC
+  short_name_variations:
+    - Palace
+  nicknames:
+    - The Eagles
+
+EVE:
+  long_name: Everton
+  short_name: EVE
+  long_name_variations:
+    - Everton Football Club
+    - Everton FC
+  short_name_variations: []
+  nicknames:
+    - The Toffees
+    - The Blues
+
+FUL:
+  long_name: Fulham
+  short_name: FUL
+  long_name_variations:
+    - Fulham Football Club
+    - Fulham FC
+  short_name_variations: []
+  nicknames:
+    - The Cottagers
+    - The Whites
+
+LIV:
+  long_name: Liverpool
+  short_name: LIV
+  long_name_variations:
+    - Liverpool Football Club
+    - Liverpool FC
+  short_name_variations: []
+  nicknames:
+    - The Reds
+
+LUT:
+  long_name: Luton Town
+  short_name: LUT
+  long_name_variations:
+    - Luton Town Football Club
+    - Luton Town FC
+  short_name_variations:
+    - Luton
+  nicknames:
+    - The Hatters
+
+MCI:
+  long_name: Manchester City
+  short_name: MCI
+  long_name_variations:
+    - Manchester City Football Club
+    - Manchester City FC
+  short_name_variations:
+    - Man City
+    - City
+  nicknames:
+    - The Citizens
+    - The Sky Blues
+
+MUN:
+  long_name: Manchester United
+  short_name: MUN
+  long_name_variations:
+    - Manchester United Football Club
+    - Manchester United FC
+  short_name_variations:
+    - Man Utd
+    - Man United
+    - United
+  nicknames:
+    - The Red Devils
+
+NEW:
+  long_name: Newcastle United
+  short_name: NEW
+  long_name_variations:
+    - Newcastle United Football Club
+    - Newcastle United FC
+  short_name_variations:
+    - Newcastle
+  nicknames:
+    - The Magpies
+    - The Toon
+
+NFO:
+  long_name: Nottingham Forest
+  short_name: NFO
+  long_name_variations:
+    - Nottingham Forest Football Club
+    - Nottingham Forest FC
+  short_name_variations:
+    - Forest
+    - Nott'm Forest
+    - NOT
+  nicknames:
+    - The Tricky Trees
+    - The Garibaldi
+
+SHU:
+  long_name: Sheffield United
+  short_name: SHU
+  long_name_variations:
+    - Sheffield United Football Club
+    - Sheffield United FC
+  short_name_variations:
+    - Sheffield Utd
+  nicknames:
+    - The Blades
+
+TOT:
+  long_name: Tottenham Hotspur
+  short_name: TOT
+  long_name_variations:
+    - Tottenham Hotspur Football Club
+    - Tottenham Hotspur FC
+  short_name_variations:
+    - Tottenham
+    - Spurs
+  nicknames:
+    - The Lilywhites
+
+WHU:
+  long_name: West Ham United
+  short_name: WHU
+  long_name_variations:
+    - West Ham United Football Club
+    - West Ham United FC
+  short_name_variations:
+    - West Ham
+  nicknames:
+    - The Hammers
+    - The Irons
+
+WOL:
+  long_name: Wolverhampton Wanderers
+  short_name: WOL
+  long_name_variations:
+    - Wolverhampton Wanderers Football Club
+    - Wolverhampton Wanderers FC
+  short_name_variations:
+    - Wolves
+    - Wolverhampton
+  nicknames:
+    - The Wanderers
