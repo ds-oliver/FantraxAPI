@@ -1,24 +1,45 @@
-# Standard team code mappings across different sources
-# Format: standard_code: [list of variations]
-# Always use lowercase for consistency
+# Standard team code mappings
+# Format:
+#   STANDARD_CODE:
+#     variations: [list of alternative codes]
 
-arsenal: [ars]
-aston_villa: [avl, villa]
-bournemouth: [bou, afcb]
-brentford: [bre, brf]
-brighton: [bha, bri]
-burnley: [bur]
-chelsea: [che, cfc]
-crystal_palace: [cry, pal]
-everton: [eve]
-fulham: [ful]
-liverpool: [liv, lfc]
-manchester_city: [mci, mnc, man_city]
-manchester_united: [mun, man_utd]
-newcastle: [new, nufc]
-nottingham_forest: [nfo, not, forest]
-sheffield_united: [shu, suf]
-tottenham: [tot, thfc]
-west_ham: [whu, wham]
-wolves: [wol, wwfc]
-luton: [lut, ltfc]
+ARS:
+  variations: [arsenal, ars]
+AVL:
+  variations: [aston_villa, avl, villa]
+BOU:
+  variations: [bournemouth, bou, afcb]
+BRE:
+  variations: [brentford, bre, brf]
+BHA:
+  variations: [brighton, bha, bri]
+BUR:
+  variations: [burnley, bur]
+CHE:
+  variations: [chelsea, che, cfc]
+CRY:
+  variations: [crystal_palace, cry, pal]
+EVE:
+  variations: [everton, eve]
+FUL:
+  variations: [fulham, ful]
+LIV:
+  variations: [liverpool, liv, lfc]
+MCI:
+  variations: [manchester_city, mci, mnc, man_city]
+MUN:
+  variations: [manchester_united, mun, man_utd]
+NEW:
+  variations: [newcastle, new, nufc]
+NFO:
+  variations: [nottingham_forest, nfo, not, forest]
+SHU:
+  variations: [sheffield_united, shu, suf]
+TOT:
+  variations: [tottenham_hotspur, tot, thfc, tottenham, spurs]
+WHU:
+  variations: [west_ham, whu, wham]
+WOL:
+  variations: [wolves, wol, wwfc]
+LUT:
+  variations: [luton, lut, ltfc]

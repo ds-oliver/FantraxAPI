@@ -68,10 +68,30 @@ def load_ffscout_data(data_dir: Path) -> pd.DataFrame:
     latest = max(files, key=lambda p: p.stat().st_mtime)
     return pd.read_parquet(latest)
 
-def load_sofascore_data() -> pd.DataFrame:
-    """Load SofaScore player data from their API."""
+def load_sofascore_data(data_dir: Path) -> pd.DataFrame:
+    """
+    Load SofaScore player data from cache or API.
+    
+    Args:
+        data_dir: Base data directory
+    """
+    # Check cache first
+    cache_dir = data_dir / "silver/sofascore"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_files = list(cache_dir.glob("sofascore_players_*.parquet"))
+    
+    if cache_files:
+        # Use most recent cache file
+        latest = max(cache_files, key=lambda p: p.stat().st_mtime)
+        # Check if cache is fresh (less than 24 hours old)
+        if time.time() - latest.stat().st_mtime < 24 * 60 * 60:
+            print(f"Loading SofaScore data from cache: {latest.name}")
+            df = pd.read_parquet(latest)
+            print(f"Loaded {len(df)} players from cache")
+            return df
+    
     # Premier League season ID for 2023-24
-    SEASON_ID = 76986  # Updated to correct season ID
+    SEASON_ID = 76986
     
     # API configuration
     base_url = "https://www.sofascore.com/api/v1/unique-tournament/17/season"
@@ -86,6 +106,7 @@ def load_sofascore_data() -> pd.DataFrame:
     try:
         players = []
         page = 1
+        print("Fetching SofaScore data from API...")
         while True:
             # Calculate offset for pagination
             offset = (page - 1) * 20
@@ -110,7 +131,8 @@ def load_sofascore_data() -> pd.DataFrame:
                 players.append({
                     "player_id": int(player["player"]["id"]),  # Convert to Python int
                     "player_name": player["player"]["name"],
-                    "team_name": player["team"]["name"]
+                    "team_name": player["team"]["name"],  # Keep original for reference
+                    "team_code": player["team"]["name"]  # Will be standardized to 3-letter code
                 })
             
             # Check if we've reached the last page
@@ -123,7 +145,24 @@ def load_sofascore_data() -> pd.DataFrame:
             time.sleep(0.5)
         
         print(f"Loaded {len(players)} players from {page} pages")
-        return pd.DataFrame(players)
+        df = pd.DataFrame(players)
+        
+        # Standardize team codes
+        code_mappings, club_mappings = load_team_mappings(Path("config"))
+        df["team_code"] = df["team_code"].apply(lambda x: standardize_team(x, code_mappings, club_mappings))
+        
+        # Save to cache
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        cache_file = cache_dir / f"sofascore_players_{timestamp}.parquet"
+        df.to_parquet(cache_file)
+        print(f"Saved SofaScore data to cache: {cache_file.name}")
+        
+        # Also save as CSV for easy viewing
+        csv_file = cache_dir / f"sofascore_players_{timestamp}.csv"
+        df.to_csv(csv_file, index=False)
+        print(f"Saved SofaScore data to CSV: {csv_file.name}")
+        
+        return df
     except Exception as e:
         print(f"Error loading SofaScore data: {e}")
         return pd.DataFrame()
@@ -163,7 +202,7 @@ def normalize_name(name: str, remove_accents: bool = False) -> str:
         return ""
         
     # Extract just the name part if it includes team/position
-    name, _ = extract_name_and_info(name)
+    name, _, _, _ = extract_name_and_info(name)
     
     # Convert to lowercase
     name = name.lower()
@@ -185,13 +224,34 @@ def standardize_team(team: str, code_mappings: dict, club_mappings: dict) -> str
     Convert a team name or code to standard code.
     Example: 'TOTTENHAM HOTSPUR' -> 'TOT'
     """
+    if not team:
+        return ""
+        
     team = team.strip().lower()
+    
     # Try code mappings first
-    std_team = code_mappings.get(team, team)
-    # If no match in code mappings, try club mappings
-    if std_team == team:
-        std_team = club_mappings.get(team, team)
-    return std_team.upper()
+    for code, data in code_mappings.items():
+        if isinstance(data, dict):  # New format
+            variations = [v.lower() for v in data.get("variations", [])]
+            if team in variations:
+                return code
+    
+    # Try club mappings
+    for code, data in club_mappings.items():
+        if isinstance(data, dict):
+            # Check all possible variations
+            all_variations = [
+                data.get("long_name", "").lower(),
+                data.get("short_name", "").lower(),
+                *[v.lower() for v in data.get("long_name_variations", [])],
+                *[v.lower() for v in data.get("short_name_variations", [])],
+                *[v.lower() for v in data.get("nicknames", [])]
+            ]
+            if team in all_variations:
+                return code
+    
+    # If no match found, return original team code in uppercase
+    return team.upper()
 
 def find_matches(
     name: str, 
@@ -260,11 +320,12 @@ def find_matches(
             
         final_score = int(base_score)
         if final_score >= threshold:
-            # Create display info with standardized team code and original position
-            display_info = f"{std_cand_team}"
+            # Create standardized display string
+            display_name = cand_name
+            display_info = f"{std_cand_team}"  # Use standardized team code
             if cand_pos:
                 display_info += f" - {cand_pos}"
-            matches.append((candidate, final_score, display_info, std_cand_team))
+            matches.append((display_name, final_score, display_info, std_cand_team))
             
     # Sort by score descending
     matches.sort(key=lambda x: x[1], reverse=True)
@@ -318,9 +379,9 @@ def update_mappings(
         print(f"Loaded FFScout data with {len(ffscout_df)} players")
         
     # Load SofaScore data
-    sofascore_df = load_sofascore_data()
+    sofascore_df = load_sofascore_data(data_dir)
     if not sofascore_df.empty:
-        print(f"Loaded SofaScore data with {len(sofascore_df)} players")
+        print(f"Found {len(sofascore_df)} players in SofaScore data")
     
     # Track statistics
     stats = {
@@ -435,10 +496,10 @@ def update_mappings(
                         
         # Try to match with SofaScore data
         if not sofascore_df.empty and not mapping.sofascore_id:
-            # Create list of (name, team_name) tuples for matching
+            # Create list of (name, team_code) tuples for matching
             sofascore_candidates = []
             for _, row in sofascore_df.iterrows():
-                sofascore_candidates.append((row["player_name"], row["team_name"]))
+                sofascore_candidates.append((row["player_name"], row["team_code"]))
             
             # Try to find all potential matches
             matches = find_matches(
@@ -492,7 +553,8 @@ def update_mappings(
                 std_player_team = standardize_team(player.team, code_mappings, club_mappings)
                 print(f"\nPotential {source.title()} matches for {player.name} ({std_player_team} - {player.position}):")
                 for i, (match_name, score, display_info, std_team) in enumerate(matches[:5], 1):
-                    print(f"  {i}. {match_name} ({display_info}) [score: {score}]")
+                    # Always show standardized team code
+                    print(f"  {i}. {match_name} ({std_team}) [score: {score}]")
                 print("  0. None of these")
                 if source == "ffscout":
                     print("\nNote: It's normal if none match - FFScout only includes likely starters")
