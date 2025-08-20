@@ -68,30 +68,39 @@ def load_ffscout_data(data_dir: Path) -> pd.DataFrame:
     latest = max(files, key=lambda p: p.stat().st_mtime)
     return pd.read_parquet(latest)
 
-def load_sofascore_data(data_dir: Path) -> pd.DataFrame:
+def load_sofascore_data(data_dir: Path, code_mappings: dict, club_mappings: dict, force_refresh: bool = False) -> pd.DataFrame:
     """
     Load SofaScore player data from cache or API.
     
     Args:
         data_dir: Base data directory
+        code_mappings: Dict mapping team codes to standard codes
+        club_mappings: Dict mapping team names to standard codes
+        force_refresh: If True, ignore cache and fetch fresh data
     """
-    # Check cache first
-    cache_dir = data_dir / "silver/sofascore"
+    # Ensure data directories exist
+    data_dir.mkdir(parents=True, exist_ok=True)
+    cache_dir = data_dir / "silver" / "sofascore"
     cache_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Using cache directory: {cache_dir}")
     cache_files = list(cache_dir.glob("sofascore_players_*.parquet"))
     
-    if cache_files:
+    # Check cache unless force refresh is requested
+    if not force_refresh and cache_files:
         # Use most recent cache file
         latest = max(cache_files, key=lambda p: p.stat().st_mtime)
-        # Check if cache is fresh (less than 24 hours old)
-        if time.time() - latest.stat().st_mtime < 24 * 60 * 60:
+        # Check if cache is fresh (less than 8 hours old)
+        if time.time() - latest.stat().st_mtime < 8 * 60 * 60:
             print(f"Loading SofaScore data from cache: {latest.name}")
             df = pd.read_parquet(latest)
             print(f"Loaded {len(df)} players from cache")
             return df
     
-    # Premier League season ID for 2023-24
-    SEASON_ID = 76986
+    # Premier League season IDs
+    SEASON_IDS = {
+        "2023-24": 76986,  # Current season
+        "2022-23": 52186,  # Previous season
+    }
     
     # API configuration
     base_url = "https://www.sofascore.com/api/v1/unique-tournament/17/season"
@@ -104,51 +113,74 @@ def load_sofascore_data(data_dir: Path) -> pd.DataFrame:
     }
     
     try:
-        players = []
-        page = 1
+        all_players = []
         print("Fetching SofaScore data from API...")
-        while True:
-            # Calculate offset for pagination
-            offset = (page - 1) * 20
-            
-            # Build URL with pagination and sorting
-            url = f"{base_url}/{SEASON_ID}/statistics"
-            params = {
-                "limit": 20,
-                "offset": offset,
-                "order": "-rating",  # Sort by rating descending
-                "accumulation": "total",
-                "group": "summary"
-            }
-            
-            # Make request
-            response = requests.get(url, headers=headers, params=params)
-            response.raise_for_status()
-            data = response.json()
-            
-            # Extract player data from this page
-            for player in data.get("results", []):
-                players.append({
-                    "player_id": int(player["player"]["id"]),  # Convert to Python int
-                    "player_name": player["player"]["name"],
-                    "team_name": player["team"]["name"],  # Keep original for reference
-                    "team_code": player["team"]["name"]  # Will be standardized to 3-letter code
-                })
-            
-            # Check if we've reached the last page
-            if page >= data.get("pages", 1):
-                break
+        
+        for season, season_id in SEASON_IDS.items():
+            print(f"\nFetching {season} season...")
+            page = 1
+            while True:
+                # Calculate offset for pagination
+                offset = (page - 1) * 20
                 
-            page += 1
-            
-            # Add a small delay to avoid rate limiting
-            time.sleep(0.5)
+                # Build URL with pagination and sorting
+                url = f"{base_url}/{season_id}/statistics"
+                params = {
+                    "limit": 20,
+                    "offset": offset,
+                    "order": "-rating",  # Sort by rating descending
+                    "accumulation": "total",
+                    "group": "summary"
+                }
+                
+                # Make request
+                response = requests.get(url, headers=headers, params=params)
+                response.raise_for_status()
+                data = response.json()
+                
+                # Extract player data from this page
+                for player in data.get("results", []):
+                    # Get team name and standardize it immediately
+                    team_name = player["team"]["name"]
+                    std_team = standardize_team(team_name, code_mappings, club_mappings)
+                    
+                    # Create player record
+                    player_record = {
+                        "player_id": int(player["player"]["id"]),  # Convert to Python int
+                        "player_name": player["player"]["name"],
+                        "team_name": team_name,  # Keep original for reference
+                        "team_code": std_team,  # Already standardized
+                        "season": season  # Add season info
+                    }
+                    
+                    # Check if player already exists from another season
+                    existing = next((p for p in all_players if p["player_id"] == player_record["player_id"]), None)
+                    if existing:
+                        # Update with current season info if team changed
+                        if existing["team_code"] != player_record["team_code"]:
+                            existing[f"team_code_{season.replace('-', '_')}"] = player_record["team_code"]
+                            existing[f"team_name_{season.replace('-', '_')}"] = player_record["team_name"]
+                    else:
+                        all_players.append(player_record)
+                
+                # Show progress
+                if page % 5 == 0:
+                    print(f"  Processed {page} pages...")
+                
+                # Check if we've reached the last page
+                if page >= data.get("pages", 1):
+                    print(f"  Completed {page} pages for {season}")
+                    break
+                    
+                page += 1
+                
+                # Add a small delay to avoid rate limiting
+                time.sleep(0.5)
         
-        print(f"Loaded {len(players)} players from {page} pages")
-        df = pd.DataFrame(players)
+        print(f"\nLoaded {len(all_players)} unique players across all seasons")
+        df = pd.DataFrame(all_players)
         
-        # Standardize team codes
-        code_mappings, club_mappings = load_team_mappings(Path("config"))
+        # Standardize team codes using the passed in mappings
         df["team_code"] = df["team_code"].apply(lambda x: standardize_team(x, code_mappings, club_mappings))
         
         # Save to cache
@@ -229,29 +261,65 @@ def standardize_team(team: str, code_mappings: dict, club_mappings: dict) -> str
         
     team = team.strip().lower()
     
-    # Try code mappings first
+    # Try exact matches first
     for code, data in code_mappings.items():
         if isinstance(data, dict):  # New format
             variations = [v.lower() for v in data.get("variations", [])]
-            if team in variations:
+            if team in variations or team == code.lower():
                 return code
     
-    # Try club mappings
+    # Try club mappings with exact matches
     for code, data in club_mappings.items():
         if isinstance(data, dict):
             # Check all possible variations
             all_variations = [
                 data.get("long_name", "").lower(),
                 data.get("short_name", "").lower(),
+                code.lower(),  # The code itself
                 *[v.lower() for v in data.get("long_name_variations", [])],
                 *[v.lower() for v in data.get("short_name_variations", [])],
                 *[v.lower() for v in data.get("nicknames", [])]
             ]
             if team in all_variations:
                 return code
+                
+    # Try fuzzy matching for long team names
+    if len(team) > 10:  # Only for longer names
+        best_score = 0
+        best_code = None
+        for code, data in club_mappings.items():
+            if isinstance(data, dict):
+                # Try matching against long name and variations
+                names_to_try = [
+                    data.get("long_name", "").lower(),
+                    *[v.lower() for v in data.get("long_name_variations", [])]
+                ]
+                for name in names_to_try:
+                    if name:
+                        score = fuzz.ratio(team, name)
+                        if score > best_score and score >= 90:  # Must be very close match
+                            best_score = score
+                            best_code = code
+        if best_code:
+            return best_code
+            
+    # Special handling for Manchester teams
+    if team.startswith("manchester "):
+        if "city" in team or "mnc" in team or "mci" in team:
+            return "MCI"
+        if "united" in team or "utd" in team or "mun" in team:
+            return "MUN"
     
-    # If no match found, return original team code in uppercase
-    return team.upper()
+    # If no match found, try to extract a 3-letter code
+    if len(team.split()) > 1:
+        # For multi-word names, try to use a meaningful part
+        words = team.split()
+        if len(words) >= 2 and words[0] in ["west", "east", "north", "south"]:
+            return words[1][:3].upper()  # e.g., "west ham" -> "HAM"
+        return words[0][:3].upper()  # e.g., "crystal palace" -> "CRY"
+    
+    # For single words, just take first 3 letters
+    return team[:3].upper()
 
 def find_matches(
     name: str, 
@@ -314,9 +382,16 @@ def find_matches(
             if len_diff > 0:
                 base_score = base_score * (1 - len_diff * 0.05)  # 5% penalty per char difference
         
-        # Apply team mismatch penalty
-        if std_team != std_cand_team:
-            base_score = base_score * 0.8  # 20% penalty for team mismatch
+        # Check team match
+        if std_team == std_cand_team:
+            # Same team - boost the score to 100 if it's already high
+            if base_score >= 90:
+                base_score = 100
+            elif base_score >= 80:
+                base_score = base_score * 1.2  # 20% bonus for team match
+        else:
+            # Different teams - heavy penalty
+            base_score = base_score * 0.5  # 50% penalty for team mismatch
             
         final_score = int(base_score)
         if final_score >= threshold:
@@ -337,7 +412,8 @@ def update_mappings(
     output_file: Path,
     cookie_file: str = "fantraxloggedin.cookie",
     interactive: bool = True,
-    config_dir: Path = Path("config")
+    config_dir: Path = Path("config"),
+    force_refresh: bool = False
 ) -> None:
     """
     Update player mappings from various sources.
@@ -379,7 +455,7 @@ def update_mappings(
         print(f"Loaded FFScout data with {len(ffscout_df)} players")
         
     # Load SofaScore data
-    sofascore_df = load_sofascore_data(data_dir)
+    sofascore_df = load_sofascore_data(data_dir, code_mappings, club_mappings, force_refresh)
     if not sofascore_df.empty:
         print(f"Found {len(sofascore_df)} players in SofaScore data")
     
@@ -619,7 +695,7 @@ def main():
     parser.add_argument(
         "--data-dir",
         type=str,
-        default="data",
+        default="/Users/hogan/FantraxAPI/data",
         help="Directory containing data files"
     )
     parser.add_argument(
@@ -639,6 +715,11 @@ def main():
         action="store_true",
         help="Skip interactive prompts for uncertain matches"
     )
+    parser.add_argument(
+        "--force-refresh",
+        action="store_true",
+        help="Force refresh of SofaScore data, ignoring cache"
+    )
     args = parser.parse_args()
     
     update_mappings(
@@ -646,7 +727,8 @@ def main():
         Path(args.data_dir),
         Path(args.output),
         args.cookie_file,
-        not args.noninteractive
+        not args.noninteractive,
+        force_refresh=args.force_refresh
     )
 
 if __name__ == "__main__":

@@ -21,6 +21,7 @@ class PlayerMapping(BaseModel):
     sofascore_name: Optional[str] = None
     ffscout_name: Optional[str] = None
     other_names: List[str] = Field(default_factory=list)
+    display_name: Optional[str] = None  # Preferred name for display
 
 class PlayerMappingManager:
     """Manages player name mappings across different sources."""
@@ -70,6 +71,14 @@ class PlayerMappingManager:
         Args:
             mapping: PlayerMapping instance to add
         """
+        # Generate display name if not provided
+        if not mapping.display_name:
+            # Try SofaScore name first as it's usually cleaner
+            if mapping.sofascore_name:
+                mapping.display_name = self._get_display_name(mapping.sofascore_name)
+            else:
+                mapping.display_name = self._get_display_name(mapping.fantrax_name)
+                
         self._mappings[mapping.fantrax_id] = mapping
         self.save_mappings()
     
@@ -112,6 +121,52 @@ class PlayerMappingManager:
                 
         return None
     
+    @staticmethod
+    def _get_display_name(name: str) -> str:
+        """
+        Generate a clean display name from a full name.
+        
+        This function:
+        1. Handles very long names (e.g., Brazilian names)
+        2. Preserves accents and special characters
+        3. Uses common/preferred names where possible
+        
+        Examples:
+            "Estevao Willian Almeida de Oliveira Gonçalves" -> "Estevao"
+            "Kevin De Bruyne" -> "De Bruyne"
+            "Son Heung-min" -> "Son"
+            "João Pedro" -> "João Pedro"
+        """
+        # Common preferred names
+        preferred_names = {
+            "kevin de bruyne": "De Bruyne",
+            "son heung-min": "Son",
+            "heung-min son": "Son",
+            "cristiano ronaldo": "Ronaldo",
+            "estevao willian": "Estevao",
+            "estevao willian almeida de oliveira goncalves": "Estevao",
+        }
+        
+        # Try preferred names first
+        normalized = name.lower().replace("-", " ")
+        if normalized in preferred_names:
+            return preferred_names[normalized]
+            
+        # Split into parts
+        parts = name.split()
+        
+        # For very long names (e.g., Brazilian players), use first name
+        if len(parts) > 3:
+            return parts[0]
+            
+        # For names with 2-3 parts, use last name unless it's too common
+        common_last_names = {"silva", "santos", "oliveira", "rodrigues", "martins"}
+        if len(parts) >= 2 and parts[-1].lower() not in common_last_names:
+            return parts[-1]
+            
+        # Default to first name
+        return parts[0]
+
     @staticmethod
     def _normalize_name(name: str) -> str:
         """
