@@ -1,0 +1,37 @@
+# SofaScore tournament IDs for major leagues
+# See: https://www.sofascore.com/tournament/football/england/premier-league/17
+
+leagues:
+  premier_league:
+    name: "Premier League"
+    tournament_id: 17
+    country: "England"
+  
+  la_liga:
+    name: "La Liga"
+    tournament_id: 8
+    country: "Spain"
+  
+  bundesliga:
+    name: "Bundesliga"
+    tournament_id: 34
+    country: "Germany"
+  
+  serie_a:
+    name: "Serie A"
+    tournament_id: 23
+    country: "Italy"
+  
+  ligue_1:
+    name: "Ligue 1"
+    tournament_id: 34
+    country: "France"
+  
+  eredivisie:
+    name: "Eredivisie"
+    tournament_id: 37
+    country: "Netherlands"
+
+# Default leagues to monitor if not specified in .env
+default_leagues:
+  - premier_league

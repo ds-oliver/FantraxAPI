@@ -1,0 +1,64 @@
+# Fantrax league configurations
+# Maps league names to their IDs and includes additional metadata
+# Note: This is a private configuration and should not be committed to public repositories
+
+leagues:
+  "Bantah Supah XI League":
+    league_id: "rqz0sshsmdd000g8"
+    team_id: "sycibfs0mddbnsb1"
+    team_name: "GG - DraftAlchemy"
+    member_id: "9a9djxvkmddbnsdm"
+
+  "DraftPL Community League":
+    league_id: "wpkabxe9md2ygbqb"
+    team_id: "5u6ce0wkmd8wxnnc"
+    team_name: "BB - DraftAlchemy"
+    member_id: "z3fkquj2md8wxnp4"
+
+  "DraftPL Lifestyle League":
+    league_id: "mh7e70u9md30tdww"
+    team_id: "vxgqu675mdd9h11h"
+    team_name: "LL - DraftAlchemy"
+    member_id: "xa2d5jo2mdd9h1su"
+
+  "DraftPL Roster Lock League":
+    league_id: "2n2fdfaxmcm64shc"
+    team_id: "ekzha63dmcm8fxhp"
+    team_name: "Gr - DraftAlchemy"
+    member_id: "s5mxfwc1mcm8fxj7"
+
+  "DraftPL Super League":
+    league_id: "10col873mcm62cqv"
+    team_id: "fhmidjjjmcm8dnys"
+    team_name: "2A - DraftAlchemy"
+    member_id: "2hqprjycmcm8do0x"
+
+  "High Rollers League":
+    league_id: "w2c4cy5xmcbxkxrn"
+    team_id: "g8ue9st4mcbzdfk9"
+    team_name: "Draft"
+    member_id: "l1sq0vlxmedb1rmy"
+
+  "International Genie League":
+    league_id: "d2k0bg7bmd66t1oo"
+    team_id: "9tu2v6zgmdae5hp3"
+    team_name: "SO - DraftAlchemy"
+    member_id: "r1b2igivmdae5hr5"
+
+  "Intl. Friendship League":
+    league_id: "o90qdw15mc719reh"
+    team_id: "3uxxpgpemc719rep"
+    team_name: "1 - Yoro wizard, Harry! (hogan_m)"
+    member_id: "ikz0r68smc719ub7"
+    is_commissioner: true
+
+# Default leagues to monitor if not specified in environment
+default_leagues:
+  - "DraftPL Super League"
+  - "DraftPL Community League"
+  - "DraftPL Lifestyle League"
+
+# Sport information
+sport_id: "009"  # EPL/Premier League
+season: "2025-26"
+game_type: "Commissioner"

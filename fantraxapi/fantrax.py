@@ -7,7 +7,7 @@ from requests.exceptions import RequestException
 from fantraxapi.exceptions import FantraxException, Unauthorized
 from fantraxapi.objs import (
     ScoringPeriod, Team, Standings, Trade, TradeBlock, Position,
-    Transaction, Roster
+    Transaction, Roster, Player
 )
 from fantraxapi.trades import TradesService
 from fantraxapi.league import LeagueService
@@ -194,6 +194,159 @@ class FantraxAPI:
 
     def roster_info(self, team_id):
         return Roster(self, self._request("getTeamRosterInfo", teamId=team_id), team_id)
+        
+    def get_all_players(self, debug: bool = False) -> List[Player]:
+        """
+        Get all players available in Fantrax.
+        
+        Args:
+            debug: If True, print debug information about the response
+        
+        Returns:
+            List of Player objects
+        """
+        # Get all players using the player stats endpoint (supports pagination)
+        response = self._request(
+            "getPlayerStats",
+            miscDisplayType="1",  # Standard display
+            pageNumber="1",  # First page
+            statusOrTeamFilter="ALL",  # Get all players, not just available
+            view="STATS"  # Include stats view
+        )
+        
+        if debug:
+            print("\nAPI Response:")
+            print(f"Keys in response: {list(response.keys())}")
+            if "statsTable" in response:
+                stats_table = response["statsTable"]
+                print(f"statsTable type: {type(stats_table).__name__}")
+                if isinstance(stats_table, dict):
+                    print(f"Keys in statsTable: {list(stats_table.keys())}")
+                    if "rows" in stats_table:
+                        print(f"Number of players (rows): {len(stats_table['rows'])}")
+                        if stats_table["rows"]:
+                            print(f"Sample player data keys: {list(stats_table['rows'][0].keys())}")
+                elif isinstance(stats_table, list):
+                    print(f"statsTable list length: {len(stats_table)}")
+                    if stats_table and isinstance(stats_table[0], dict):
+                        print(f"First element keys: {list(stats_table[0].keys())}")
+                        first = stats_table[0]
+                        if "scorer" in first and isinstance(first["scorer"], dict):
+                            print(f"First.scorer keys: {list(first['scorer'].keys())}")
+                        if "cells" in first and isinstance(first["cells"], list):
+                            print(f"First.cells length: {len(first['cells'])}")
+                            # Show first few cell keys if they are dicts
+                            cell_keys = []
+                            for c in first["cells"][:3]:
+                                if isinstance(c, dict):
+                                    cell_keys.append(list(c.keys()))
+                                else:
+                                    cell_keys.append(type(c).__name__)
+                            print(f"First 3 cells key sets: {cell_keys}")
+            if "paginatedResultSet" in response and isinstance(response["paginatedResultSet"], dict):
+                prs = response["paginatedResultSet"]
+                print(f"paginatedResultSet keys: {list(prs.keys())}")
+            if "tableHeader" in response:
+                th = response["tableHeader"]
+                if isinstance(th, dict):
+                    print(f"tableHeader keys: {list(th.keys())}")
+                    for k in ("columns", "rows", "headers"):
+                        if k in th:
+                            try:
+                                print(f"tableHeader.{k} length: {len(th[k])}")
+                            except Exception:
+                                pass
+                elif isinstance(th, list):
+                    print(f"tableHeader length: {len(th)}")
+        
+        # Extract player rows robustly from various possible shapes
+        players = []
+        rows = []
+
+        stats_table = response.get("statsTable")
+        if isinstance(stats_table, dict):
+            rows = stats_table.get("rows") or stats_table.get("data") or []
+        elif isinstance(stats_table, list):
+            aggregated_rows = []
+            for item in stats_table:
+                if isinstance(item, dict):
+                    if "rows" in item and isinstance(item["rows"], list):
+                        aggregated_rows.extend(item["rows"])
+                    elif "data" in item and isinstance(item["data"], list):
+                        aggregated_rows.extend(item["data"])
+                elif isinstance(item, list):
+                    aggregated_rows.extend(item)
+            rows = aggregated_rows
+
+        # Fallback: try paginatedResultSet common shapes
+        if not rows:
+            prs = response.get("paginatedResultSet")
+            if isinstance(prs, dict):
+                for key in ("results", "rows", "data", "items"):  # try common keys
+                    candidate = prs.get(key)
+                    if isinstance(candidate, list) and candidate:
+                        rows = candidate
+                        break
+
+        if debug and rows:
+            print(f"Total extracted rows (page 1): {len(rows)}")
+            print(f"Sample row keys: {list(rows[0].keys())}")
+
+        # If paginated, fetch remaining pages
+        prs = response.get("paginatedResultSet")
+        total_pages = 1
+        if isinstance(prs, dict):
+            try:
+                total_pages = int(prs.get("totalNumPages") or 1)
+            except Exception:
+                total_pages = 1
+
+        if total_pages > 1:
+            for page_num in range(2, total_pages + 1):
+                page_resp = self._request(
+                    "getPlayerStats",
+                    miscDisplayType="1",
+                    pageNumber=str(page_num),
+                    statusOrTeamFilter="ALL",
+                    view="STATS",
+                )
+                page_stats = page_resp.get("statsTable")
+                if isinstance(page_stats, dict):
+                    page_rows = page_stats.get("rows") or page_stats.get("data") or []
+                elif isinstance(page_stats, list):
+                    page_rows = page_stats
+                else:
+                    page_rows = []
+                if page_rows:
+                    rows.extend(page_rows)
+
+        if debug and rows:
+            print(f"Total extracted rows (all pages): {len(rows)}")
+
+        for player_data in rows:
+            if isinstance(player_data, dict):
+                # If rows are table cells shape, try to extract core player info from 'scorer'
+                if "scorer" in player_data and isinstance(player_data["scorer"], dict):
+                    scorer = player_data["scorer"]
+                    pos_list = scorer.get("posShortNames") or scorer.get("pos") or []
+                    if isinstance(pos_list, str):
+                        pos_list = [pos_list]
+                    player_dict = {
+                        "id": scorer.get("scorerId") or scorer.get("playerId") or scorer.get("id") or scorer.get("pid"),
+                        "name": scorer.get("name") or scorer.get("fullName") or scorer.get("playerName"),
+                        "firstName": scorer.get("firstName"),
+                        "lastName": scorer.get("lastName"),
+                        "proTeamAbbr": scorer.get("teamShortName") or scorer.get("proTeamAbbr") or scorer.get("team"),
+                        "position": (pos_list[0] if isinstance(pos_list, list) and pos_list else None),
+                        "eligiblePositions": pos_list if isinstance(pos_list, list) else [],
+                        "status": scorer.get("status") or scorer.get("statusId"),
+                        "injuryStatus": scorer.get("injuryStatus"),
+                    }
+                    players.append(Player(self, player_dict))
+                else:
+                    players.append(Player(self, player_data))
+            
+        return players
 
     # Lineup helpers
     def make_lineup_changes(self, team_id: str, changes: dict, apply_to_future_periods: bool = True) -> bool:

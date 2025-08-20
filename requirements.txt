@@ -1,2 +1,11 @@
-requests
-setuptools
+requests>=2.31.0
+setuptools>=69.0.0
+httpx>=0.25.0
+python-dateutil>=2.8.2
+tenacity>=8.0.0
+pytz>=2023.3
+pydantic>=2.0.0
+pandas>=2.0.0
+PyYAML>=6.0.0  # For player mapping configuration
+unidecode>=2.0.0  # For handling accented characters in player names
+thefuzz>=0.20.0  # For fuzzy string matching in player names

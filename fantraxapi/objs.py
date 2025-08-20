@@ -1,557 +1,240 @@
-from datetime import datetime, timedelta
-
-from .exceptions import FantraxException
-
-
-class DraftPick:
-    """ Represents a single Draft Pick.
-
-        Attributes:
-            from_team (:class:`~Team`]): Team Traded From.
-            to_team (:class:`~Team`]): Team Traded To.
-            round (int): Draft Pick Round.
-            year (int): Draft Pick Year.
-            owner (:class:`~Team`]): Original Pick Owner.
-
-    """
-    def __init__(self, api, data):
-        self._api = api
-        self.from_team = self._api.team(data["from"]["teamId"])
-        self.to_team = self._api.team(data["to"]["teamId"])
-        self.round = data["draftPick"]["round"]
-        self.year = data["draftPick"]["year"]
-        self.owner = self._api.team(data["draftPick"]["origOwnerTeam"]["id"])
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return f"From: {self.from_team.name} To: {self.to_team.name} Pick: {self.year}, Round {self.round} ({self.owner.name})"
-
-
-class Matchup:
-    """ Represents a single Matchup.
-
-        Attributes:
-            matchup_key (int): Team ID.
-            away (:class:`~Team`): Away Team.
-            away_score (float): Away Team Score.
-            home (:class:`~Team`): Home Team.
-            home_score (float): Home Team Score.
-
-    """
-    def __init__(self, api, matchup_key, data):
-        self._api = api
-        self.matchup_key = matchup_key
-        try:
-            self.away = self._api.team(data[0]["teamId"])
-        except FantraxException:
-            self.away = data[0]["content"]
-        self.away_score = float(str(data[1]["content"]).replace(',', ''))
-        try:
-            self.home = self._api.team(data[2]["teamId"])
-        except FantraxException:
-            self.home = data[2]["content"]
-        self.home_score = float(str(data[3]["content"]).replace(',', ''))
-
-    def winner(self):
-        if self.away_score > self.home_score:
-            return self.away, self.away_score, self.home, self.home_score
-        elif self.away_score < self.home_score:
-            return self.home, self.home_score, self.away, self.away_score
-        else:
-            return None, None, None, None
-
-    def difference(self):
-        if self.away_score > self.home_score:
-            return self.away_score - self.home_score
-        elif self.away_score < self.home_score:
-            return self.home_score - self.away_score
-        else:
-            return 0
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return f"{self.away} ({self.away_score}) vs {self.home} ({self.home_score})"
-
+"""
+Object models for Fantrax API responses.
+"""
+from typing import Optional, Dict, List, Any, Union
+import re
 
 class Player:
-    """ Represents a single Player.
-
-        Attributes:
-            id (str): Player ID.
-            name (str): Player Name.
-            short_name (str): Player Short Name.
-            team_name (str): Team Name.
-            team_short_name (str): Team Short Name.
-            pos_short_name (str): Player Positions.
-            positions (List[Position]): Player Positions.
-
-    """
-    def __init__(self, api, data, transaction_type=None):
-        self._api = api
-        self.type = transaction_type
-        self.id = data["scorerId"]
-        self.name = data["name"]
-        self.short_name = data["shortName"]
-        self.team_name = data["teamName"]
-        self.team_short_name = data["teamShortName"] if "teamShortName" in data else self.team_name
-        self.pos_short_name = data["posShortNames"]
-        self.positions = [self._api.positions[d] for d in data["posIdsNoFlex"]]
-        self.all_positions = [self._api.positions[d] for d in data["posIds"]]
-        self.injured = False
-        self.suspended = False
-        if "icons" in data:
-            for icon in data["icons"]:
-                if icon["typeId"] in ["1", "2", "6", "30"]: # DtD, Out, IR, Knee
-                    self.injured = True
-                elif icon["typeId"] == "6":
-                    self.suspended = True
-
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return f"{self.type} {self.name}" if self.type else self.name
-
+    """Player information from Fantrax."""
+    
+    def __init__(self, api, data: Dict[str, Any]):
+        self.api = api
+        self.id = data.get("id", "")  # Fantrax ID
+        self.name = data.get("name", "")  # Full name
+        self.first_name = data.get("firstName", "")
+        self.last_name = data.get("lastName", "")
+        self.team = data.get("proTeamAbbr", "")  # Pro team abbreviation
+        self.position = data.get("position", "")  # Primary position
+        self.positions = data.get("eligiblePositions", [])  # All eligible positions
+        self.status = data.get("status", "")  # Player status (e.g., Active, Injured)
+        self.injury_status = data.get("injuryStatus", "")  # Detailed injury status
+        
+    def __str__(self) -> str:
+        return f"{self.name} ({self.team} - {self.position})"
+        
+    def __repr__(self) -> str:
+        return f"<Player {self.id}: {self.name}>"
 
 class Position:
-    """ Represents a single Position.
-
-        Attributes:
-            id (str): Position ID.
-            name (str): Position Name.
-            short_name (str): Position Short Name.
-
-    """
-    def __init__(self, api, data):
-        self._api = api
-        self.id = data["id"]
-        self.name = data["name"]
-        self.short_name = data["shortName"]
-
-    def __eq__(self, other):
-        return (self.id, self.name, self.short_name) == (other.id, other.name, other.short_name)
-
-class Record:
-    """ Represents a single Record of a :class:`~Standings`.
-
-        Attributes:
-            team (:class:`~Team`): Team.
-            rank (int): Standings Rank.
-            win (int): Number of Wins.
-            loss (int): Number of Losses.
-            tie (int): Number of Ties.
-            points (int): Number of Points.
-            win_percentage (float): Win Percentage.
-            games_back (int): Number of Games Back.
-            wavier_wire_order (int): Wavier Wire Claim Order.
-            points_for (float): Fantasy Points Against.
-            streak (str): Streak.
-
-    """
-    def __init__(self, api, team_id, rank, fields, data):
-        self._api = api
-        self.team = self._api.team(team_id)
-        self.rank = int(rank)
-        self.win = int(data[fields["win"]]["content"]) if "win" in fields else None
-        self.loss = int(data[fields["loss"]]["content"]) if "loss" in fields else None
-        self.tie = int(data[fields["tie"]]["content"]) if "tie" in fields else None
-        self.points = int(data[fields["points"]]["content"]) if "points" in fields else None
-        winpc_raw = data[fields["winpc"]]["content"] if "winpc" in fields else None
-        self.win_percentage = float(winpc_raw) if winpc_raw != "-" else 0
-        self.games_back = float(data[fields["gamesback"]]["content"]) if "gamesback" in fields else None
-        self.wavier_wire_order = int(data[fields["wwOrder"]]["content"]) if "wwOrder" in fields else None
-        self.points_for = float(data[fields["pointsFor"]]["content"].replace(",", "")) if "pointsFor" in fields else None
-        self.points_against = float(data[fields["pointsAgainst"]]["content"].replace(",", "")) if "pointsAgainst" in fields else None
-        self.streak = data[fields["streak"]]["content"] if "streak" in fields else None
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return f"{self.rank}: {self.team} ({self.win}-{self.loss}-{self.tie})"
-
-
-class ScoringPeriod:
-    """ Represents a single Scoring Period.
-
-        Attributes:
-            name (str): Name.
-            week (int): Week Number.
-            start (datetime): Start Date of the Period.
-            end (datetime): End Date of the Period.
-            next (datetime): Next Day after the Period.
-            complete (bool): Is the Period Complete?
-            current (bool): Is it the current Period?
-            future (bool): Is the Period in the future?
-            matchups (List[:class:`~Matchup`]): List of Matchups.
-
-    """
-    def __init__(self, api, data):
-        self._api = api
-        self.name = data["caption"]
-        if self.name.startswith("Scoring Period "):
-            self.week = int(self.name[15:])
-        if self.name.startswith("Playoffs - Round "):
-            self.week = int(self.name[17:])
-        dates = data["subCaption"][1:-1].split(" - ")
-        self.start = datetime.strptime(dates[0], "%a %b %d, %Y")
-        self.end = datetime.strptime(dates[1], "%a %b %d, %Y")
-        self.next = self.end + timedelta(days=1)
-        self.days = (self.next - self.start).days
-        now = datetime.now()
-        self.complete = now > self.next
-        self.current = self.start < now < self.next
-        self.future = now < self.start
-
-        self.matchups = []
-        for i, matchup in enumerate(data["rows"], 1):
-            self.matchups.append(Matchup(self._api, i, matchup["cells"]))
-
-    def add_matchups(self, data):
-
-        for i, matchup in enumerate(data["rows"], len(self.matchups) + 1):
-            self.matchups.append(Matchup(self._api, i, matchup["cells"]))
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        output = f"{self.name}\n{self.days} Days ({self.start.strftime('%a %b %d, %Y')} - {self.end.strftime('%a %b %d, %Y')})"
-        if self.complete:
-            output += "\nComplete"
-        elif self.current:
-            output += "\nCurrent"
-        else:
-            output += "\nFuture"
-        for matchup in self.matchups:
-            output += f"\n{matchup}"
-        return output
-
-
-class Standings:
-    """ Represents a single Standings.
-
-        Attributes:
-            week (int): Week Number.
-            ranks (Dict[int, :class:`~Record`]): Team Ranks and their Records.
-
-    """
-    def __init__(self, api, data, week=None):
-        self._api = api
-        self.week = week
-        self.ranks = {}
-        fields = {c["key"]: i for i, c in enumerate(data["header"]["cells"])}
-        for obj in data["rows"]:
-            team_id = obj["fixedCells"][1]["teamId"]
-            rank = obj["fixedCells"][0]["content"]
-            self.ranks[int(rank)] = Record(self._api, team_id, rank, fields, obj["cells"])
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        output = f"Standings"
-        if self.week:
-            output += f" Week {self.week}"
-        for rank, record in self.ranks.items():
-            output += f"\n{record}"
-        return output
-
+    """Position information."""
+    def __init__(self, api, data: Dict[str, Any]):
+        self.api = api
+        self.id = data.get("id", "")
+        self.name = data.get("name", "")
+        self.short_name = data.get("shortName", "")
 
 class Team:
-    """ Represents a single Team.
-
-        Attributes:
-            team_id (str): Team ID.
-            name (str): Team Name.
-            short (str): Team Short Name.
-
-    """
-    def __init__(self, api, team_id, name, short, logo):
-        self._api = api
+    """Team information."""
+    def __init__(self, api, team_id: str, name: str, short_name: str = "", logo_url: str = ""):
+        self.api = api
         self.team_id = team_id
         self.name = name
-        self.short = short
-        self.logo = logo
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return self.name
-
-
-class Trade:
-    """ Represents a single Trade.
-
-        Attributes:
-            proposed_by (:class:`~Team`]): Team Trade Proposed By.
-            proposed (str): Datetime Trade was Proposed.
-            accepted (str): Datetime Trade was Accepted.
-            executed (str): Datetime Trade will be Executed.
-            moves (List[Union(:class:`~DraftPick`, :class:`~TradePlayer`)]): Team Short Name.
-
-    """
-    def __init__(self, api, data):
-        self._api = api
-        info = {i["name"]: i["value"] for i in data["usefulInfo"]}
-
-        self.trade_id = data["txSetId"]
-        self.proposed_by = self._api.team(data["creatorTeamId"])
-        self.proposed = info["Proposed"]
-        self.accepted = info["Accepted"]
-        self.executed = info["To be executed"]
-        self.moves = []
-        for move in data["moves"]:
-            self.moves.append(DraftPick(self._api, move) if "draftPick" in move else TradePlayer(self._api, move))
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return "\n".join([str(m) for m in self.moves])
-
-
-class TradeBlock:
-    """ Represents a single Trade Block.
-
-        Attributes:
-            team (:class:`~Team`]): Team of the Trade Block.
-            update_date (datetime): Last Updated Date.
-            note (str): Trading Block Note.
-            players_offered (Dict[str, List[Player]]): Players Offered.
-            positions_wanted (Dict[str, List[Player]]): Players Wanted.
-            positions_offered (List[Position]): Positions Offered.
-            positions_wanted (List[Position]): Positions Wanted.
-            stats_offered (List[str]): Stats Offered.
-            stats_wanted (List[str]): Stats Wanted.
-
-    """
-    def __init__(self, api, data):
-        self._api = api
-        self.team = self._api.team(data["teamId"])
-        self.update_date = datetime.fromtimestamp(data["lastUpdated"]["date"] / 1e3)
-        self.note = data["comment"]["body"] if "comment" in data else ""
-        self.players_offered = {self._api.positions[k].short_name: [Player(self._api, p) for p in players] for k, players in data["scorersOffered"]["scorers"].items()} if "scorersOffered" in data else {}
-        self.players_wanted = {self._api.positions[k].short_name: [Player(self._api, p) for p in players] for k, players in data["scorersWanted"]["scorers"].items()} if "scorersWanted" in data else {}
-        self.positions_offered = [self._api.positions[pos] for pos in data["positionsOffered"]["positions"]] if "positionsOffered" in data else []
-        self.positions_wanted = [self._api.positions[pos] for pos in data["positionsWanted"]["positions"]] if "positionsWanted" in data else []
-        self.stats_offered = [s["shortName"] for s in data["statsOffered"]["stats"]] if "statsOffered" in data else []
-        self.stats_wanted = [s["shortName"] for s in data["statsWanted"]["stats"]] if "statsWanted" in data else []
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return self.note
-
-
-class TradePlayer:
-    """ Represents a single Draft Pick.
-
-        Attributes:
-            from_team (:class:`~Team`]): Team Traded From.
-            to_team (:class:`~Team`]): Team Traded To.
-            name (str): TradePlayer Name.
-            short_name (str): TradePlayer Short Name.
-            team_name (str): Team Name.
-            team_short_name (str): Team Short Name.
-            pos (str): TradePlayer Position.
-            ppg (float): Fantasy Points Per Game.
-            points (float): Total Fantasy Points.
-
-    """
-    def __init__(self, api, data):
-        self._api = api
-        self.from_team = self._api.team(data["from"]["teamId"])
-        self.to_team = self._api.team(data["to"]["teamId"])
-        self.name = data["scorer"]["name"]
-        self.short_name = data["scorer"]["shortName"]
-        self.team_name = data["scorer"]["teamName"]
-        self.team_short_name = data["scorer"]["teamShortName"]
-        self.pos = data["scorer"]["posShortNames"]
-        self.ppg = data["scorePerGame"]
-        self.points = data["score"]
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return f"From: {self.from_team.name} To: {self.to_team.name} TradePlayer: {self.name} {self.pos} - {self.team_short_name} {self.ppg} {self.points}"
-
-
-class Transaction:
-    """ Represents a single Transaction.
-
-        Attributes:
-            id (str): Transaction ID.
-            team (:class:`~Team`]): Team who made te Transaction.
-            date (datetime): Transaction Date.
-            count (str): Number of Players in the Transaction.
-            players (List[Player]): Players in the Transaction.
-            finalized (bool): this is true when all player have been added.
-
-    """
-    def __init__(self, api, data):
-        self._api = api
-        self.id = data["txSetId"]
-        self.team = self._api.team(data["cells"][0]["teamId"])
-        self.date = datetime.strptime(data["cells"][1]["content"], "%a %b %d, %Y, %I:%M%p")
-        self.count = data["numInGroup"]
-        self.players = [Player(self._api, data["scorer"], data["claimType"] if data["transactionCode"] == "CLAIM" else data["transactionCode"])]
-        self.finalized = self.count == 1
-
-    def update(self, data):
-        if data["txSetId"] == self.id:
-            self.players.append(Player(self._api, data["scorer"], data["claimType"] if data["transactionCode"] == "CLAIM" else data["transactionCode"]))
-            self.finalized = True
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return str(self.players)
-
+        self.short_name = short_name
+        self.logo_url = logo_url
 
 class Roster:
-    def __init__(self, api, data, team_id):
-        self._api = api
-        self.team = self._api.team(team_id)
-        
-        # Safely handle different roster data structures
+    """Team roster information."""
+    def __init__(self, api, data: Dict[str, Any], team_id: str):
+        self.api = api
+        self.team_id = team_id
+        self.data = data
+        # Link the team object if available
         try:
-            status_totals = data.get("miscData", {}).get("statusTotals", [])
-            
-            # Set defaults
-            self.active = 0
-            self.reserve = 0
-            self.max = 0
-            self.injured = 0
-            
-            # Safely extract values based on available data
-            if len(status_totals) > 0:
-                self.active = status_totals[0].get("total", 0)
-            if len(status_totals) > 1:
-                self.reserve = status_totals[1].get("total", 0)
-                self.max = status_totals[1].get("max", 0)
-            if len(status_totals) > 2:
-                self.injured = status_totals[2].get("total", 0)
-                
-        except Exception as e:
-            # Fallback to safe defaults if data structure is unexpected
-            print(f"Warning: Unexpected roster data structure: {e}")
-            self.active = 0
-            self.reserve = 0
-            self.max = 0
-            self.injured = 0
-        
-        self.rows = []
-        try:
-            for group in data.get("tables", []):
-                for row in group.get("rows", []):
-                    if "scorer" in row or row.get("statusId") == "1":
-                        self.rows.append(RosterRow(self._api, row))
-        except Exception as e:
-            print(f"Warning: Error processing roster rows: {e}")
-            self.rows = []
+            self.team = self.api.get_team_by_id(team_id)
+        except Exception:
+            self.team = None
 
-    def get_player_by_name(self, player_name: str):
-        """Find a player by name (case-insensitive partial match).
-        
-        Parameters:
-            player_name (str): Player name to search for
-            
-        Returns:
-            RosterRow or None: The roster row containing the player, or None if not found
-        """
-        player_name_lower = player_name.lower()
-        for row in self.rows:
-            if row.player and player_name_lower in row.player.name.lower():
-                return row
+        # Parse rows from response tables
+        self.rows: List[RosterRow] = []
+        tables = data.get("tables") or []
+        for table in tables:
+            for row in table.get("rows", []) or []:
+                try:
+                    self.rows.append(RosterRow(self.api, row))
+                except Exception:
+                    # Be tolerant to unexpected shapes; skip invalid row
+                    continue
+
+    def get_starters(self) -> List["RosterRow"]:
+        """Return rows for starting lineup (non-bench)."""
+        return [r for r in self.rows if r.pos_id != "0" and r.player is not None]
+
+    def get_bench_players(self) -> List["RosterRow"]:
+        """Return rows for bench players (pos_id == '0')."""
+        return [r for r in self.rows if r.pos_id == "0" and r.player is not None]
+
+    def get_player_by_name(self, name: str) -> Optional["RosterRow"]:
+        """Find a roster row by player name (case-insensitive contains)."""
+        if not name:
+            return None
+        q = name.strip().lower()
+        for r in self.rows:
+            if r.player and q in (r.player.name or "").lower():
+                return r
         return None
 
-    def get_starters(self):
-        """Get all players currently in starting positions.
-        
-        Returns:
-            list: List of RosterRow objects for starters
-        """
-        starters = []
-        for row in self.rows:
-            if row.player:
-                if row.pos_id != "0":
-                    starters.append(row)
-        return starters
 
-    def get_bench_players(self):
-        """Get all players currently on the bench.
-        
-        Returns:
-            list: List of RosterRow objects for bench players
-        """
-        bench = []
-        for row in self.rows:
-            if row.player:
-                if row.pos_id == "0":
-                    bench.append(row)
-        return bench
+class RosterPosition:
+    """Lightweight wrapper for a roster position slot."""
+    def __init__(self, short_name: Optional[str]):
+        self.short_name = short_name or ""
 
-    def get_players_by_position(self, position_short_name: str):
-        """Get all players at a specific position.
-        
-        Parameters:
-            position_short_name (str): Position abbreviation (e.g., "F", "D", "G")
-            
-        Returns:
-            list: List of RosterRow objects for players at that position
-        """
-        return [row for row in self.rows if row.player and row.pos.short_name == position_short_name]
 
-    def __repr__(self):
-        return self.__str__()
+class RosterPlayer:
+    """Lightweight wrapper for a roster player as returned by getTeamRosterInfo."""
+    def __init__(self, data: Dict[str, Any]):
+        # Data is row['scorer'] structure
+        self.id: Optional[str] = (
+            data.get("scorerId") or data.get("playerId") or data.get("id")
+        )
+        self.name: str = data.get("name", "")
+        self.first_name: Optional[str] = data.get("firstName")
+        self.last_name: Optional[str] = data.get("lastName")
+        self.team_name: Optional[str] = data.get("teamName")
+        self.team_short_name: Optional[str] = data.get("teamShortName")
+        # Support alternative attributes that other code may reference
+        if not hasattr(self, "team_short"):
+            setattr(self, "team_short", self.team_short_name)
 
-    def __str__(self):
-        rows = "\n".join([str(r) for r in self.rows])
-        return f"{self.team} Roster\n{rows}"
 
 class RosterRow:
-    def __init__(self, api, data):
-        self._api = api
+    """Represents a single roster slot row with associated player and position info."""
+    def __init__(self, api, row_data: Dict[str, Any]):
+        self.api = api
+        self._raw = row_data
+        # Ensure pos_id preserves numeric 0 (bench) by converting to string explicitly
+        raw_pos_id = row_data.get("posId")
+        self.pos_id: str = str(raw_pos_id) if raw_pos_id is not None else ""
+        self.status_id: Optional[str] = (
+            str(row_data.get("statusId")) if row_data.get("statusId") is not None else None
+        )
+        scorer = row_data.get("scorer") or {}
+        self.player: Optional[RosterPlayer] = RosterPlayer(scorer) if scorer else None
 
-        if data["statusId"] == "1":
-            self.pos_id = data["posId"]
-            self.pos = self._api.positions[self.pos_id]
-        elif data["statusId"] == "3":
-            self.pos_id = "-1"
-            self.pos = Position(self._api, {"id": "-1", "name": "Injured", "shortName": "IR"})
-        else:
+        # Normalize starters vs bench based on statusId where possible:
+        # statusId == "1" => starter; otherwise treat as bench/reserve
+        if self.status_id is not None and self.status_id != "1":
             self.pos_id = "0"
-            self.pos = Position(self._api, {"id": "0", "name": "Reserve", "shortName": "Res"})
 
-        self.player = None
-        self.fppg = None
-        if "scorer" in data:
-            self.player = Player(self._api, data["scorer"])
-            self.fppg = float(data["cells"][3]["content"])
-
-        content = data["cells"][1]["content"]
-        self.opponent = None
-        self.time = None
-        if content and content.endswith(("AM", "PM")):
-            self.opponent, time_str = content.split("\u003cbr/\u003e")
-            self.time = datetime.strptime(time_str.split(" ")[1], "%I:%M%p")
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        if self.player:
-            return f"{self.pos.short_name}: {self.player}{f' vs {self.opponent}' if self.opponent else ''}"
+        # Determine position short name for display
+        short_name: Optional[str] = None
+        if self.pos_id == "0":
+            short_name = "Res"
         else:
-            return f"{self.pos.short_name}: Empty"
+            # Use scorer.posShortNames if available; try to pick matching index if possible
+            pos_short_val = scorer.get("posShortNames") if isinstance(scorer, dict) else None
+            if isinstance(pos_short_val, list) and pos_short_val:
+                short_name = pos_short_val[0]
+            elif isinstance(pos_short_val, str) and pos_short_val:
+                short_name = pos_short_val
+        self.pos = RosterPosition(short_name)
 
+        # Attempt to parse FPPG metric from cells if present
+        self.fppg: Optional[float] = self._extract_fppg(row_data.get("cells") or [])
+
+    def _extract_fppg(self, cells: List[Any]) -> Optional[float]:
+        # Heuristics: look for a tooltip mentioning FPPG or content including FPPG, else first numeric cell
+        try:
+            # Search by tooltip
+            for cell in cells:
+                if isinstance(cell, dict):
+                    tt = (cell.get("toolTip") or cell.get("tooltip") or "").lower()
+                    if "fppg" in tt or "fantasy points per game" in tt:
+                        val = self._parse_float(cell.get("content"))
+                        if val is not None:
+                            return val
+            # Fallback: first numeric-looking content
+            for cell in cells:
+                if isinstance(cell, dict):
+                    val = self._parse_float(cell.get("content"))
+                    if val is not None:
+                        return val
+        except Exception:
+            return None
+        return None
+
+    @staticmethod
+    def _parse_float(value: Any) -> Optional[float]:
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            # Extract first float-like number
+            m = re.search(r"-?\d+(?:\.\d+)?", value.replace(",", ""))
+            if m:
+                try:
+                    return float(m.group(0))
+                except ValueError:
+                    return None
+        return None
+
+class Trade:
+    """Trade information."""
+    def __init__(self, api, data: Dict[str, Any]):
+        self.api = api
+        self.data = data
+        
+class TradeBlock:
+    """Trade block information."""
+    def __init__(self, api, data: Dict[str, Any]):
+        self.api = api
+        self.data = data
+        
+class Transaction:
+    """Transaction information."""
+    def __init__(self, api, data: Dict[str, Any]):
+        self.api = api
+        self.data = data
+        
+class ScoringPeriod:
+    """Scoring period information."""
+    def __init__(self, api, data: Dict[str, Any]):
+        self.api = api
+        self.data = data
+        self.week = int(data.get("caption", "0").split()[-1])
+        
+    def add_matchups(self, data: Dict[str, Any]):
+        """Add matchup data to the scoring period."""
+        pass
+        
+class Standings:
+    """League standings information."""
+    def __init__(self, api, data: Dict[str, Any], week: Optional[Union[int, str]] = None):
+        self.api = api
+        self.data = data
+        self.week = week
+        
+class Record:
+    """Team record information."""
+    def __init__(self, api, data: Dict[str, Any]):
+        self.api = api
+        self.data = data
+        
+class Matchup:
+    """Matchup information."""
+    def __init__(self, api, data: Dict[str, Any]):
+        self.api = api
+        self.data = data
+        
+class DraftPick:
+    """Draft pick information."""
+    def __init__(self, api, data: Dict[str, Any]):
+        self.api = api
+        self.data = data
+        
+class TradePlayer:
+    """Trade player information."""
+    def __init__(self, api, data: Dict[str, Any]):
+        self.api = api
+        self.data = data
