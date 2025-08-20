@@ -17,6 +17,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+from requests import Session
+from fantraxapi import FantraxAPI
 
 def load_config():
     """Load configuration from config.ini"""
@@ -78,8 +80,54 @@ def main():
         with open(cookie_path, "wb") as f:
             pickle.dump(cookies, f)
         
-        print(f"\n✅ Successfully saved cookies to: {cookie_path}")
-        print("\nYou can now use the substitutions.py script to manage your roster!")
+        print(f"\nSuccessfully saved cookies to: {cookie_path}")
+
+        # Optional: detect and persist team id/name for this cookie/session
+        try:
+            print("\nAttempting to detect your team in this league using the saved cookies…")
+            session = Session()
+            with open(cookie_path, "rb") as f:
+                for c in pickle.load(f):
+                    session.cookies.set(c["name"], c["value"])
+
+            api = FantraxAPI(league_id, session=session)
+            teams = api.teams
+            print("\nSelect your fantasy team to bind with this cookie:")
+            for i, t in enumerate(teams, 1):
+                print(f"{i:2d}. {t.name} ({t.short}) - {t.team_id}")
+            sel = None
+            while sel is None:
+                try:
+                    sel_in = input("Enter number (or press Enter to skip): ").strip()
+                    if not sel_in:
+                        break
+                    sel = int(sel_in)
+                    if not (1 <= sel <= len(teams)):
+                        sel = None
+                        print("Invalid selection, try again.")
+                except ValueError:
+                    print("Invalid selection, try again.")
+
+            if sel:
+                chosen = teams[sel - 1]
+                # Persist to config.ini
+                cfg = ConfigParser()
+                cfg_path = Path("config.ini")
+                cfg.read(cfg_path)
+                if "fantrax" not in cfg:
+                    cfg["fantrax"] = {}
+                cfg["fantrax"]["team_id"] = chosen.team_id
+                cfg["fantrax"]["team_name"] = chosen.name
+                with open(cfg_path, "w") as fp:
+                    cfg.write(fp)
+                print(f"\nBound this cookie to team: {chosen.name} (TeamID={chosen.team_id})")
+            else:
+                print("\nSkipped binding team; you can select it later when running scripts.")
+        except Exception as e_det:
+            print(f"\nCould not auto-detect team from cookies: {e_det}")
+            print("You can still run scripts; they'll prompt you to select your team and will persist it.")
+
+        print("\nYou can now use the substitutions.py or submit_claim.py scripts to manage your roster!")
         
     except Exception as e:
         print(f"\n❌ Error: {e}")

@@ -3,8 +3,12 @@ from typing import Optional, Union, List, Dict
 from requests import Session
 from json.decoder import JSONDecodeError
 from requests.exceptions import RequestException
+
 from fantraxapi.exceptions import FantraxException, Unauthorized
-from fantraxapi.objs import ScoringPeriod, Team, Standings, Trade, TradeBlock, Position, Transaction, Roster
+from fantraxapi.objs import (
+    ScoringPeriod, Team, Standings, Trade, TradeBlock, Position,
+    Transaction, Roster
+)
 from fantraxapi.trades import TradesService
 from fantraxapi.league import LeagueService
 from fantraxapi.waivers import WaiversService
@@ -12,23 +16,14 @@ from fantraxapi.waivers import WaiversService
 logger = logging.getLogger(__name__)
 
 
-
 class FantraxAPI:
-    """ Main Object Class
+    """ Main API wrapper for Fantrax private endpoints. """
 
-        Parameters:
-            league_id (str): Fantrax League ID.
-            session (Optional[Session]): Use you're own Session object
-
-        Attributes:
-            league_id (str): Fantrax League ID.
-            teams (List[:class:`~Team`]): List of Teams in the League.
-    """
     def __init__(self, league_id: str, session: Optional[Session] = None):
         self.league_id = league_id
         self._session = Session() if session is None else session
-        self._teams = None
-        self._positions = None
+        self._teams: Optional[List[Team]] = None
+        self._positions: Optional[Dict[str, Position]] = None
         # Feature services
         self.trades = TradesService(self._request, self)
         self.league = LeagueService(self._request, self)
@@ -40,87 +35,110 @@ class FantraxAPI:
             response = self._request("getFantasyTeams")
             self._teams = []
             for data in response["fantasyTeams"]:
-                self._teams.append(Team(self, data["id"], data["name"], data["shortName"], data["logoUrl256"]))
+                # Team(api, id, name, shortName, logoUrl256)
+                t = Team(
+                    self,
+                    data["id"],
+                    data["name"],
+                    data.get("shortName", ""),
+                    data.get("logoUrl256", ""),
+                )
+                # Defensive aliases for snake_case
+                if not hasattr(t, "short_name"):
+                    setattr(t, "short_name", getattr(t, "shortName", "") or "")
+                if not hasattr(t, "logo_url"):
+                    setattr(t, "logo_url", data.get("logoUrl256", ""))
+                self._teams.append(t)
         return self._teams
 
-    @property
-    def positions(self) -> Dict[str, Position]:
-        if self._positions is None:
-            self._positions = {k: Position(self, v) for k, v in self._request("getRefObject", type="Position")["allObjs"].items()}
-        return self._positions
-
-    def team(self, team_id: str) -> Team:
-        """ :class:`~Team` Object for the given Team ID.
-
-            Parameters:
-                team_id (str): Team ID.
-
-            Returns:
-                :class:`~Team`
-
-            Raises:
-                :class:`FantraxException`: When an Invalid Team ID is provided.
-        """
+    def get_team_by_id(self, team_id: str) -> Team:
         for team in self.teams:
             if team.team_id == team_id:
                 return team
         raise FantraxException(f"Team ID: {team_id} not found")
 
+    # Back-compat alias (objs.Roster calls api.team(...))
+    def team(self, team_id: str) -> Team:
+        return self.get_team_by_id(team_id)
+
+    def find_team_by_name(self, needle: str) -> Optional[Team]:
+        q = (needle or "").strip().lower()
+        if not q:
+            return None
+        for t in self.teams:
+            name = getattr(t, "name", "") or ""
+            short1 = getattr(t, "short_name", "") or ""
+            short2 = getattr(t, "shortName", "") or ""
+            if q in name.lower() or q in short1.lower() or q in short2.lower():
+                return t
+        return None
+
+    @property
+    def positions(self) -> Dict[str, Position]:
+        if self._positions is None:
+            ref = self._request("getRefObject", type="Position")
+            self._positions = {k: Position(self, v) for k, v in ref["allObjs"].items()}
+        return self._positions
+
     def _request(self, method, **kwargs):
+        """Low-level request helper. Returns the inner .responses[0].data."""
         data = {"leagueId": self.league_id}
-        for key, value in kwargs.items():
-            data[key] = value
+        data.update(kwargs)
         json_data = {"msgs": [{"method": method, "data": data}]}
         logger.debug(f"Request JSON: {json_data}")
 
         try:
-            response = self._session.post("https://www.fantrax.com/fxpa/req", params={"leagueId": self.league_id}, json=json_data)
+            response = self._session.post(
+                "https://www.fantrax.com/fxpa/req",
+                params={"leagueId": self.league_id},
+                json=json_data
+            )
             response_json = response.json()
         except (RequestException, JSONDecodeError) as e:
             raise FantraxException(f"Failed to Connect to {method}: {e}\nData: {data}")
+
         logger.debug(f"Response ({response.status_code} [{response.reason}]) {response_json}")
+
         if response.status_code >= 400:
             raise FantraxException(f"({response.status_code} [{response.reason}]) {response_json}")
+
         if "pageError" in response_json:
-            if "code" in response_json["pageError"]:
-                if response_json["pageError"]["code"] == "WARNING_NOT_LOGGED_IN":
-                    raise Unauthorized("Unauthorized: Not Logged in")
+            pe = response_json["pageError"]
+            if "code" in pe and pe["code"] == "WARNING_NOT_LOGGED_IN":
+                raise Unauthorized("Unauthorized: Not Logged in")
             raise FantraxException(f"Error: {response_json}")
+
         return response_json["responses"][0]["data"]
 
+    # ---------- Higher-level helpers ----------
     def scoring_periods(self) -> Dict[int, ScoringPeriod]:
-        """ :class:`~ScoringPeriod` Objects for the league.
-
-            Returns:
-                Dict[int, :class:`~ScoringPeriod`]
-        """
         periods = {}
         response = self._request("getStandings", view="SCHEDULE")
         self._teams = []
         for team_id, data in response["fantasyTeamInfo"].items():
-            self._teams.append(Team(self, team_id, data["name"], data["shortName"], data["logoUrl512"]))
+            t = Team(self, team_id, data["name"], data.get("shortName", ""), data.get("logoUrl512", ""))
+            if not hasattr(t, "short_name"):
+                setattr(t, "short_name", getattr(t, "shortName", "") or "")
+            self._teams.append(t)
         for period_data in response["tableList"]:
             period = ScoringPeriod(self, period_data)
             periods[period.week] = period
         return periods
 
     def standings(self, week: Optional[Union[int, str]] = None) -> Standings:
-        """ :class:`~Standings` Object for either the current moment in time or after a specific week..
-
-            Parameters:
-                week (Optional[Union[int, str]]): Pulls data for the Standings at the given week.
-
-            Returns:
-                :class:`~Standings`
-        """
         if week is None:
             response = self._request("getStandings")
         else:
-            response = self._request("getStandings", period=week, timeframeType="BY_PERIOD", timeStartType="FROM_SEASON_START")
+            response = self._request(
+                "getStandings", period=week, timeframeType="BY_PERIOD", timeStartType="FROM_SEASON_START"
+            )
 
         self._teams = []
         for team_id, data in response["fantasyTeamInfo"].items():
-            self._teams.append(Team(self, team_id, data["name"], data["shortName"], data["logoUrl512"]))
+            t = Team(self, team_id, data["name"], data.get("shortName", ""), data.get("logoUrl512", ""))
+            if not hasattr(t, "short_name"):
+                setattr(t, "short_name", getattr(t, "shortName", "") or "")
+            self._teams.append(t)
         return Standings(self, response["tableList"][0], week=week)
 
     def pending_trades(self) -> List[Trade]:
@@ -135,7 +153,7 @@ class FantraxAPI:
         update = False
         for row in response["table"]["rows"]:
             if update:
-                transaction.update(row) # noqa
+                transaction.update(row)  # noqa
                 update = False
             else:
                 transaction = Transaction(self, row)
@@ -177,41 +195,22 @@ class FantraxAPI:
     def roster_info(self, team_id):
         return Roster(self, self._request("getTeamRosterInfo", teamId=team_id), team_id)
 
+    # Lineup helpers
     def make_lineup_changes(self, team_id: str, changes: dict, apply_to_future_periods: bool = True) -> bool:
-        """Make lineup changes for a team.
-        
-        Parameters:
-            team_id (str): The team ID to make changes for
-            changes (dict): Dictionary mapping player IDs to new positions/status
-                          Format: {"player_id": {"posId": "position_id", "stId": "status_id"}}
-            apply_to_future_periods (bool): Whether to apply changes to future periods
-        
-        Returns:
-            bool: True if changes were successful
-            
-        Raises:
-            FantraxException: If the lineup change fails
-        """
-        # First, get current roster to build the complete fieldMap
         roster = self.roster_info(team_id)
         current_field_map = {}
-        
-        # Build current field map from existing roster
         for row in roster.rows:
             if row.player:
                 current_field_map[row.player.id] = {
                     "posId": row.pos_id,
                     "stId": "1" if row.pos_id != "0" else "2"  # 1=starter, 2=bench
                 }
-        
-        # Apply the requested changes
         for player_id, new_config in changes.items():
             if player_id in current_field_map:
                 current_field_map[player_id].update(new_config)
-        
-        # Phase 1: Confirm changes
+
         confirm_data = {
-            "rosterLimitPeriod": 2,  # This appears to be a constant from your example
+            "rosterLimitPeriod": 2,
             "fantasyTeamId": team_id,
             "daily": False,
             "adminMode": False,
@@ -219,87 +218,41 @@ class FantraxAPI:
             "applyToFuturePeriods": apply_to_future_periods,
             "fieldMap": current_field_map
         }
-        
         try:
             self._request("confirmOrExecuteTeamRosterChanges", **confirm_data)
         except FantraxException as e:
             raise FantraxException(f"Failed to confirm lineup changes: {e}")
-        
-        # Phase 2: Execute changes
-        execute_data = {
-            "rosterLimitPeriod": 2,
-            "fantasyTeamId": team_id,
-            "daily": False,
-            "adminMode": False,
-            "confirm": False,
-            "applyToFuturePeriods": apply_to_future_periods,
-            "fieldMap": current_field_map
-        }
-        
+
+        execute_data = confirm_data.copy()
+        execute_data["confirm"] = False
         try:
             self._request("confirmOrExecuteTeamRosterChanges", **execute_data)
         except FantraxException as e:
             raise FantraxException(f"Failed to execute lineup changes: {e}")
-        
         return True
 
     def swap_players(self, team_id: str, player1_id: str, player2_id: str) -> bool:
-        """Swap two players between starter and bench positions.
-        
-        Parameters:
-            team_id (str): The team ID
-            player1_id (str): First player ID
-            player2_id (str): Second player ID
-            
-        Returns:
-            bool: True if swap was successful
-        """
         roster = self.roster_info(team_id)
-        
-        # Find current status of both players
         player1_status = None
         player2_status = None
-        
         for row in roster.rows:
             if row.player:
                 if row.player.id == player1_id:
                     player1_status = "1" if row.pos_id != "0" else "2"
                 elif row.player.id == player2_id:
                     player2_status = "1" if row.pos_id != "0" else "2"
-        
         if player1_status is None or player2_status is None:
             raise FantraxException("One or both players not found on roster")
-        
-        # Swap their statuses
         changes = {
             player1_id: {"stId": player2_status},
             player2_id: {"stId": player1_status}
         }
-        
         return self.make_lineup_changes(team_id, changes)
 
     def move_to_starters(self, team_id: str, player_ids: list) -> bool:
-        """Move specified players to starter positions.
-        
-        Parameters:
-            team_id (str): The team ID
-            player_ids (list): List of player IDs to move to starters
-            
-        Returns:
-            bool: True if moves were successful
-        """
         changes = {player_id: {"stId": "1"} for player_id in player_ids}
         return self.make_lineup_changes(team_id, changes)
 
     def move_to_bench(self, team_id: str, player_ids: list) -> bool:
-        """Move specified players to bench positions.
-        
-        Parameters:
-            team_id (str): The team ID
-            player_ids (list): List of player IDs to move to bench
-            
-        Returns:
-            bool: True if moves were successful
-        """
         changes = {player_id: {"stId": "2"} for player_id in player_ids}
         return self.make_lineup_changes(team_id, changes)
