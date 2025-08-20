@@ -272,26 +272,18 @@ def update_mappings(
                 threshold=70  # Lower threshold to see more potential matches
             )
             
-            # Print all potential matches during phase 1
+            # Process matches
             if matches:
                 best_score = matches[0][1]
-                print(f"\nChecking {player.name} ({player.team}):")
-                print(f"Found {len(matches)} potential matches:")
-                for match_name, score, _, team_code in matches[:5]:
-                    std_team = team_mappings.get(team_code.lower(), team_code.lower())
-                    print(f"  - {match_name} ({team_code.upper()}) [score: {score}, std team: {std_team.upper()}]")
-                
                 if best_score >= 95:
                     # Found a confident match
-                    print("  -> Auto-matching with highest score")
                     mapping.ffscout_name = matches[0][0]
                     stats["ffscout_matches"] += 1
                     stats["exact_matches"] += 1
                 else:
-                    # No exact match found, collect for manual matching if score >= 70
-                    matches_for_review = [m for m in matches if m[1] >= 70]
+                    # No exact match found, collect for manual matching if score >= 75
+                    matches_for_review = [m for m in matches if m[1] >= 75]
                     if matches_for_review:
-                        print("  -> Collecting for manual review")
                         unmatched_players.append((player, mapping, matches_for_review))
                     else:
                         unmatched_players.append((player, mapping, []))
