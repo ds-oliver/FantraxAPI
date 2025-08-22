@@ -7,13 +7,37 @@ import pickle
 from pathlib import Path
 import pandas as pd
 import requests
+import logging
 import time
+from datetime import datetime
 from thefuzz import fuzz
 from unidecode import unidecode
 import yaml
 
 from fantraxapi.fantrax import FantraxAPI
 from fantraxapi.player_mapping import PlayerMapping, PlayerMappingManager
+
+def setup_logging(data_dir: Path) -> None:
+    """Set up logging to both file and console."""
+    # Create logs directory
+    log_dir = data_dir / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create timestamped log file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = log_dir / f"player_mapping_{timestamp}.log"
+    
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()  # Also log to console
+        ]
+    )
+    
+    logging.info(f"Logging to: {log_file}")
 
 def load_fantrax_players(league_id: str, session: requests.Session) -> list:
     """Get all players from Fantrax."""
@@ -96,11 +120,8 @@ def load_sofascore_data(data_dir: Path, code_mappings: dict, club_mappings: dict
             print(f"Loaded {len(df)} players from cache")
             return df
     
-    # Premier League season IDs
-    SEASON_IDS = {
-        "2023-24": 76986,  # Current season
-        "2022-23": 52186,  # Previous season
-    }
+    # Premier League season ID for current season
+    SEASON_ID = 76986  # 2023-24 season
     
     # API configuration
     base_url = "https://www.sofascore.com/api/v1/unique-tournament/17/season"
@@ -113,72 +134,60 @@ def load_sofascore_data(data_dir: Path, code_mappings: dict, club_mappings: dict
     }
     
     try:
-        all_players = []
+        players = []
         print("Fetching SofaScore data from API...")
+        page = 1
         
-        for season, season_id in SEASON_IDS.items():
-            print(f"\nFetching {season} season...")
-            page = 1
-            while True:
-                # Calculate offset for pagination
-                offset = (page - 1) * 20
+        while True:
+            # Calculate offset for pagination
+            offset = (page - 1) * 20
+            
+            # Build URL with pagination and sorting
+            url = f"{base_url}/{SEASON_ID}/statistics"
+            params = {
+                "limit": 20,
+                "offset": offset,
+                "order": "-rating",  # Sort by rating descending
+                "accumulation": "total",
+                "group": "summary"
+            }
+            
+            # Make request
+            response = requests.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Extract player data from this page
+            for player in data.get("results", []):
+                # Get team name and standardize it immediately
+                team_name = player["team"]["name"]
+                std_team = standardize_team(team_name, code_mappings, club_mappings)
                 
-                # Build URL with pagination and sorting
-                url = f"{base_url}/{season_id}/statistics"
-                params = {
-                    "limit": 20,
-                    "offset": offset,
-                    "order": "-rating",  # Sort by rating descending
-                    "accumulation": "total",
-                    "group": "summary"
+                # Create player record
+                player_record = {
+                    "player_id": int(player["player"]["id"]),  # Convert to Python int
+                    "player_name": player["player"]["name"],
+                    "team_name": team_name,  # Keep original for reference
+                    "team_code": std_team,  # Already standardized
                 }
+                players.append(player_record)
+            
+            # Show progress
+            if page % 5 == 0:
+                print(f"Processed {page} pages...")
+            
+            # Check if we've reached the last page
+            if page >= data.get("pages", 1):
+                print(f"Completed {page} pages")
+                break
                 
-                # Make request
-                response = requests.get(url, headers=headers, params=params)
-                response.raise_for_status()
-                data = response.json()
-                
-                # Extract player data from this page
-                for player in data.get("results", []):
-                    # Get team name and standardize it immediately
-                    team_name = player["team"]["name"]
-                    std_team = standardize_team(team_name, code_mappings, club_mappings)
-                    
-                    # Create player record
-                    player_record = {
-                        "player_id": int(player["player"]["id"]),  # Convert to Python int
-                        "player_name": player["player"]["name"],
-                        "team_name": team_name,  # Keep original for reference
-                        "team_code": std_team,  # Already standardized
-                        "season": season  # Add season info
-                    }
-                    
-                    # Check if player already exists from another season
-                    existing = next((p for p in all_players if p["player_id"] == player_record["player_id"]), None)
-                    if existing:
-                        # Update with current season info if team changed
-                        if existing["team_code"] != player_record["team_code"]:
-                            existing[f"team_code_{season.replace('-', '_')}"] = player_record["team_code"]
-                            existing[f"team_name_{season.replace('-', '_')}"] = player_record["team_name"]
-                    else:
-                        all_players.append(player_record)
-                
-                # Show progress
-                if page % 5 == 0:
-                    print(f"  Processed {page} pages...")
-                
-                # Check if we've reached the last page
-                if page >= data.get("pages", 1):
-                    print(f"  Completed {page} pages for {season}")
-                    break
-                    
-                page += 1
-                
-                # Add a small delay to avoid rate limiting
-                time.sleep(0.5)
+            page += 1
+            
+            # Add a small delay to avoid rate limiting
+            time.sleep(0.5)
         
-        print(f"\nLoaded {len(all_players)} unique players across all seasons")
-        df = pd.DataFrame(all_players)
+        print(f"\nLoaded {len(players)} players")
+        df = pd.DataFrame(players)
         
         # Standardize team codes using the passed in mappings
         df["team_code"] = df["team_code"].apply(lambda x: standardize_team(x, code_mappings, club_mappings))
@@ -187,16 +196,16 @@ def load_sofascore_data(data_dir: Path, code_mappings: dict, club_mappings: dict
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         cache_file = cache_dir / f"sofascore_players_{timestamp}.parquet"
         df.to_parquet(cache_file)
-        print(f"Saved SofaScore data to cache: {cache_file.name}")
+        logging.info(f"Saved SofaScore data to cache: {cache_file.name}")
         
         # Also save as CSV for easy viewing
         csv_file = cache_dir / f"sofascore_players_{timestamp}.csv"
         df.to_csv(csv_file, index=False)
-        print(f"Saved SofaScore data to CSV: {csv_file.name}")
+        logging.info(f"Saved SofaScore data to CSV: {csv_file.name}")
         
         return df
     except Exception as e:
-        print(f"Error loading SofaScore data: {e}")
+        logging.error(f"Error loading SofaScore data: {e}")
         return pd.DataFrame()
 
 def extract_name_and_info(full_str: str) -> tuple[str, str, str, str]:
@@ -424,7 +433,11 @@ def update_mappings(
         output_file: Where to save the mappings YAML
         cookie_file: Path to Fantrax cookie file
         interactive: Whether to prompt for confirmation on uncertain matches
+        config_dir: Directory containing configuration files
+        force_refresh: Whether to force refresh of SofaScore data
     """
+    # Set up logging
+    setup_logging(data_dir)
     # Initialize session with saved cookies
     session = requests.Session()
     try:
@@ -432,32 +445,38 @@ def update_mappings(
             cookies = pickle.load(f)
             for cookie in cookies:
                 session.cookies.set(cookie["name"], cookie["value"])
+            logging.info("Loaded Fantrax session cookies")
     except FileNotFoundError:
-        print(f"Cookie file not found: {cookie_file}")
-        print("Please run bootstrap_cookie.py first")
+        logging.error(f"Cookie file not found: {cookie_file}")
+        logging.error("Please run bootstrap_cookie.py first")
         return
         
     # Load existing mappings
     manager = PlayerMappingManager(str(output_file))
+    logging.info(f"Initialized player mapping manager with {output_file}")
     
     # Get Fantrax players (source of truth)
-    print("Fetching players from Fantrax...")
+    logging.info("Fetching players from Fantrax...")
     fantrax_players = load_fantrax_players(league_id, session)
-    print(f"Found {len(fantrax_players)} players in Fantrax")
+    logging.info(f"Found {len(fantrax_players)} players in Fantrax")
     
     # Load team mappings
     code_mappings, club_mappings = load_team_mappings(config_dir)
-    print("Loaded team mappings")
+    logging.info("Loaded team mappings from config files")
     
     # Load FFScout data if available
     ffscout_df = load_ffscout_data(data_dir / "silver/scout_picks")
     if not ffscout_df.empty:
-        print(f"Loaded FFScout data with {len(ffscout_df)} players")
+        logging.info(f"Loaded FFScout data with {len(ffscout_df)} players")
+    else:
+        logging.warning("No FFScout data found")
         
     # Load SofaScore data
     sofascore_df = load_sofascore_data(data_dir, code_mappings, club_mappings, force_refresh)
     if not sofascore_df.empty:
-        print(f"Found {len(sofascore_df)} players in SofaScore data")
+        logging.info(f"Found {len(sofascore_df)} players in SofaScore data")
+    else:
+        logging.warning("No SofaScore data found")
     
     # Track statistics
     stats = {
@@ -477,15 +496,15 @@ def update_mappings(
     # List to collect players needing manual matching
     unmatched_players = []
     
-    print("\nPhase 1: Processing exact matches...")
-    print("Note: FFScout data only includes likely starters, while Fantrax includes all squad players.")
-    print("Many players without FFScout matches is expected and normal.\n")
+    logging.info("\nPhase 1: Processing exact matches...")
+    logging.info("Note: FFScout data only includes likely starters, while Fantrax includes all squad players.")
+    logging.info("Many players without FFScout matches is expected and normal.\n")
     
     # Process each Fantrax player
     for i, player in enumerate(fantrax_players, 1):
         # Show progress every 50 players
         if i % 50 == 0:
-            print(f"Processed {i}/{stats['total_players']} players...")
+            logging.info(f"Processed {i}/{stats['total_players']} players...")
         
         # Check if we already have a mapping
         mapping = manager.get_by_fantrax_id(player.id)
@@ -552,6 +571,7 @@ def update_mappings(
                     stats["ffscout_matches"] += 1
                     stats["ffscout_exact_matches"] += 1
                     stats["no_ffscout_match"] -= 1  # Remove from unmatched count
+                    logging.info(f"Exact FFScout match found: {player.name} ({player.team}) -> {matches[0][0]} ({matches[0][3]}) [score: {matches[0][1]}]")
                 else:
                     # No exact match found, collect for manual matching if score >= 75
                     matches_for_review = [m for m in matches if m[1] >= 75]
@@ -599,6 +619,7 @@ def update_mappings(
                     stats["sofascore_matches"] += 1
                     stats["sofascore_exact_matches"] += 1
                     stats["no_sofascore_match"] -= 1  # Remove from unmatched count
+                    logging.info(f"Exact SofaScore match found: {player.name} ({player.team}) -> {match_name} ({matches[0][3]}) [score: {matches[0][1]}, id: {match_id}]")
                 else:
                     # No exact match found, collect for manual matching if score >= 75
                     matches_for_review = [m for m in matches if m[1] >= 75]
@@ -615,9 +636,9 @@ def update_mappings(
         
     # Phase 2: Manual matching for remaining players
     if unmatched_players and interactive:
-        print("\nPhase 2: Manual matching for remaining players...")
-        print(f"Found {len(unmatched_players)} players without exact matches")
-        print("Only showing potential matches with score >= 75")
+        logging.info("\nPhase 2: Manual matching for remaining players...")
+        logging.info(f"Found {len(unmatched_players)} players without exact matches")
+        logging.info("Only showing potential matches with score >= 75")
         
         for player, mapping, (source, matches) in unmatched_players:
             if not matches:  # Skip if no potential matches found in phase 1
@@ -627,13 +648,13 @@ def update_mappings(
             if matches:
                 # Standardize player's team for display
                 std_player_team = standardize_team(player.team, code_mappings, club_mappings)
-                print(f"\nPotential {source.title()} matches for {player.name} ({std_player_team} - {player.position}):")
+                logging.info(f"\nPotential {source.title()} matches for {player.name} ({std_player_team} - {player.position}):")
                 for i, (match_name, score, display_info, std_team) in enumerate(matches[:5], 1):
                     # Always show standardized team code
-                    print(f"  {i}. {match_name} ({std_team}) [score: {score}]")
-                print("  0. None of these")
+                    print(f"  {i}. {match_name} ({std_team}) [score: {score}]")  # Keep print for interactive UI
+                print("  0. None of these")  # Keep print for interactive UI
                 if source == "ffscout":
-                    print("\nNote: It's normal if none match - FFScout only includes likely starters")
+                    logging.info("\nNote: It's normal if none match - FFScout only includes likely starters")
                 
                 while True:
                     try:
@@ -649,6 +670,7 @@ def update_mappings(
                                     stats["ffscout_matches"] += 1
                                     stats["ffscout_manual_matches"] += 1
                                     stats["no_ffscout_match"] -= 1
+                                    logging.info(f"Manual FFScout match accepted: {player.name} ({player.team}) -> {match_name} ({matches[choice-1][3]}) [score: {matches[choice-1][1]}]")
                                 else:  # sofascore
                                     match_id = int(sofascore_df[sofascore_df["player_name"] == match_name]["player_id"].iloc[0])
                                     mapping.sofascore_id = match_id
@@ -656,36 +678,38 @@ def update_mappings(
                                     stats["sofascore_matches"] += 1
                                     stats["sofascore_manual_matches"] += 1
                                     stats["no_sofascore_match"] -= 1
+                                    logging.info(f"Manual SofaScore match accepted: {player.name} ({player.team}) -> {match_name} ({matches[choice-1][3]}) [score: {matches[choice-1][1]}, id: {match_id}]")
                             break
                     except ValueError:
                         pass
-                    print("Invalid choice. Please enter a number between 0 and 5.")
+                    logging.warning("Invalid choice. Please enter a number between 0 and 5.")
+                    print("Invalid choice. Please enter a number between 0 and 5.")  # Keep print for interactive UI
     
-    # Print final statistics
-    print("\nProcessing complete!")
-    print("=" * 50)
-    print("Statistics:")
-    print(f"Total Fantrax players: {stats['total_players']}")
-    print(f"Existing mappings updated: {stats['existing_mappings']}")
-    print(f"New mappings created: {stats['new_mappings']}")
-    print("\nFFScout matches:")
-    print(f"Total matches found: {stats['ffscout_matches']}")
-    print(f"  - Exact matches: {stats['ffscout_exact_matches']}")
-    print(f"  - Manual matches: {stats['ffscout_manual_matches']}")
-    print(f"Players without FFScout match: {stats['no_ffscout_match']}")
-    print(f"FFScout match rate: {stats['ffscout_matches']/stats['total_players']*100:.1f}%")
-    print("Note: Low FFScout match rate is expected as FFScout only includes likely starters")
-    print("\nSofaScore matches:")
-    print(f"Total matches found: {stats['sofascore_matches']}")
-    print(f"  - Exact matches: {stats['sofascore_exact_matches']}")
-    print(f"  - Manual matches: {stats['sofascore_manual_matches']}")
-    print(f"Players without SofaScore match: {stats['no_sofascore_match']}")
-    print(f"SofaScore match rate: {stats['sofascore_matches']/stats['total_players']*100:.1f}%")
-    print("=" * 50)
+    # Log final statistics
+    logging.info("\nProcessing complete!")
+    logging.info("=" * 50)
+    logging.info("Statistics:")
+    logging.info(f"Total Fantrax players: {stats['total_players']}")
+    logging.info(f"Existing mappings updated: {stats['existing_mappings']}")
+    logging.info(f"New mappings created: {stats['new_mappings']}")
+    logging.info("\nFFScout matches:")
+    logging.info(f"Total matches found: {stats['ffscout_matches']}")
+    logging.info(f"  - Exact matches: {stats['ffscout_exact_matches']}")
+    logging.info(f"  - Manual matches: {stats['ffscout_manual_matches']}")
+    logging.info(f"Players without FFScout match: {stats['no_ffscout_match']}")
+    logging.info(f"FFScout match rate: {stats['ffscout_matches']/stats['total_players']*100:.1f}%")
+    logging.info("Note: Low FFScout match rate is expected as FFScout only includes likely starters")
+    logging.info("\nSofaScore matches:")
+    logging.info(f"Total matches found: {stats['sofascore_matches']}")
+    logging.info(f"  - Exact matches: {stats['sofascore_exact_matches']}")
+    logging.info(f"  - Manual matches: {stats['sofascore_manual_matches']}")
+    logging.info(f"Players without SofaScore match: {stats['no_sofascore_match']}")
+    logging.info(f"SofaScore match rate: {stats['sofascore_matches']/stats['total_players']*100:.1f}%")
+    logging.info("=" * 50)
     
     # Save all mappings to file
     manager.save_mappings()
-    print(f"\nSaved mappings to: {output_file}")
+    logging.info(f"\nSaved mappings to: {output_file}")
 
 def main():
     # Your Premier League league ID

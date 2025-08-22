@@ -3,10 +3,13 @@ Discover scheduled events from SofaScore.
 """
 import asyncio
 from datetime import datetime, timedelta, timezone
+import logging
 from typing import Dict, List, Optional, Tuple
 
 import httpx
 from tenacity import retry, wait_exponential, stop_after_attempt
+
+logger = logging.getLogger(__name__)
 
 # API configuration
 API_BASE = "https://api.sofascore.com/api/v1"
@@ -74,16 +77,18 @@ def is_premier_league_game(event: Dict) -> bool:
     """
     tournament = event.get("tournament", {})
     unique_tournament = tournament.get("uniqueTournament", {})
-    return (
-        # Must be Premier League tournament
-        unique_tournament.get("id") == PREMIER_LEAGUE_ID and
-        unique_tournament.get("name") == PREMIER_LEAGUE_NAME and
-        # Must be regular league game (not cup/friendly)
-        tournament.get("name") == PREMIER_LEAGUE_NAME and
-        # Must have both teams
-        event.get("homeTeam") and
-        event.get("awayTeam")
-    )
+    
+    # Validate it's a Premier League game
+    if not (unique_tournament.get("id") == PREMIER_LEAGUE_ID and
+            tournament.get("name") == PREMIER_LEAGUE_NAME):
+        return False
+        
+    # Validate both teams exist
+    if not (event.get("homeTeam", {}).get("name") and 
+            event.get("awayTeam", {}).get("name")):
+        return False
+        
+    return True
 
 def get_event_key(event: Dict) -> str:
     """
@@ -93,11 +98,72 @@ def get_event_key(event: Dict) -> str:
         event: Event data from SofaScore API
     
     Returns:
-        str: Unique key combining home team, away team, and date
+        str: Unique key combining home team and away team
     """
-    # Convert timestamp to date string
-    date = utc_ts_to_dt(event["startTimestamp"]).date().isoformat()
-    return f"{date}_{event['homeTeam']['id']}_{event['awayTeam']['id']}"
+    return f"{event['homeTeam']['id']}_{event['awayTeam']['id']}"
+
+def deduplicate_events(events: List[Event]) -> List[Event]:
+    """
+    Deduplicate events that appear on consecutive days.
+    
+    When the same match appears on consecutive days, we:
+    1. Group by teams playing
+    2. For each group, keep only the most likely date
+    3. Most likely = the date that has the most other games
+    
+    Args:
+        events: List of events to deduplicate
+    
+    Returns:
+        Deduplicated list of events
+    """
+    if not events:
+        return []
+        
+    # Group events by date
+    events_by_date = {}
+    for event in events:
+        date = event.kickoff_utc.date()
+        if date not in events_by_date:
+            events_by_date[date] = []
+        events_by_date[date].append(event)
+    
+    # Find the dates with the most games
+    # These are most likely to be the actual matchdays
+    dates_by_game_count = sorted(
+        events_by_date.keys(),
+        key=lambda d: len(events_by_date[d]),
+        reverse=True
+    )
+    
+    # Group events by teams playing
+    events_by_teams = {}
+    for event in events:
+        key = f"{event.home_team['id']}_{event.away_team['id']}"
+        if key not in events_by_teams:
+            events_by_teams[key] = []
+        events_by_teams[key].append(event)
+    
+    # For each set of teams, keep the event on the date with the most games
+    result = []
+    for team_events in events_by_teams.values():
+        if len(team_events) == 1:
+            # Only one date, keep it
+            result.append(team_events[0])
+        else:
+            # Multiple dates, find the one with the most games
+            best_event = max(
+                team_events,
+                key=lambda e: (
+                    len(events_by_date[e.kickoff_utc.date()]),  # Prefer dates with more games
+                    -abs((e.kickoff_utc.hour - 15))  # Prefer times closer to 3pm
+                )
+            )
+            result.append(best_event)
+    
+    # Sort by kickoff time
+    result.sort(key=lambda e: e.kickoff_utc)
+    return result
 
 async def get_scheduled_events(
     client: httpx.AsyncClient,
@@ -123,9 +189,6 @@ async def get_scheduled_events(
     data = await get_json(client, url)
     events = data.get("events", [])
     
-    if verbose:
-        print(f"\nFound {len(events)} total events on {date_str}")
-    
     # Filter for Premier League games and deduplicate
     seen_keys = set()
     result = []
@@ -141,10 +204,13 @@ async def get_scheduled_events(
                 
                 result.append(Event(**e))
     
-    if verbose and result:
-        print(f"- Premier League games:")
-        for e in result:
-            print(f"  • {e.kickoff_utc.strftime('%H:%M')} {e.home_team['name']} vs {e.away_team['name']}")
+    if verbose:
+        if result:
+            logger.info(f"\nFound {len(result)} Premier League games on {date_str}:")
+            for e in result:
+                logger.info(f"  • {e.kickoff_utc.strftime('%H:%M')} {e.home_team['name']} vs {e.away_team['name']}")
+        else:
+            logger.info(f"\nNo Premier League games on {date_str}")
     
     return result
 
@@ -167,22 +233,23 @@ async def get_season_events(
     all_events = []
     current_date = season_start
     
-    print(f"\nFetching Premier League {season} season games from {season_start.date()} to {season_end.date()}")
+    logger.info(f"\nFetching Premier League {season} season games from {season_start.date()} to {season_end.date()}")
     
     async with httpx.AsyncClient() as client:
         while current_date <= season_end:
             events = await get_scheduled_events(client, current_date, verbose)
-            if events:
-                print(f"Found {len(events)} Premier League games on {current_date.date()}")
-                all_events.extend(events)
+            all_events.extend(events)
             current_date += timedelta(days=1)
             # Small delay to avoid rate limiting
             await asyncio.sleep(0.5)
     
-    # Sort by kickoff time
-    all_events.sort(key=lambda e: e.kickoff_utc)
+    # Log raw event count before deduplication
+    raw_count = len(all_events)
     
-    # Group by matchday
+    # Deduplicate events
+    all_events = deduplicate_events(all_events)
+    
+    # Group by matchday for reporting
     matchdays = {}
     for e in all_events:
         date = e.kickoff_utc.date()
@@ -190,7 +257,10 @@ async def get_season_events(
             matchdays[date] = []
         matchdays[date].append(e)
     
-    print(f"\nFound {len(all_events)} total Premier League games across {len(matchdays)} matchdays")
+    # Log final results
+    logger.info(f"\nFound {len(all_events)} unique Premier League games across {len(matchdays)} matchdays")
+    if raw_count > len(all_events):
+        logger.info(f"Removed {raw_count - len(all_events)} duplicate games")
     
     return all_events
 

@@ -1,0 +1,1069 @@
+{
+  "confirmed": true,
+  "home": {
+    "players": [
+      {
+        "avgRating": 7.7,
+        "player": {
+          "name": "Rico Lewis",
+          "firstName": "Rico Lewis",
+          "lastName": "",
+          "slug": "rico-lewis",
+          "shortName": "R. Lewis",
+          "position": "D",
+          "jerseyNumber": "82",
+          "height": 170,
+          "userCount": 17373,
+          "sofascoreId": "Rico_Lewis",
+          "id": 1136731,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1100995200,
+          "proposedMarketValueRaw": {
+            "value": 43414786,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0631\u064a\u0643\u0648 \u0644\u0648\u064a\u0633",
+              "hi": "\u0930\u093f\u0915\u094b \u0932\u0941\u0908\u0938",
+              "bn": "\u09b0\u09bf\u0995\u09cb \u09b2\u09c1\u0987\u09b8"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0631. \u0644\u0648\u064a\u0633",
+              "hi": "\u0906\u0930. \u0932\u0941\u0908\u0938",
+              "bn": "\u0986\u09b0. \u09b2\u09c1\u0987\u09b8"
+            }
+          }
+        },
+        "teamId": 17,
+        "shirtNumber": 82,
+        "jerseyNumber": "82",
+        "position": "D",
+        "substitute": false
+      },
+      {
+        "avgRating": 7.4,
+        "player": {
+          "name": "R\u00faben Dias",
+          "firstName": "",
+          "lastName": "",
+          "slug": "ruben-dias",
+          "shortName": "R. Dias",
+          "position": "D",
+          "jerseyNumber": "3",
+          "height": 188,
+          "userCount": 44176,
+          "sofascoreId": "R\u00fabenD",
+          "id": 318941,
+          "country": {
+            "alpha2": "PT",
+            "alpha3": "PRT",
+            "name": "Portugal",
+            "slug": "portugal"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 863568000,
+          "proposedMarketValueRaw": {
+            "value": 28702756,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0631\u0648\u0628\u0646 \u062f\u064a\u0627\u0632",
+              "hi": "\u0930\u0941\u092c\u0947\u0928 \u0921\u093f\u092f\u093e\u0938",
+              "bn": "\u09b0\u09c1\u09ac\u09c7\u09a8 \u09a1\u09be\u09af\u09bc\u09be\u09b8"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0631. \u062f\u064a\u0627\u0632",
+              "hi": "\u0906\u0930. \u0921\u093f\u092f\u093e\u0938",
+              "bn": "\u0986\u09b0. \u09a1\u09be\u09af\u09bc\u09be\u09b8"
+            }
+          }
+        },
+        "teamId": 17,
+        "shirtNumber": 3,
+        "jerseyNumber": "3",
+        "position": "D",
+        "substitute": true
+      },
+      {
+        "avgRating": 7.8,
+        "player": {
+          "name": "Tijjani Reijnders",
+          "slug": "tijjani-reijnders",
+          "shortName": "T. Reijnders",
+          "position": "M",
+          "jerseyNumber": "4",
+          "height": 185,
+          "userCount": 30594,
+          "sofascoreId": "tijjanireijnders",
+          "id": 893549,
+          "country": {
+            "alpha2": "NL",
+            "alpha3": "NLD",
+            "name": "Netherlands",
+            "slug": "netherlands"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 901670400,
+          "proposedMarketValueRaw": {
+            "value": 36331674,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u062a\u064a\u0627\u0646\u064a \u0631\u064a\u0646\u062f\u0631\u0632",
+              "hi": "\u0924\u093f\u091c\u093e\u0928\u0940 \u0930\u0947\u0907\u0902\u0921\u0930\u094d\u0938",
+              "bn": "\u09a4\u09bf\u099c\u09be\u09a8\u09bf \u09b0\u09c7\u0987\u099c\u09c7\u09a8\u09cd\u09a1\u09be\u09b0\u09cd\u09b8"
+            },
+            "shortNameTranslation": {
+              "ar": "\u062a. \u0631\u064a\u0646\u062f\u0631\u0632",
+              "hi": "\u091f\u0940. \u0930\u0947\u0907\u0902\u0921\u0930\u094d\u0938",
+              "bn": "\u099f\u09bf. \u09b0\u09c7\u0987\u099c\u09c7\u09a8\u09cd\u09a1\u09be\u09b0\u09cd\u09b8"
+            }
+          }
+        },
+        "teamId": 17,
+        "shirtNumber": 4,
+        "jerseyNumber": "4",
+        "position": "M",
+        "substitute": true
+      },
+      {
+        "avgRating": 7.7,
+        "player": {
+          "name": "Nico Gonz\u00e1lez",
+          "firstName": "",
+          "lastName": "",
+          "slug": "nico-gonzalez",
+          "shortName": "N. Gonz\u00e1lez",
+          "position": "M",
+          "jerseyNumber": "14",
+          "height": 186,
+          "userCount": 13638,
+          "sofascoreId": "nico14",
+          "id": 954056,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1010016000,
+          "proposedMarketValueRaw": {
+            "value": 85405024,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0646\u064a\u0643\u0648\u0644\u0627\u0633 \u063a\u0648\u0646\u0632\u0627\u0644\u064a\u0633",
+              "hi": "\u0928\u093f\u0915\u094b\u0932\u0938 \u0917\u094b\u0902\u091c\u093e\u0932\u0947\u091c",
+              "bn": "\u09a8\u09bf\u0995\u09cb\u09b2\u09be\u09b8 \u0997\u099e\u09cd\u099c\u09be\u09b2\u09c7\u099c"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0646. \u063a\u0648\u0646\u0632\u0627\u0644\u064a\u0633",
+              "hi": "\u090f\u0928. \u0917\u094b\u0902\u091c\u093e\u0932\u0947\u091c",
+              "bn": "\u098f\u09a8. \u0997\u099e\u09cd\u099c\u09be\u09b2\u09c7\u099c"
+            }
+          }
+        },
+        "teamId": 17,
+        "shirtNumber": 14,
+        "jerseyNumber": "14",
+        "position": "M",
+        "substitute": false
+      },
+      {
+        "avgRating": 8.5,
+        "player": {
+          "name": "Erling Haaland",
+          "slug": "erling-haaland",
+          "shortName": "E. Haaland",
+          "position": "F",
+          "jerseyNumber": "9",
+          "height": 194,
+          "userCount": 596691,
+          "sofascoreId": "EHaaland",
+          "id": 839956,
+          "country": {
+            "alpha2": "NO",
+            "alpha3": "NOR",
+            "name": "Norway",
+            "slug": "norway"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 964137600,
+          "proposedMarketValueRaw": {
+            "value": 213373790,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0625\u064a\u0631\u0644\u064a\u0646\u063a \u0647\u0627\u0644\u0627\u0646\u062f",
+              "hi": "\u090f\u0930\u094d\u0932\u093f\u0902\u0917 \u0939\u093e\u0932\u0948\u0902\u0921",
+              "bn": "\u098f\u09b0\u09b2\u09bf\u0982 \u09b9\u09be\u09b2\u09be\u09a8\u09cd\u09a1"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0625. \u0647\u0627\u0644\u0627\u0646\u062f",
+              "hi": "\u0908. \u0939\u093e\u0932\u0948\u0902\u0921",
+              "bn": "\u0987. \u09b9\u09be\u09b2\u09be\u09a8\u09cd\u09a1"
+            }
+          }
+        },
+        "teamId": 17,
+        "shirtNumber": 9,
+        "jerseyNumber": "9",
+        "position": "F",
+        "substitute": false
+      },
+      {
+        "avgRating": 6.3,
+        "player": {
+          "name": "J\u00e9r\u00e9my Doku",
+          "slug": "jeremy-doku",
+          "shortName": "J. Doku",
+          "position": "M",
+          "jerseyNumber": "11",
+          "height": 173,
+          "userCount": 67709,
+          "sofascoreId": "Dokss",
+          "id": 934386,
+          "country": {
+            "alpha2": "BE",
+            "alpha3": "BEL",
+            "name": "Belgium",
+            "slug": "belgium"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1022457600,
+          "proposedMarketValueRaw": {
+            "value": 50285432,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u062c\u064a\u0631\u064a\u0645\u064a \u062f\u0648\u0643\u0648",
+              "hi": "\u091c\u0947\u0930\u0947\u092e\u0940 \u0921\u094b\u0915\u0942",
+              "bn": "\u099c\u09c7\u09b0\u09c7\u09ae\u09bf \u09a1\u0995\u09c1"
+            },
+            "shortNameTranslation": {
+              "ar": "\u062c. \u062f\u0648\u0643\u0648",
+              "hi": "\u091c\u0947. \u0921\u094b\u0915\u0942",
+              "bn": "\u099c\u09c7. \u09a1\u0995\u09c1"
+            }
+          }
+        },
+        "teamId": 17,
+        "shirtNumber": 11,
+        "jerseyNumber": "11",
+        "position": "M",
+        "substitute": true
+      }
+    ],
+    "supportStaff": [],
+    "formation": "4-3-3",
+    "playerColor": {
+      "primary": "abd1f5",
+      "number": "000000",
+      "outline": "abd1f5",
+      "fancyNumber": "222226"
+    },
+    "goalkeeperColor": {
+      "primary": "ff46e1",
+      "number": "8fc4ff",
+      "outline": "ff46e1",
+      "fancyNumber": "222226"
+    },
+    "missingPlayers": [
+      {
+        "player": {
+          "name": "Jo\u0161ko Gvardiol",
+          "slug": "josko-gvardiol",
+          "shortName": "J. Gvardiol",
+          "position": "D",
+          "jerseyNumber": "24",
+          "height": 186,
+          "userCount": 55982,
+          "sofascoreId": "JGvardiol",
+          "id": 964994,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1011744000,
+          "proposedMarketValueRaw": {
+            "value": 39800266,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u064a\u0648\u0634\u0643\u0648 \u063a\u0641\u0627\u0631\u062f\u064a\u0648\u0644",
+              "hi": "\u091c\u094b\u0938\u094d\u0915\u094b \u0917\u094d\u0935\u093e\u0930\u094d\u0921\u093f\u0913\u0932",
+              "bn": "\u099c\u09cb\u09b8\u0995\u09cb \u0997\u09cb\u0993\u09df\u09be\u09b0\u09a6\u09bf\u0993\u09b2"
+            },
+            "shortNameTranslation": {
+              "ar": "\u064a. \u063a\u0641\u0627\u0631\u062f\u064a\u0648\u0644",
+              "hi": "\u091c\u0947. \u0917\u094d\u0935\u093e\u0930\u094d\u0921\u093f\u0913\u0932",
+              "bn": "\u099c\u09c7. \u0997\u09cb\u0993\u09df\u09be\u09b0\u09a6\u09bf\u0993\u09b2"
+            }
+          }
+        },
+        "type": "doubtful",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "Rodri",
+          "firstName": "",
+          "lastName": "",
+          "slug": "rodri",
+          "shortName": "Rodri",
+          "position": "M",
+          "jerseyNumber": "16",
+          "height": 191,
+          "userCount": 113542,
+          "sofascoreId": "Rodri",
+          "id": 827606,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 835401600,
+          "proposedMarketValueRaw": {
+            "value": 189176002,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0631\u0648\u062f\u0631\u064a",
+              "hi": "\u0930\u094b\u0921\u094d\u0930\u0940",
+              "bn": "\u09b0\u09a1\u09b0\u09bf"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0631\u0648\u062f\u0631\u064a",
+              "hi": "\u0930\u094b\u0921\u094d\u0930\u0940",
+              "bn": "\u09b0\u09a1\u09b0\u09bf"
+            }
+          }
+        },
+        "type": "doubtful",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "Savinho",
+          "slug": "savio",
+          "shortName": "Savinho",
+          "position": "M",
+          "jerseyNumber": "26",
+          "height": 176,
+          "userCount": 60324,
+          "sofascoreId": "Savinho",
+          "id": 1046795,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1081555200,
+          "proposedMarketValueRaw": {
+            "value": 34576142,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0633\u0627\u0641\u064a\u0648",
+              "hi": "\u0938\u0948\u0935\u093f\u092f\u094b",
+              "bn": "\u09b8\u09cd\u09af\u09be\u09ad\u09bf\u0993"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0633\u0627\u0641\u064a\u0648",
+              "hi": "\u0938\u0948\u0935\u093f\u092f\u094b",
+              "bn": "\u09b8\u09cd\u09af\u09be\u09ad\u09bf\u0993"
+            }
+          }
+        },
+        "type": "missing",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "Mateo Kova\u010di\u0107",
+          "slug": "mateo-kovacic",
+          "shortName": "M. Kova\u010di\u0107",
+          "position": "M",
+          "jerseyNumber": "8",
+          "height": 178,
+          "userCount": 38582,
+          "sofascoreId": "Kova8",
+          "id": 136710,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 768182400,
+          "proposedMarketValueRaw": {
+            "value": 32715624,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0645\u0627\u062a\u064a\u0648 \u0643\u0648\u0641\u0627\u0633\u064a\u062a\u0634",
+              "hi": "\u092e\u093e\u091f\u0947\u0913 \u0915\u094b\u0935\u093e\u0938\u093f\u0915",
+              "bn": "\u09ae\u09be\u09a4\u09c7\u0993 \u0995\u09cb\u09ad\u09be\u09b8\u09bf\u0995"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0645. \u0643\u0648\u0641\u0627\u0633\u064a\u062a\u0634",
+              "hi": "\u090f\u092e. \u0915\u094b\u0935\u093e\u0938\u093f\u0915",
+              "bn": "\u098f\u09ae. \u0995\u09cb\u09ad\u09be\u09b8\u09bf\u099a"
+            }
+          }
+        },
+        "type": "missing",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "Phil Foden",
+          "firstName": "",
+          "lastName": "",
+          "slug": "phil-foden",
+          "shortName": "P. Foden",
+          "position": "M",
+          "jerseyNumber": "47",
+          "height": 171,
+          "userCount": 219688,
+          "sofascoreId": "Foden",
+          "id": 859765,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 959472000,
+          "proposedMarketValueRaw": {
+            "value": 7405892,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0641\u064a\u0644 \u0641\u0648\u062f\u064a\u0646",
+              "hi": "\u092b\u093f\u0932 \u092b\u094b\u0921\u0947\u0928",
+              "bn": "\u09ab\u09bf\u09b2 \u09ab\u09cb\u09a1\u09c7\u09a8"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0641. \u0641\u0648\u062f\u064a\u0646",
+              "hi": "\u092a\u0940. \u092b\u094b\u0921\u0947\u0928",
+              "bn": "\u09aa\u09bf. \u09ab\u09cb\u09a1\u09c7\u09a8"
+            }
+          }
+        },
+        "type": "doubtful",
+        "reason": 1
+      }
+    ]
+  },
+  "away": {
+    "players": [
+      {
+        "avgRating": 7.2,
+        "player": {
+          "name": "Cristian Romero",
+          "firstName": "",
+          "lastName": "",
+          "slug": "cristian-romero",
+          "shortName": "C. Romero",
+          "position": "D",
+          "jerseyNumber": "17",
+          "height": 185,
+          "userCount": 41627,
+          "sofascoreId": "cutiromero2",
+          "id": 829932,
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 893635200,
+          "proposedMarketValueRaw": {
+            "value": 21514890,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0643\u0631\u064a\u0633\u062a\u064a\u0627\u0646 \u0631\u0648\u0645\u064a\u0631\u0648",
+              "hi": "\u0915\u094d\u0930\u093f\u0938\u094d\u091f\u093f\u092f\u0928 \u0930\u094b\u092e\u0947\u0930\u094b",
+              "bn": "\u0995\u09cd\u09b0\u09bf\u09b6\u09cd\u099a\u09bf\u09af\u09bc\u09be\u09a8 \u09b0\u09cb\u09ae\u09c7\u09b0\u09cb"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0643. \u0631\u0648\u0645\u064a\u0631\u0648",
+              "hi": "\u0938\u0940. \u0930\u094b\u092e\u0947\u0930\u094b",
+              "bn": "\u09b8\u09bf. \u09b0\u09cb\u09ae\u09c7\u09b0\u09cb"
+            }
+          }
+        },
+        "teamId": 33,
+        "shirtNumber": 17,
+        "jerseyNumber": "17",
+        "position": "D",
+        "substitute": false
+      },
+      {
+        "player": {
+          "name": "Kevin Danso",
+          "slug": "danso-kevin",
+          "shortName": "K. Danso",
+          "position": "D",
+          "jerseyNumber": "4",
+          "height": 190,
+          "userCount": 2990,
+          "id": 794953,
+          "country": {
+            "alpha2": "AT",
+            "alpha3": "AUT",
+            "name": "Austria",
+            "slug": "austria"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 906163200,
+          "proposedMarketValueRaw": {
+            "value": 16971634,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u062f\u0627\u0646\u0633\u0648\u060c \u0643\u064a\u0641\u0646",
+              "hi": "\u0921\u0948\u0928\u094d\u0938\u094b, \u0915\u0947\u0935\u093f\u0928",
+              "bn": "\u09a1\u09be\u09a8\u09b8\u09cb, \u0995\u09c7\u09ad\u09bf\u09a8"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0643. \u062f\u0627\u0646\u0633\u0648",
+              "hi": "\u0915\u0947. \u0921\u093e\u0902\u0938\u094b",
+              "bn": "\u0995\u09c7. \u09a1\u09be\u09a8\u09b8\u09cb"
+            }
+          }
+        },
+        "teamId": 33,
+        "shirtNumber": 4,
+        "jerseyNumber": "4",
+        "position": "D",
+        "substitute": false
+      },
+      {
+        "avgRating": 7.1,
+        "player": {
+          "name": "Djed Spence",
+          "firstName": "",
+          "lastName": "",
+          "slug": "djed-spence",
+          "shortName": "D. Spence",
+          "position": "D",
+          "jerseyNumber": "24",
+          "height": 184,
+          "userCount": 3210,
+          "id": 945798,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 965779200,
+          "proposedMarketValueRaw": {
+            "value": 1483932,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u062f\u062c\u064a\u062f \u0633\u0628\u064a\u0646\u0633",
+              "hi": "\u091c\u0947\u0921 \u0938\u094d\u092a\u0947\u0902\u0938",
+              "bn": "\u099c\u09c7\u09a1. \u09b8\u09cd\u09aa\u09c7\u09a8\u09cd\u09b8"
+            },
+            "shortNameTranslation": {
+              "ar": "\u062f. \u0633\u0628\u064a\u0646\u0633",
+              "hi": "\u0921\u0940. \u0938\u094d\u092a\u0947\u0902\u0938",
+              "bn": "\u09a1\u09bf. \u09b8\u09cd\u09aa\u09c7\u09a8\u09cd\u09b8"
+            }
+          }
+        },
+        "teamId": 33,
+        "shirtNumber": 24,
+        "jerseyNumber": "24",
+        "position": "D",
+        "substitute": true
+      },
+      {
+        "avgRating": 6.8,
+        "player": {
+          "name": "Rodrigo Bentancur",
+          "slug": "bentancur-rodrigo",
+          "shortName": "R. Bentancur",
+          "position": "M",
+          "jerseyNumber": "30",
+          "height": 187,
+          "userCount": 8068,
+          "sofascoreId": "rodrigo_bentancur",
+          "id": 791190,
+          "country": {
+            "alpha2": "UY",
+            "alpha3": "URY",
+            "name": "Uruguay",
+            "slug": "uruguay"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 867196800,
+          "proposedMarketValueRaw": {
+            "value": 4307612,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0631\u0648\u062f\u0631\u064a\u063a\u0648 \u0628\u064a\u0646\u062a\u0627\u0646\u0643\u0648\u0631",
+              "hi": "\u092c\u0947\u0928\u091f\u093e\u0928\u0915\u0941\u0930, \u0930\u094b\u0921\u094d\u0930\u093f\u0917\u094b",
+              "bn": "\u09ac\u09c7\u09a8\u09cd\u099f\u09be\u09a8\u0995\u09c1\u09b0, \u09b0\u09a6\u09cd\u09b0\u09bf\u0997\u09cb"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0631. \u0628\u064a\u0646\u062a\u0627\u0646\u0643\u0648\u0631",
+              "hi": "\u0906\u0930. \u092c\u0947\u0928\u091f\u093e\u0928\u0915\u0941\u0930",
+              "bn": "\u0986\u09b0. \u09ac\u09c7\u09a8\u09cd\u099f\u09be\u09a8\u0995\u09c1\u09b0"
+            }
+          }
+        },
+        "teamId": 33,
+        "shirtNumber": 30,
+        "jerseyNumber": "30",
+        "position": "M",
+        "substitute": false
+      },
+      {
+        "avgRating": 7.8,
+        "player": {
+          "name": "Pape Matar Sarr",
+          "firstName": "",
+          "lastName": "",
+          "slug": "pape-matar-sarr",
+          "shortName": "P. M. Sarr",
+          "position": "M",
+          "jerseyNumber": "29",
+          "height": 185,
+          "userCount": 24697,
+          "sofascoreId": "pape",
+          "id": 1002711,
+          "country": {
+            "alpha2": "SN",
+            "alpha3": "SEN",
+            "name": "Senegal",
+            "slug": "senegal"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1031961600,
+          "proposedMarketValueRaw": {
+            "value": 37737314,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0628\u0627\u0628\u064a \u0645\u0637\u0631 \u0633\u0627\u0631",
+              "hi": "\u092a\u093e\u092a\u0947 \u092e\u091f\u0930 \u0938\u0930\u094d\u0930",
+              "bn": "\u09aa\u09cb\u09aa \u09ae\u09be\u09a4\u09be\u09b0 \u09b8\u09b0\u09b0"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0628. \u0645. \u0633\u0627\u0631",
+              "hi": "\u092a\u0940\u090f\u092e \u092e\u091f\u0930",
+              "bn": "\u09aa\u09bf. \u098f\u09ae. \u09b8\u09b0"
+            }
+          }
+        },
+        "teamId": 33,
+        "shirtNumber": 29,
+        "jerseyNumber": "29",
+        "position": "M",
+        "substitute": true
+      },
+      {
+        "avgRating": 9.5,
+        "player": {
+          "name": "Richarlison",
+          "firstName": "",
+          "lastName": "",
+          "slug": "richarlison",
+          "shortName": "Richarlison",
+          "position": "F",
+          "jerseyNumber": "9",
+          "height": 184,
+          "userCount": 52473,
+          "sofascoreId": "Richarlison",
+          "id": 840217,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 863222400,
+          "proposedMarketValueRaw": {
+            "value": 34131632,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0631\u064a\u062a\u0634\u0627\u0631\u0644\u064a\u0633\u0648\u0646",
+              "hi": "\u0930\u093f\u091a\u0930\u094d\u0921\u0938\u0928",
+              "bn": "\u09b0\u09bf\u099a\u09be\u09b0\u09cd\u09b2\u09bf\u09b8\u09a8"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0631\u064a\u062a\u0634\u0627\u0631\u0644\u064a\u0633\u0648\u0646",
+              "hi": "\u0930\u093f\u091a\u0930\u094d\u0921\u0938\u0928",
+              "bn": "\u09b0\u09bf\u099a\u09be\u09b0\u09cd\u09b2\u09bf\u09b8\u09a8"
+            }
+          }
+        },
+        "teamId": 33,
+        "shirtNumber": 9,
+        "jerseyNumber": "9",
+        "position": "F",
+        "substitute": true
+      }
+    ],
+    "supportStaff": [],
+    "formation": "5-3-2",
+    "playerColor": {
+      "primary": "111312",
+      "number": "bdb8b4",
+      "outline": "111312",
+      "fancyNumber": "ffffff"
+    },
+    "goalkeeperColor": {
+      "primary": "b81e77",
+      "number": "fff7fa",
+      "outline": "b81e77",
+      "fancyNumber": "ffffff"
+    },
+    "missingPlayers": [
+      {
+        "player": {
+          "name": "Destiny Udogie",
+          "slug": "destiny-udogie",
+          "shortName": "D. Udogie",
+          "position": "D",
+          "jerseyNumber": "13",
+          "height": 186,
+          "userCount": 5961,
+          "sofascoreId": "udogiethree",
+          "id": 983572,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1038441600,
+          "proposedMarketValueRaw": {
+            "value": 67276484,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u062f\u064a\u0633\u062a\u064a\u0646\u064a \u0623\u0648\u062f\u0648\u062c\u064a",
+              "hi": "\u0921\u0947\u0938\u094d\u091f\u093f\u0928\u0940 \u0909\u0921\u094b\u0917\u0940",
+              "bn": "\u09a1\u09c7\u09b8\u099f\u09bf\u09a8\u09bf \u0989\u09a6\u09cb\u0997\u09bf"
+            },
+            "shortNameTranslation": {
+              "ar": "\u062f. \u0623\u0648\u062f\u0648\u062c\u064a",
+              "hi": "\u0921\u0940. \u0909\u0921\u094b\u0917\u0940",
+              "bn": "\u09a1\u09bf. \u0989\u09a6\u09cb\u0997\u09bf"
+            }
+          }
+        },
+        "type": "doubtful",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "Dejan Kulusevski",
+          "slug": "dejan-kulusevski",
+          "shortName": "D. Kulusevski",
+          "position": "M",
+          "jerseyNumber": "21",
+          "height": 186,
+          "userCount": 13202,
+          "sofascoreId": "dejan_k10",
+          "id": 928124,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 956620800,
+          "proposedMarketValueRaw": {
+            "value": 96012466,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u062f\u064a\u0627\u0646 \u0643\u0648\u0644\u0648\u0633\u064a\u0641\u0633\u0643\u064a",
+              "hi": "\u0926\u0947\u091c\u093e\u0928 \u0915\u0941\u0932\u0941\u0938\u0947\u0935\u0938\u094d\u0915\u0940",
+              "bn": "\u09a6\u09c7\u099c\u09be\u09a8 \u0995\u09c1\u09b2\u09c1\u09b8\u09c7\u09ad\u09b8\u09cd\u0995\u09bf"
+            },
+            "shortNameTranslation": {
+              "ar": "\u062f. \u0643\u0648\u0644\u0648\u0633\u064a\u0641\u0633\u0643\u064a",
+              "hi": "\u0921\u0940. \u0915\u0941\u0932\u0941\u0938\u0947\u0935\u0938\u094d\u0915\u0940",
+              "bn": "\u09a1\u09bf. \u0995\u09c1\u09b2\u09c1\u09b8\u09c7\u09ad\u09b8\u09cd\u0995\u09bf"
+            }
+          }
+        },
+        "type": "missing",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "James Maddison",
+          "slug": "james-maddison",
+          "shortName": "J. Maddison",
+          "position": "M",
+          "jerseyNumber": "10",
+          "height": 175,
+          "userCount": 19439,
+          "sofascoreId": "Madders",
+          "id": 356398,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 848707200,
+          "proposedMarketValueRaw": {
+            "value": 13466276,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u062c\u064a\u0645\u0633 \u0645\u0627\u062f\u064a\u0633\u0648\u0646",
+              "hi": "\u091c\u0947\u092e\u094d\u0938 \u092e\u0948\u0921\u093f\u0938\u0928",
+              "bn": "\u099c\u09c7\u09ae\u09b8 \u09ae\u09cd\u09af\u09be\u09a1\u09bf\u09b8\u09a8"
+            },
+            "shortNameTranslation": {
+              "ar": "\u062c. \u0645\u0627\u062f\u064a\u0633\u0648\u0646",
+              "hi": "\u091c\u0947. \u092e\u0948\u0921\u093f\u0938\u0928",
+              "bn": "\u099c\u09c7. \u09ae\u09cd\u09af\u09be\u09a1\u09bf\u09b8\u09a8"
+            }
+          }
+        },
+        "type": "missing",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "Radu Dr\u0103gu\u015fin",
+          "slug": "radu-dragusin",
+          "shortName": "R. Dr\u0103gu\u015fin",
+          "position": "D",
+          "jerseyNumber": "6",
+          "height": 191,
+          "userCount": 12632,
+          "sofascoreId": "radudragusin5",
+          "id": 997103,
+          "country": {
+            "alpha2": "RO",
+            "alpha3": "ROU",
+            "name": "Romania",
+            "slug": "romania"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1012694400,
+          "proposedMarketValueRaw": {
+            "value": 13434072,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0631\u0627\u062f\u0648 \u062f\u0631\u0627\u062c\u0648\u0634\u064a\u0646",
+              "hi": "\u0930\u093e\u0921\u0942 \u0926\u094d\u0930\u093e\u0917\u0941\u0938\u093f\u0928",
+              "bn": "\u09b0\u09be\u09a6\u09c1 \u09a1\u09cd\u09b0\u09be\u0997\u09c1\u09b6\u09bf\u09a8"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0631. \u062f\u0631\u0627\u062c\u0648\u0634\u064a\u0646",
+              "hi": "\u0906\u0930. \u0926\u094d\u0930\u093e\u0917\u0941\u0938\u093f\u0928",
+              "bn": "\u0986\u09b0. \u09a1\u09cd\u09b0\u09be\u0997\u09c1\u09b8\u09bf\u09a8"
+            }
+          }
+        },
+        "type": "missing",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "Kota Takai",
+          "firstName": "Kota Takai",
+          "lastName": "",
+          "slug": "kota-takai",
+          "shortName": "K. Takai",
+          "position": "D",
+          "jerseyNumber": "2",
+          "height": 192,
+          "userCount": 2246,
+          "id": 1144143,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1094256000,
+          "proposedMarketValueRaw": {
+            "value": 576094,
+            "currency": "EUR"
+          }
+        },
+        "type": "missing",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "Manor Solomon",
+          "slug": "manor-solomon",
+          "shortName": "M. Solomon",
+          "position": "M",
+          "jerseyNumber": "14",
+          "height": 167,
+          "userCount": 3978,
+          "id": 862223,
+          "country": {
+            "alpha2": "IL",
+            "alpha3": "ISR",
+            "name": "Israel",
+            "slug": "israel"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 932774400,
+          "proposedMarketValueRaw": {
+            "value": 2919544,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0645\u0627\u0646\u0648\u0631 \u0633\u0648\u0644\u0648\u0645\u0648\u0646",
+              "hi": "\u092e\u0928\u094b\u0930 \u0938\u094b\u0932\u094b\u092e\u0928",
+              "bn": "\u09ae\u09a8\u09cb\u09b0 \u09b8\u09b2\u09cb\u09ae\u09a8"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0645. \u0633\u0648\u0644\u0648\u0645\u0648\u0646",
+              "hi": "\u090f\u092e. \u0938\u094b\u0932\u094b\u092e\u0928",
+              "bn": "\u098f\u09ae. \u09b8\u09b2\u09cb\u09ae\u09a8"
+            }
+          }
+        },
+        "type": "missing",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "Bryan Gil",
+          "slug": "bryan-gil",
+          "shortName": "B. Gil",
+          "position": "M",
+          "jerseyNumber": "20",
+          "height": 176,
+          "userCount": 4106,
+          "sofascoreId": "bryan11gil",
+          "id": 910026,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 981849600,
+          "proposedMarketValueRaw": {
+            "value": 3287662,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0628\u0631\u0627\u064a\u0627\u0646 \u062c\u064a\u0644",
+              "hi": "\u092c\u094d\u0930\u093e\u092f\u0928 \u0917\u093f\u0932",
+              "bn": "\u09ac\u09cd\u09b0\u09be\u09af\u09bc\u09be\u09a8 \u0997\u09bf\u09b2"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0628. \u062c\u064a\u0644",
+              "hi": "\u092c\u0940. \u0917\u093f\u0932",
+              "bn": "\u09ac\u09bf. \u0997\u09bf\u09b2"
+            }
+          }
+        },
+        "type": "missing",
+        "reason": 1
+      },
+      {
+        "player": {
+          "name": "Yves Bissouma",
+          "slug": "yves-bissouma",
+          "shortName": "Y. Bissouma",
+          "position": "M",
+          "jerseyNumber": "8",
+          "height": 181,
+          "userCount": 12398,
+          "sofascoreId": "YB8",
+          "id": 844842,
+          "country": {
+            "alpha2": "ML",
+            "alpha3": "MLI",
+            "name": "Mali",
+            "slug": "mali"
+          },
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 841363200,
+          "proposedMarketValueRaw": {
+            "value": 45085704,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "\u0625\u064a\u0641 \u0628\u064a\u0633\u0648\u0645\u0627",
+              "hi": "\u092f\u0935\u0947\u0938 \u092c\u093f\u0938\u094c\u092e\u093e",
+              "bn": "\u0987\u09af\u09bc\u09c7\u09ad\u09c7\u09b8 \u09ac\u09bf\u09b8\u09c1\u09ae\u09be"
+            },
+            "shortNameTranslation": {
+              "ar": "\u0625. \u0628\u064a\u0633\u0648\u0645\u0627",
+              "hi": "\u0935\u093e\u0908. \u092c\u093f\u0938\u094c\u092e\u093e",
+              "bn": "\u0993\u09af\u09bc\u09be\u0987. \u09ac\u09bf\u09b8\u09c1\u09ae\u09be"
+            }
+          }
+        },
+        "type": "missing",
+        "reason": 1
+      }
+    ]
+  }
+}

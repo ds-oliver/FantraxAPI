@@ -1,0 +1,16 @@
+{
+  "event_id": 14025242,
+  "confirmed": false,
+  "home": {
+    "formation": "",
+    "starters": [],
+    "subs": [],
+    "missing": []
+  },
+  "away": {
+    "formation": null,
+    "starters": [],
+    "subs": [],
+    "missing": []
+  }
+}

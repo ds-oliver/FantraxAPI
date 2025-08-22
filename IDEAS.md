@@ -25,9 +25,7 @@
   "v": "167.0.1"
 }
 
-- [ ] Scrape the data from the website
-- [ ] Analyze the data
-- [ ] Make predictions
-- [ ] Make recommendations
-- [ ] Make a dashboard
-- [ ] Make a dashboard
+# Important scripts
+
+python esd_export_schedule_and_lineups_v1.py --tournament-id 17 --output-dir data/sofascore --upcoming --with-lineups
+

@@ -1,0 +1,11 @@
+event_id,kickoff_utc,home_team,away_team,home_team_id,away_team_id,tournament_id,season_id,round,status_code
+14025013,2025-08-15 19:00:00+0000,Liverpool,Bournemouth,44,60,17,76986,1,
+14025016,2025-08-16 11:30:00+0000,Aston Villa,Newcastle United,40,39,17,76986,1,
+14025038,2025-08-16 14:00:00+0000,Sunderland,West Ham United,41,37,17,76986,1,
+14025020,2025-08-16 14:00:00+0000,Brighton & Hove Albion,Fulham,30,43,17,76986,1,
+14025047,2025-08-16 14:00:00+0000,Tottenham Hotspur,Burnley,33,6,17,76986,1,
+14025050,2025-08-16 16:30:00+0000,Wolverhampton,Manchester City,3,17,17,76986,1,
+14025028,2025-08-17 13:00:00+0000,Nottingham Forest,Brentford,14,50,17,76986,1,
+14025053,2025-08-17 13:00:00+0000,Chelsea,Crystal Palace,38,7,17,76986,1,
+14025056,2025-08-17 15:30:00+0000,Manchester United,Arsenal,35,42,17,76986,1,
+14025059,2025-08-18 19:00:00+0000,Leeds United,Everton,34,48,17,76986,1,

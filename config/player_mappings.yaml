@@ -1507,7 +1507,7 @@
   sofascore_name: "Enzo Le F\xE9e"
   ffscout_name: null
   other_names: []
-  display_name: Enzo Le Fée
+  display_name: "Enzo Le F\xE9e"
 - fantrax_id: 05ylw
   fantrax_name: Rodrigo Bentancur
   sofascore_id: 791190
@@ -3862,3 +3862,24 @@
   other_names:
   - Doherty
   display_name: null
+- fantrax_id: 04spp
+  fantrax_name: Douglas Luiz
+  sofascore_id: null
+  sofascore_name: null
+  ffscout_name: null
+  other_names: []
+  display_name: Luiz
+- fantrax_id: 070ci
+  fantrax_name: Amine Adli
+  sofascore_id: null
+  sofascore_name: null
+  ffscout_name: null
+  other_names: []
+  display_name: Adli
+- fantrax_id: 070cj
+  fantrax_name: Noah Okafor
+  sofascore_id: null
+  sofascore_name: null
+  ffscout_name: null
+  other_names: []
+  display_name: Okafor
