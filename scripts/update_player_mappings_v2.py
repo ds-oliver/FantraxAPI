@@ -46,17 +46,40 @@ from fantraxapi.player_mapping import PlayerMapping, PlayerMappingManager
 # --------------------------------------------------------------------------------------
 
 def setup_logging(data_dir: Path) -> None:
-    """Set up logging to both file and console."""
+    """Set up logging to both file and console with different levels."""
     log_dir = data_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = log_dir / f"player_mapping_{timestamp}.log"
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[logging.FileHandler(log_file), logging.StreamHandler()]
-    )
+    
+    # Create formatters
+    file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    console_formatter = logging.Formatter('%(message)s')
+    
+    # Set up file handler (detailed logging)
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(file_formatter)
+    
+    # Set up console handler (progress only)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(console_formatter)
+    
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)  # Allow all levels
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
+    
+    # Create player logger for detailed player info (file only)
+    player_logger = logging.getLogger('player')
+    player_logger.setLevel(logging.DEBUG)
+    player_logger.addHandler(file_handler)
+    player_logger.propagate = False  # Don't send to root logger
+    
     logging.info(f"Logging to: {log_file}")
+    logging.debug("Detailed player matching logs will be written to file only")
 
 # --------------------------------------------------------------------------------------
 # Fantrax + config
@@ -662,19 +685,32 @@ def update_mappings(
             if key not in sofa_name_index:
                 sofa_name_index[key] = int(r["player_id"])
 
+    player_log = logging.getLogger('player')
     for i, player in enumerate(fantrax_players, 1):
         if i % 50 == 0:
             logging.info(f"Processed {i}/{stats['total_players']} players...")
+
+        # Start player log entry
+        player_log.debug(f"\n{'='*80}\nProcessing Fantrax Player: {player.name} (ID: {player.id})")
+        player_log.debug(f"Team: {player.team}, Position: {player.position}")
+        if player.first_name and player.last_name:
+            player_log.debug(f"Full name: {player.first_name} {player.last_name}")
 
         mapping = manager.get_by_fantrax_id(player.id)
         if mapping:
             mapping.fantrax_name = player.name
             stats["existing_mappings"] += 1
+            player_log.debug("Found existing mapping:")
             if mapping.ffscout_name:
                 stats["ffscout_matches"] += 1
+                player_log.debug(f"  - FFScout: {mapping.ffscout_name}")
             if mapping.sofascore_id:
                 stats["sofascore_matches"] += 1
+                player_log.debug(f"  - SofaScore: {mapping.sofascore_name} (ID: {mapping.sofascore_id})")
+            if mapping.other_names:
+                player_log.debug(f"  - Other names: {', '.join(mapping.other_names)}")
             if mapping.ffscout_name and mapping.sofascore_id:
+                player_log.debug("  ✓ Complete mapping found, skipping further processing")
                 continue
         else:
             mapping = PlayerMapping(
@@ -723,12 +759,20 @@ def update_mappings(
                     stats["ffscout_matches"] += 1
                     stats["ffscout_exact_matches"] += 1
                     stats["no_ffscout_match"] -= 1
+                    player_log.debug(f"Found exact FFScout match:")
+                    player_log.debug(f"  - Name: {matches[0][0]}")
+                    player_log.debug(f"  - Team: {matches[0][3]}")
+                    player_log.debug(f"  - Match Score: {matches[0][1]}")
                     logging.info(f"Exact FFScout match: {player.name} ({player.team}) -> {matches[0][0]} ({matches[0][3]}) [score: {matches[0][1]}]")
                 else:
                     matches_for_review = [m for m in matches if m[1] >= 75]
                     if matches_for_review:
+                        player_log.debug(f"Found potential FFScout matches (score >= 75):")
+                        for m in matches_for_review:
+                            player_log.debug(f"  - {m[0]} ({m[3]}) [score: {m[1]}]")
                         unmatched_players.append((player, mapping, ("ffscout", matches_for_review)))
                     else:
+                        player_log.debug("No FFScout matches found with score >= 75")
                         unmatched_players.append((player, mapping, ("ffscout", [])))
 
             if mapping.ffscout_name:
@@ -776,12 +820,21 @@ def update_mappings(
                         stats["sofascore_matches"] += 1
                         stats["sofascore_exact_matches"] += 1
                         stats["no_sofascore_match"] -= 1
+                        player_log.debug(f"Found exact SofaScore match:")
+                        player_log.debug(f"  - Name: {match_name}")
+                        player_log.debug(f"  - Team: {matches[0][3]}")
+                        player_log.debug(f"  - ID: {pid}")
+                        player_log.debug(f"  - Match Score: {matches[0][1]}")
                         logging.info(f"Exact SofaScore match: {player.name} ({player.team}) -> {match_name} ({matches[0][3]}) [score: {matches[0][1]}, id: {pid}]")
                 else:
                     matches_for_review = [m for m in matches if m[1] >= 75]
                     if matches_for_review:
+                        player_log.debug(f"Found potential SofaScore matches (score >= 75):")
+                        for m in matches_for_review:
+                            player_log.debug(f"  - {m[0]} ({m[3]}) [score: {m[1]}]")
                         unmatched_players.append((player, mapping, ("sofascore", matches_for_review)))
                     else:
+                        player_log.debug("No SofaScore matches found with score >= 75")
                         unmatched_players.append((player, mapping, ("sofascore", [])))
 
         mapping.other_names = list(set(mapping.other_names))
@@ -816,6 +869,10 @@ def update_mappings(
                                 stats["ffscout_matches"] += 1
                                 stats["ffscout_manual_matches"] += 1
                                 stats["no_ffscout_match"] -= 1
+                                player_log.debug(f"Manual FFScout match accepted:")
+                                player_log.debug(f"  - Name: {match_name}")
+                                player_log.debug(f"  - Team: {matches[choice-1][3]}")
+                                player_log.debug(f"  - Match Score: {matches[choice-1][1]}")
                                 logging.info(f"Manual FFScout match: {player.name} -> {match_name} ({matches[choice-1][3]}) [score: {matches[choice-1][1]}]")
                             else:
                                 # SofaScore id lookup, considering merged pool
@@ -838,6 +895,11 @@ def update_mappings(
                                     stats["sofascore_matches"] += 1
                                     stats["sofascore_manual_matches"] += 1
                                     stats["no_sofascore_match"] -= 1
+                                    player_log.debug(f"Manual SofaScore match accepted:")
+                                    player_log.debug(f"  - Name: {match_name}")
+                                    player_log.debug(f"  - Team: {matches[choice-1][3]}")
+                                    player_log.debug(f"  - ID: {pid}")
+                                    player_log.debug(f"  - Match Score: {matches[choice-1][1]}")
                                     logging.info(f"Manual SofaScore match: {player.name} -> {match_name} [{pid}] ({matches[choice-1][3]}) [score: {matches[choice-1][1]}]")
                         break
                 except ValueError:
