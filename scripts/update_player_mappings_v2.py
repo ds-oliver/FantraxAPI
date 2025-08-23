@@ -1,15 +1,40 @@
 #!/usr/bin/env python
 """
 Script to update player mappings from various sources.
+
+Now includes unmatched reporting:
+  - Fantrax players with no SofaScore match
+  - SofaScore/ESD players with no Fantrax mapping
+
+Enhanced display name selection:
+  - Automatically picks the best display name from all available sources
+  - Prioritizes SofaScore names (cleanest), then FFScout (preferred), then Fantrax
+  - Analyzes name patterns across sources to find most common representation
+
+Comprehensive data export:
+  - Saves all Fantrax and SofaScore players with match information
+  - Includes boolean columns for match status and cross-referenced IDs
+  - Exports to both CSV and Parquet formats for performance
+  - Generates summary statistics and match rates
+
+Use --report-format to control outputs: csv | json | both (default: both)
+Use --report-dir to change output directory (default: <data-dir>/reports/unmatched)
+Use --display-names-only to only update display names without full mapping process
+Use --export-player-data-only to only export all players data without full mapping process
+Use --skip-display-name-update to skip display name updates during full mapping
+Use --skip-player-data-export to skip exporting all players data
+Use --fast-mode to skip expensive operations (display names, data export) for faster execution
 """
 import argparse
 import pickle
+import json
 from pathlib import Path
 import pandas as pd
 import requests
 import logging
 import time
 from datetime import datetime, timezone
+import pytz
 from thefuzz import fuzz
 from unidecode import unidecode
 import yaml
@@ -42,6 +67,16 @@ from fantraxapi.fantrax import FantraxAPI
 from fantraxapi.player_mapping import PlayerMapping, PlayerMappingManager
 
 # --------------------------------------------------------------------------------------
+# Helper functions
+# --------------------------------------------------------------------------------------
+
+def get_pacific_timestamp() -> str:
+    """Get current timestamp in Pacific time with 12-hour format."""
+    pacific_tz = pytz.timezone('America/Los_Angeles')
+    pacific_time = datetime.now(pacific_tz)
+    return pacific_time.strftime("%Y%m%d_%I%M%p").lower()
+
+# --------------------------------------------------------------------------------------
 # Logging
 # --------------------------------------------------------------------------------------
 
@@ -49,7 +84,7 @@ def setup_logging(data_dir: Path) -> None:
     """Set up logging to both file and console with different levels."""
     log_dir = data_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = get_pacific_timestamp()
     log_file = log_dir / f"player_mapping_{timestamp}.log"
     
     # Create formatters
@@ -200,7 +235,7 @@ def load_sofascore_data(data_dir: Path, code_mappings: dict, club_mappings: dict
         df = pd.DataFrame(players)
         df["team_code"] = df["team_code"].apply(lambda x: standardize_team(x, code_mappings, club_mappings))
 
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        timestamp = get_pacific_timestamp()
         cache_file = cache_dir / f"sofascore_players_{timestamp}.parquet"
         df.to_parquet(cache_file)
         logging.info(f"Saved SofaScore data to cache: {cache_file.name}")
@@ -565,6 +600,269 @@ def load_esd_players(
         return pd.DataFrame()
 
 # --------------------------------------------------------------------------------------
+# Player data export helpers
+# --------------------------------------------------------------------------------------
+
+def save_all_players_data(
+    fantrax_players: list,
+    sofa_all_df: pd.DataFrame,
+    manager: "PlayerMappingManager",
+    data_dir: Path,
+    code_mappings: dict,
+    club_mappings: dict,
+) -> dict:
+    """
+    Save all Fantrax and SofaScore players in separate files with match information.
+    
+    Args:
+        fantrax_players: List of Fantrax player objects
+        sofa_all_df: DataFrame with all SofaScore/ESD players
+        manager: PlayerMappingManager instance
+        data_dir: Base data directory
+        code_mappings: Team code mappings
+        club_mappings: Club team mappings
+        
+    Returns:
+        Dict with written file paths
+    """
+    silver_dir = data_dir / "silver"
+    silver_dir.mkdir(parents=True, exist_ok=True)
+    
+    ts = get_pacific_timestamp()
+    written = {}
+    
+    # 1. Save all Fantrax players with match info
+    fantrax_data = []
+    missing_team_count = 0
+    processed_count = 0
+    
+    logging.info(f"Starting export of {len(fantrax_players)} Fantrax players...")
+    
+    # CRITICAL DEBUG: Check if Moises Caicedo is in the input fantrax_players
+    caicedo_in_input = False
+    for player in fantrax_players:
+        if player.id == "05rb8" or "Caicedo" in player.name:
+            logging.info(f"✅ MOISES CAICEDO FOUND in input fantrax_players: ID={player.id}, Name={player.name}")
+            caicedo_in_input = True
+            break
+    
+    if not caicedo_in_input:
+        logging.error("❌ MOISES CAICEDO NOT FOUND in input fantrax_players to save_all_players_data!")
+    
+    for player in fantrax_players:
+        processed_count += 1
+        
+        # Debug: Log every 100th player to track progress
+        if processed_count % 100 == 0:
+            logging.info(f"Processing player {processed_count}/{len(fantrax_players)}: {player.name} (ID: {player.id})")
+        
+        # CRITICAL DEBUG: Log when we process Moises Caicedo
+        if player.id == "05rb8" or "Caicedo" in player.name:
+            logging.info(f"🔍 PROCESSING MOISES CAICEDO: ID={player.id}, Name={player.name}, Team={getattr(player, 'team', 'NO_TEAM')}, Position={getattr(player, 'position', 'NO_POSITION')}")
+        
+        try:
+            mapping = manager.get_by_fantrax_id(player.id)
+            has_sofascore_match = bool(mapping and mapping.sofascore_id)
+            
+            # Debug: Check for players with missing team info
+            player_team = getattr(player, "team", "")
+            if not player_team:
+                missing_team_count += 1
+                if missing_team_count <= 5:  # Log first 5 missing team cases
+                    logging.warning(f"Player {player.name} (ID: {player.id}) has no team info. Player object: {vars(player)}")
+            
+            player_data = {
+                "fantrax_id": player.id,
+                "player_name": player.name,
+                "team": player_team,
+                "team_code": standardize_team(player_team or "", code_mappings, club_mappings),
+                "position": getattr(player, "position", ""),
+                "has_sofascore_match": has_sofascore_match,
+                "sofascore_id": mapping.sofascore_id if mapping else None,
+                "sofascore_name": mapping.sofascore_name if mapping else None,
+            }
+            
+            # CRITICAL DEBUG: Log the created player_data for Moises Caicedo
+            if player.id == "05rb8" or "Caicedo" in player.name:
+                logging.info(f"🔍 CREATED player_data for Moises Caicedo: {player_data}")
+            
+            fantrax_data.append(player_data)
+            
+        except Exception as e:
+            logging.error(f"Error processing player {player.name} (ID: {player.id}): {e}")
+            logging.error(f"Player object: {vars(player)}")
+            # Still add the player with basic info to avoid losing them
+            fantrax_data.append({
+                "fantrax_id": player.id,
+                "player_name": player.name,
+                "team": getattr(player, "team", ""),
+                "team_code": "",
+                "position": getattr(player, "position", ""),
+                "has_sofascore_match": False,
+                "sofascore_id": None,
+                "sofascore_name": None,
+            })
+    
+    logging.info(f"Successfully processed {len(fantrax_data)} players for export")
+    
+    # CRITICAL DEBUG: Check if Moises Caicedo made it into fantrax_data
+    caicedo_in_output = False
+    for player_data in fantrax_data:
+        if player_data["fantrax_id"] == "05rb8" or "Caicedo" in player_data["player_name"]:
+            logging.info(f"✅ MOISES CAICEDO FOUND in fantrax_data output: {player_data}")
+            caicedo_in_output = True
+            break
+    
+    if not caicedo_in_output:
+        logging.error("❌ MOISES CAICEDO NOT FOUND in fantrax_data output!")
+    
+    if missing_team_count > 0:
+        logging.warning(f"Total players with missing team info: {missing_team_count}")
+    
+    fantrax_df = pd.DataFrame(fantrax_data)
+    fantrax_file = silver_dir / f"fantrax_all_players_{ts}.csv"
+    fantrax_df.to_csv(fantrax_file, index=False)
+    written["fantrax_all"] = str(fantrax_file)
+    
+    # Also save as parquet for better performance
+    fantrax_parquet = silver_dir / f"fantrax_all_players_{ts}.parquet"
+    fantrax_df.to_parquet(fantrax_parquet, index=False)
+    written["fantrax_all_parquet"] = str(fantrax_parquet)
+    
+    # 2. Save all SofaScore/ESD players with match info
+    if not sofa_all_df.empty:
+        # Get all Fantrax IDs that have SofaScore matches
+        matched_sofa_ids = set()
+        for player in fantrax_players:
+            mapping = manager.get_by_fantrax_id(player.id)
+            if mapping and mapping.sofascore_id:
+                matched_sofa_ids.add(int(mapping.sofascore_id))
+        
+        # Add match info to SofaScore data
+        sofa_data = sofa_all_df.copy()
+        sofa_data["has_fantrax_match"] = sofa_data["player_id"].isin(matched_sofa_ids)
+        
+        # Get Fantrax info for matched players
+        sofa_data["fantrax_id"] = None
+        sofa_data["fantrax_name"] = None
+        
+        for idx, row in sofa_data.iterrows():
+            if row["has_fantrax_match"]:
+                # Find the mapping for this SofaScore ID
+                for player in fantrax_players:
+                    mapping = manager.get_by_fantrax_id(player.id)
+                    if mapping and mapping.sofascore_id == row["player_id"]:
+                        sofa_data.at[idx, "fantrax_id"] = player.id
+                        sofa_data.at[idx, "fantrax_name"] = player.name
+                        break
+        
+        sofa_file = silver_dir / f"sofascore_all_players_{ts}.csv"
+        sofa_data.to_csv(sofa_file, index=False)
+        written["sofascore_all"] = str(sofa_file)
+        
+        # Also save as parquet
+        sofa_parquet = silver_dir / f"sofascore_all_players_{ts}.parquet"
+        sofa_data.to_parquet(sofa_parquet, index=False)
+        written["sofascore_all_parquet"] = str(sofa_parquet)
+    else:
+        # Create empty DataFrame with proper columns if no SofaScore data
+        empty_sofa = pd.DataFrame(columns=[
+            "player_id", "player_name", "team_name", "team_code", "source",
+            "has_fantrax_match", "fantrax_id", "fantrax_name"
+        ])
+        sofa_file = silver_dir / f"sofascore_all_players_{ts}.csv"
+        empty_sofa.to_csv(sofa_file, index=False)
+        written["sofascore_all"] = str(sofa_file)
+        
+        sofa_parquet = silver_dir / f"sofascore_all_players_{ts}.parquet"
+        empty_sofa.to_parquet(sofa_parquet, index=False)
+        written["sofascore_all_parquet"] = str(sofa_parquet)
+    
+    # 3. Save summary statistics
+    # Ensure we have the required variables defined
+    if not sofa_all_df.empty:
+        sofa_data = sofa_all_df.copy()
+        sofa_data["has_fantrax_match"] = False  # Default value
+        # Get all Fantrax IDs that have SofaScore matches
+        matched_sofa_ids = set()
+        for player in fantrax_players:
+            mapping = manager.get_by_fantrax_id(player.id)
+            if mapping and mapping.sofascore_id:
+                matched_sofa_ids.add(int(mapping.sofascore_id))
+        
+        # Add match info to SofaScore data
+        sofa_data["has_fantrax_match"] = sofa_data["player_id"].isin(matched_sofa_ids)
+    else:
+        # Create empty DataFrame with proper columns if no SofaScore data
+        sofa_data = pd.DataFrame(columns=[
+            "player_id", "player_name", "team_name", "team_code", "source",
+            "has_fantrax_match", "fantrax_id", "fantrax_name"
+        ])
+    
+    summary_stats = {
+        "timestamp_pacific": ts,
+        "total_fantrax_players": int(len(fantrax_players)),
+        "total_sofascore_players": int(len(sofa_all_df)) if not sofa_all_df.empty else 0,
+        "fantrax_with_sofascore_match": int(fantrax_df["has_sofascore_match"].sum()),
+        "fantrax_without_sofascore_match": int((~fantrax_df["has_sofascore_match"]).sum()),
+        "sofascore_with_fantrax_match": int(sofa_data["has_fantrax_match"].sum()) if not sofa_data.empty else 0,
+        "sofascore_without_fantrax_match": int((~sofa_data["has_fantrax_match"]).sum()) if not sofa_data.empty else 0,
+        "match_rate_fantrax": f"{fantrax_df['has_sofascore_match'].sum() / len(fantrax_players) * 100:.1f}%",
+        "match_rate_sofascore": f"{sofa_data['has_fantrax_match'].sum() / len(sofa_data) * 100:.1f}%" if not sofa_data.empty else "N/A",
+    }
+    
+    summary_file = silver_dir / f"player_mapping_summary_{ts}.json"
+    with summary_file.open("w", encoding="utf-8") as f:
+        json.dump(summary_stats, f, ensure_ascii=False, indent=2)
+    written["summary"] = str(summary_file)
+    
+    return written
+
+# --------------------------------------------------------------------------------------
+# Unmatched reporting helpers
+# --------------------------------------------------------------------------------------
+
+def write_unmatched_reports(
+    fantrax_unmatched_rows: list[dict],
+    sofascore_unmatched_df: pd.DataFrame,
+    report_dir: Path,
+    report_format: str = "both"
+) -> dict:
+    """
+    Write unmatched reports to disk. Returns dict with written file paths.
+    """
+    report_dir.mkdir(parents=True, exist_ok=True)
+    ts = get_pacific_timestamp()
+
+    written = {}
+
+    # CSV outputs
+    if report_format in ("csv", "both"):
+        ft_csv = report_dir / f"fantrax_without_sofascore_{ts}.csv"
+        ss_csv = report_dir / f"sofascore_without_fantrax_{ts}.csv"
+        pd.DataFrame(fantrax_unmatched_rows).to_csv(ft_csv, index=False)
+        (sofascore_unmatched_df if not sofascore_unmatched_df.empty else pd.DataFrame(columns=["player_id","player_name","team_code","source"])).to_csv(ss_csv, index=False)
+        written["fantrax_csv"] = str(ft_csv)
+        written["sofascore_csv"] = str(ss_csv)
+
+    # JSON output (single file with both lists)
+    if report_format in ("json", "both"):
+        json_path = report_dir / f"unmatched_report_{ts}.json"
+        payload = {
+            "fantrax_without_sofascore": fantrax_unmatched_rows,
+            "sofascore_without_fantrax": (
+                sofascore_unmatched_df.to_dict(orient="records")
+                if not sofascore_unmatched_df.empty else []
+            ),
+            "generated_at_pacific": datetime.now(pytz.timezone('America/Los_Angeles')).strftime("%Y-%m-%d %I:%M:%S %p %Z"),
+        }
+        with json_path.open("w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        written["json"] = str(json_path)
+
+    return written
+
+# --------------------------------------------------------------------------------------
 # Main mapping pipeline
 # --------------------------------------------------------------------------------------
 
@@ -582,10 +880,20 @@ def update_mappings(
     season_text: str | None = None,
     season_id: int | None = None,
     browser_path: str | None = None,
+    # NEW: reports
+    report_dir: Path | None = None,
+    report_format: str = "both",  # csv | json | both
+    # NEW: display name options
+    skip_display_name_update: bool = False,
+    # NEW: data export options
+    skip_player_data_export: bool = False,
+    # NEW: performance options
+    fast_mode: bool = False,
 ) -> None:
     """
     Update player mappings from various sources.
     Optionally merges full ESD rosters for comprehensive matching.
+    After processing, emit unmatched reports (Fantrax↔SofaScore/ESD).
     """
     setup_logging(data_dir)
 
@@ -646,15 +954,22 @@ def update_mappings(
         else:
             logging.warning("ESD roster dataframe is empty; proceeding without it.")
 
-    # Combined Sofa pool for matching
+    # Combined Sofa pool for matching (+ source tag)
     if not esd_df.empty and not sofascore_df.empty:
-        sofa_all_df = pd.concat([sofascore_df[["player_id", "player_name", "team_code"]],
-                                 esd_df[["player_id", "player_name", "team_code"]]], ignore_index=True)
+        a = sofascore_df[["player_id", "player_name", "team_code"]].copy()
+        a["source"] = "ratings"
+        b = esd_df[["player_id", "player_name", "team_code"]].copy()
+        b["source"] = "esd"
+        sofa_all_df = pd.concat([a, b], ignore_index=True)
         sofa_all_df = sofa_all_df.drop_duplicates(subset=["player_id"]).reset_index(drop=True)
     elif not esd_df.empty:
         sofa_all_df = esd_df[["player_id", "player_name", "team_code"]].copy()
+        sofa_all_df["source"] = "esd"
     else:
-        sofa_all_df = sofascore_df[["player_id", "player_name", "team_code"]].copy() if not sofascore_df.empty else pd.DataFrame()
+        sofa_all_df = (sofascore_df[["player_id", "player_name", "team_code"]].copy()
+                       if not sofascore_df.empty else pd.DataFrame(columns=["player_id","player_name","team_code"]))
+        if not sofa_all_df.empty:
+            sofa_all_df["source"] = "ratings"
 
     stats = {
         "total_players": len(fantrax_players),
@@ -678,7 +993,6 @@ def update_mappings(
 
     # Build quick lookup from Sofa pool name -> id (may be multiple; keep first)
     if not sofa_all_df.empty:
-        # normalize keys for safety
         sofa_name_index = {}
         for _, r in sofa_all_df.iterrows():
             key = (r["player_name"], r["team_code"])
@@ -693,7 +1007,7 @@ def update_mappings(
         # Start player log entry
         player_log.debug(f"\n{'='*80}\nProcessing Fantrax Player: {player.name} (ID: {player.id})")
         player_log.debug(f"Team: {player.team}, Position: {player.position}")
-        if player.first_name and player.last_name:
+        if getattr(player, "first_name", None) and getattr(player, "last_name", None):
             player_log.debug(f"Full name: {player.first_name} {player.last_name}")
 
         mapping = manager.get_by_fantrax_id(player.id)
@@ -711,6 +1025,7 @@ def update_mappings(
                 player_log.debug(f"  - Other names: {', '.join(mapping.other_names)}")
             if mapping.ffscout_name and mapping.sofascore_id:
                 player_log.debug("  ✓ Complete mapping found, skipping further processing")
+                manager.add_mapping(mapping)
                 continue
         else:
             mapping = PlayerMapping(
@@ -727,7 +1042,7 @@ def update_mappings(
         stats["no_ffscout_match"] += 1
         stats["no_sofascore_match"] += 1
 
-        if player.first_name and player.last_name:
+        if getattr(player, "first_name", None) and getattr(player, "last_name", None):
             mapping.other_names.extend([
                 f"{player.first_name} {player.last_name}",
                 f"{player.last_name}, {player.first_name}",
@@ -775,15 +1090,6 @@ def update_mappings(
                         player_log.debug("No FFScout matches found with score >= 75")
                         unmatched_players.append((player, mapping, ("ffscout", [])))
 
-            if mapping.ffscout_name:
-                display_names = ffscout_df[
-                    ffscout_df["player_full_from_title"] == mapping.ffscout_name
-                ]["player_display"]
-                if not display_names.empty:
-                    display_name = display_names.iloc[0]
-                    if display_name and display_name != mapping.ffscout_name:
-                        mapping.other_names.append(display_name)
-
         # SofaScore (ratings list + ESD rosters merged)
         if not sofa_all_df.empty and not mapping.sofascore_id:
             sofa_candidates = [(row["player_name"], row["team_code"]) for _, row in sofa_all_df.iterrows()]
@@ -798,14 +1104,11 @@ def update_mappings(
                 best_score = matches[0][1]
                 if best_score >= 95:
                     match_name = matches[0][0]
-                    # get id by (name, team_code) if available; fallback to name-only first match
                     std_tc = matches[0][3]
-                    # try exact key
                     pid = None
                     if 'sofa_name_index' in locals():
                         pid = sofa_name_index.get((match_name, std_tc))
                         if pid is None:
-                            # fallback: first matching name (could collide across teams in rare cases)
                             subset = sofa_all_df[sofa_all_df["player_name"] == match_name]
                             if not subset.empty:
                                 pid = int(subset.iloc[0]["player_id"])
@@ -869,15 +1172,10 @@ def update_mappings(
                                 stats["ffscout_matches"] += 1
                                 stats["ffscout_manual_matches"] += 1
                                 stats["no_ffscout_match"] -= 1
-                                player_log.debug(f"Manual FFScout match accepted:")
-                                player_log.debug(f"  - Name: {match_name}")
-                                player_log.debug(f"  - Team: {matches[choice-1][3]}")
-                                player_log.debug(f"  - Match Score: {matches[choice-1][1]}")
                                 logging.info(f"Manual FFScout match: {player.name} -> {match_name} ({matches[choice-1][3]}) [score: {matches[choice-1][1]}]")
                             else:
                                 # SofaScore id lookup, considering merged pool
                                 pid = None
-                                # Prefer exact (name, team) match
                                 if not sofa_all_df.empty:
                                     exact = sofa_all_df[
                                         (sofa_all_df["player_name"] == match_name) &
@@ -895,11 +1193,6 @@ def update_mappings(
                                     stats["sofascore_matches"] += 1
                                     stats["sofascore_manual_matches"] += 1
                                     stats["no_sofascore_match"] -= 1
-                                    player_log.debug(f"Manual SofaScore match accepted:")
-                                    player_log.debug(f"  - Name: {match_name}")
-                                    player_log.debug(f"  - Team: {matches[choice-1][3]}")
-                                    player_log.debug(f"  - ID: {pid}")
-                                    player_log.debug(f"  - Match Score: {matches[choice-1][1]}")
                                     logging.info(f"Manual SofaScore match: {player.name} -> {match_name} [{pid}] ({matches[choice-1][3]}) [score: {matches[choice-1][1]}]")
                         break
                 except ValueError:
@@ -928,8 +1221,237 @@ def update_mappings(
     logging.info(f"SofaScore match rate: {stats['sofascore_matches']/stats['total_players']*100:.1f}%")
     logging.info("=" * 50)
 
+    # Save mappings
     manager.save_mappings()
     logging.info(f"\nSaved mappings to: {output_file}")
+
+    # Update all display names using the new smart selection logic
+    if not skip_display_name_update and not fast_mode:
+        logging.info("\nUpdating display names for all mappings...")
+        manager.update_all_display_names()
+    elif skip_display_name_update:
+        logging.info("\nSkipping display name updates as requested")
+    elif fast_mode:
+        logging.info("\nSkipping display name updates in fast mode")
+
+    # ----------------------------------------------------------------------------------
+    # NEW: Unmatched reporting (Fantrax without SofaScore, and vice versa)
+    # ----------------------------------------------------------------------------------
+    # Recompute unmatched after manual phase (use final manager state)
+    report_dir = report_dir or (data_dir / "reports" / "unmatched")
+
+    # 1) Fantrax players with no sofascore match
+    fantrax_unmatched_rows = []
+    for player in fantrax_players:
+        m = manager.get_by_fantrax_id(player.id)
+        if not m or not m.sofascore_id:
+            std_team = standardize_team(getattr(player, "team", "") or "", code_mappings, club_mappings)
+            fantrax_unmatched_rows.append({
+                "fantrax_id": player.id,
+                "fantrax_name": player.name,
+                "team": getattr(player, "team", ""),
+                "team_code": std_team,
+                "position": getattr(player, "position", ""),
+            })
+
+    # 2) SofaScore/ESD players with no Fantrax mapping
+    matched_sofa_ids = set()
+    for player in fantrax_players:
+        m = manager.get_by_fantrax_id(player.id)
+        if m and m.sofascore_id:
+            matched_sofa_ids.add(int(m.sofascore_id))
+    if not sofa_all_df.empty:
+        sofascore_unmatched_df = sofa_all_df[~sofa_all_df["player_id"].isin(matched_sofa_ids)].drop_duplicates(subset=["player_id"]).reset_index(drop=True)
+    else:
+        sofascore_unmatched_df = pd.DataFrame(columns=["player_id", "player_name", "team_code", "source"])
+
+    written = write_unmatched_reports(
+        fantrax_unmatched_rows=fantrax_unmatched_rows,
+        sofascore_unmatched_df=sofascore_unmatched_df,
+        report_dir=report_dir,
+        report_format=report_format.lower(),
+    )
+
+    logging.info("\nUnmatched reporting complete:")
+    logging.info(f"  Fantrax without SofaScore: {len(fantrax_unmatched_rows)}")
+    logging.info(f"  SofaScore/ESD without Fantrax: {0 if sofascore_unmatched_df.empty else len(sofascore_unmatched_df)}")
+    if "fantrax_csv" in written:
+        logging.info(f"  CSV (Fantrax→No SofaScore): {written['fantrax_csv']}")
+    if "sofascore_csv" in written:
+        logging.info(f"  CSV (SofaScore→No Fantrax): {written['sofascore_csv']}")
+    if "json" in written:
+        logging.info(f"  JSON (combined): {written['json']}")
+
+    # ----------------------------------------------------------------------------------
+    # NEW: Export all players data with match information
+    # ----------------------------------------------------------------------------------
+    if not skip_player_data_export and not fast_mode:
+        logging.info("\nExporting all players data...")
+        player_data_files = save_all_players_data(
+            fantrax_players=fantrax_players,
+            sofa_all_df=sofa_all_df,
+            manager=manager,
+            data_dir=data_dir,
+            code_mappings=code_mappings,
+            club_mappings=club_mappings,
+        )
+        
+        logging.info("Player data export complete:")
+        logging.info(f"  Fantrax all players: {player_data_files['fantrax_all']}")
+        logging.info(f"  Summary statistics: {player_data_files['summary']}")
+        logging.info(f"  Parquet files also saved for better performance")
+    elif skip_player_data_export:
+        logging.info("\nSkipping player data export as requested")
+    elif fast_mode:
+        logging.info("\nSkipping player data export in fast mode")
+
+# --------------------------------------------------------------------------------------
+# Standalone functions
+# --------------------------------------------------------------------------------------
+
+def update_display_names_only(
+    output_file: Path,
+    config_dir: Path = Path("config"),
+) -> None:
+    """
+    Update display names for existing mappings without running the full mapping process.
+    This is useful when you want to refresh display names after manual edits.
+    """
+    setup_logging(Path("data"))
+    
+    manager = PlayerMappingManager(str(output_file))
+    logging.info(f"Initialized player mapping manager with {output_file}")
+    
+    # Update all display names using the new smart selection logic
+    logging.info("Updating display names for all existing mappings...")
+    manager.update_all_display_names()
+    
+    logging.info("Display name update complete!")
+
+def export_player_data_only(
+    output_file: Path,
+    data_dir: Path,
+    config_dir: Path = Path("config"),
+) -> None:
+    """
+    Export all players data from existing mappings without running the full mapping process.
+    This is useful when you want to refresh the data export after manual edits.
+    """
+    setup_logging(data_dir)
+    
+    manager = PlayerMappingManager(str(output_file))
+    logging.info(f"Initialized player mapping manager with {output_file}")
+    
+    # Load team mappings
+    code_mappings, club_mappings = load_team_mappings(config_dir)
+    
+    # IMPORTANT: We need to fetch fresh Fantrax data to get team/position info
+    # Create a session and fetch real Fantrax players
+    import requests
+    session = requests.Session()
+    try:
+        with open("fantraxloggedin.cookie", "rb") as f:
+            import pickle
+            cookies = pickle.load(f)
+            for cookie in cookies:
+                session.cookies.set(cookie["name"], cookie["value"])
+            logging.info("Loaded Fantrax session cookies")
+    except FileNotFoundError:
+        logging.error("Cookie file not found. Please run bootstrap_cookie.py first")
+        return
+    
+    # Fetch fresh Fantrax data to get complete player info including teams
+    logging.info("Fetching fresh Fantrax data to get complete player information...")
+    from fantraxapi.fantrax import FantraxAPI
+    api = FantraxAPI("o90qdw15mc719reh", session=session)
+    fantrax_players = api.get_all_players()
+    logging.info(f"Fetched {len(fantrax_players)} players with complete team/position data")
+    
+    # CRITICAL DEBUG: Check if Moises Caicedo is in the fetched players
+    caicedo_found = False
+    for player in fantrax_players:
+        if player.id == "05rb8" or "Caicedo" in player.name:
+            logging.info(f"✅ FOUND MOISES CAICEDO in fantrax_players: ID={player.id}, Name={player.name}, Team={getattr(player, 'team', 'NO_TEAM')}, Position={getattr(player, 'position', 'NO_POSITION')}")
+            caicedo_found = True
+            break
+    
+    if not caicedo_found:
+        logging.error("❌ MOISES CAICEDO NOT FOUND in fantrax_players after API call!")
+        logging.error("This means the issue is in Player object creation in get_all_players()")
+    
+    # Log sample of first few players to verify data structure
+    logging.info("Sample of first 5 players from fantrax_players:")
+    for i, player in enumerate(fantrax_players[:5]):
+        logging.info(f"  Player {i+1}: ID={player.id}, Name={player.name}, Team={getattr(player, 'team', 'NO_TEAM')}, Position={getattr(player, 'position', 'NO_POSITION')}")
+    
+    # Create empty SofaScore DataFrame since we don't have fresh data
+    sofa_all_df = pd.DataFrame(columns=["player_id", "player_name", "team_name", "team_code", "source"])
+    
+    # Export the data
+    logging.info("Exporting all players data with fresh Fantrax data...")
+    player_data_files = save_all_players_data(
+        fantrax_players=fantrax_players,
+        sofa_all_df=sofa_all_df,
+        manager=manager,
+        data_dir=data_dir,
+        code_mappings=code_mappings,
+        club_mappings=club_mappings,
+    )
+    
+    # Also generate unmatched reports (Fantrax without SofaScore, SofaScore without Fantrax)
+    logging.info("Generating unmatched reports...")
+    
+    # 1) Fantrax players with no sofascore match
+    fantrax_unmatched_rows = []
+    for player in fantrax_players:
+        m = manager.get_by_fantrax_id(player.id)
+        if not m or not m.sofascore_id:
+            std_team = standardize_team(getattr(player, "team", "") or "", code_mappings, club_mappings)
+            fantrax_unmatched_rows.append({
+                "fantrax_id": player.id,
+                "fantrax_name": player.name,
+                "team": getattr(player, "team", ""),
+                "team_code": std_team,
+                "position": getattr(player, "position", ""),
+            })
+
+    # 2) SofaScore/ESD players with no Fantrax mapping
+    matched_sofa_ids = set()
+    for player in fantrax_players:
+        m = manager.get_by_fantrax_id(player.id)
+        if m and m.sofascore_id:
+            matched_sofa_ids.add(int(m.sofascore_id))
+    
+    if not sofa_all_df.empty:
+        sofascore_unmatched_df = sofa_all_df[~sofa_all_df["player_id"].isin(matched_sofa_ids)].drop_duplicates(subset=["player_id"]).reset_index(drop=True)
+    else:
+        sofascore_unmatched_df = pd.DataFrame(columns=["player_id", "player_name", "team_code", "source"])
+
+    # Write unmatched reports
+    report_dir = data_dir / "reports" / "unmatched"
+    unmatched_files = write_unmatched_reports(
+        fantrax_unmatched_rows=fantrax_unmatched_rows,
+        sofascore_unmatched_df=sofascore_unmatched_df,
+        report_dir=report_dir,
+        report_format="both",
+    )
+    
+    logging.info("Player data export complete:")
+    logging.info(f"  Fantrax all players: {player_data_files['fantrax_all']}")
+    logging.info(f"  SofaScore all players: {player_data_files['sofascore_all']}")
+    logging.info(f"  Summary statistics: {player_data_files['summary']}")
+    
+    logging.info("\nUnmatched reporting complete:")
+    logging.info(f"  Fantrax without SofaScore: {len(fantrax_unmatched_rows)}")
+    logging.info(f"  SofaScore/ESD without Fantrax: {0 if sofascore_unmatched_df.empty else len(sofascore_unmatched_df)}")
+    if "fantrax_csv" in unmatched_files:
+        logging.info(f"  CSV (Fantrax→No SofaScore): {unmatched_files['fantrax_csv']}")
+    if "sofascore_csv" in unmatched_files:
+        logging.info(f"  CSV (SofaScore→No Fantrax): {unmatched_files['sofascore_csv']}")
+    if "json" in unmatched_files:
+        logging.info(f"  JSON (combined): {unmatched_files['json']}")
+
+
 
 # --------------------------------------------------------------------------------------
 # CLI
@@ -940,8 +1462,13 @@ def main():
     LEAGUE_ID = "o90qdw15mc719reh"
 
     parser = argparse.ArgumentParser(description="Update player mappings from various sources")
+    parser.add_argument("--display-names-only", action="store_true",
+                        help="Only update display names for existing mappings (skip full mapping process)")
+    parser.add_argument("--export-player-data-only", action="store_true",
+                        help="Only export all players data from existing mappings (skip full mapping process)")
     parser.add_argument("--data-dir", type=str, default="/Users/hogan/FantraxAPI/data", help="Directory containing data files")
     parser.add_argument("--output", type=str, default="config/player_mappings.yaml", help="Output YAML file for mappings")
+    parser.add_argument("--config-dir", type=str, default="config", help="Directory containing config files")
     parser.add_argument("--cookie-file", type=str, default="fantraxloggedin.cookie", help="Path to cookie file")
     parser.add_argument("--noninteractive", action="store_true", help="Skip interactive prompts for uncertain matches")
     parser.add_argument("--force-refresh", action="store_true", help="Force refresh of SofaScore/ESD data, ignoring cache")
@@ -954,7 +1481,42 @@ def main():
     parser.add_argument("--season-id", type=int, default=None, help="Explicit season_id (overrides --season)")
     parser.add_argument("--browser-path", type=str, default="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
                         help="Path to Chrome/Chromium if ESD needs it")
+
+    # NEW: reporting options
+    parser.add_argument("--report-dir", type=str, default=None,
+                        help="Output directory for unmatched reports (default: <data-dir>/reports/unmatched)")
+    parser.add_argument("--report-format", type=str, default="both", choices=["csv","json","both"],
+                        help="Report format for unmatched outputs (default: both)")
+    
+    # NEW: display name options
+    parser.add_argument("--skip-display-name-update", action="store_true",
+                        help="Skip updating display names for existing mappings")
+    
+    # NEW: data export options
+    parser.add_argument("--skip-player-data-export", action="store_true",
+                        help="Skip exporting all players data to CSV/parquet files")
+    
+    # NEW: performance options
+    parser.add_argument("--fast-mode", action="store_true",
+                        help="Skip expensive operations (display name updates, data export) for faster execution")
+
     args = parser.parse_args()
+
+    # Handle standalone modes
+    if args.display_names_only:
+        update_display_names_only(
+            output_file=Path(args.output),
+            config_dir=Path(args.config_dir),
+        )
+        return
+    
+    if args.export_player_data_only:
+        export_player_data_only(
+            output_file=Path(args.output),
+            data_dir=Path(args.data_dir),
+            config_dir=Path(args.config_dir),
+        )
+        return
 
     update_mappings(
         LEAGUE_ID,
@@ -962,6 +1524,7 @@ def main():
         Path(args.output),
         args.cookie_file,
         not args.noninteractive,
+        Path(args.config_dir),
         force_refresh=args.force_refresh,
         # ESD
         use_esd=args.use_esd,
@@ -969,6 +1532,15 @@ def main():
         season_text=args.season,
         season_id=args.season_id,
         browser_path=args.browser_path,
+        # reports
+        report_dir=(Path(args.report_dir) if args.report_dir else None),
+        report_format=args.report_format,
+        # display names
+        skip_display_name_update=args.skip_display_name_update,
+        # data export
+        skip_player_data_export=args.skip_player_data_export,
+        # performance
+        fast_mode=args.fast_mode,
     )
 
 if __name__ == "__main__":

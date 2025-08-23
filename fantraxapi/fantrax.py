@@ -197,6 +197,17 @@ class FantraxAPI:
     def roster_info(self, team_id):
         return Roster(self, self._request("getTeamRosterInfo", teamId=team_id), team_id)
         
+    def _extract_rows(self, stats_table):
+        """Helper method to extract rows from statsTable, handling both dict and list shapes."""
+        rows = []
+        if isinstance(stats_table, dict):
+            rows = stats_table.get("rows") or stats_table.get("data") or []
+        elif isinstance(stats_table, list):
+            # The statsTable is a list of player objects, each with a 'scorer' key
+            # Each item in the list is already a player row
+            rows = stats_table
+        return rows
+
     def get_all_players(self, debug: bool = False) -> List[Player]:
         """
         Get all players available in Fantrax.
@@ -208,12 +219,15 @@ class FantraxAPI:
             List of Player objects
         """
         # Get all players using the player stats endpoint (supports pagination)
+        # Use maxResultsPerPage=500 to reduce pagination overhead
         response = self._request(
             "getPlayerStats",
             miscDisplayType="1",  # Standard display
             pageNumber="1",  # First page
             statusOrTeamFilter="ALL",  # Get all players, not just available
-            view="STATS"  # Include stats view
+            view="STATS",  # Include stats view
+            positionOrGroup="ALL",  # Ensure all position groups are included
+            maxResultsPerPage="500"  # Reduce pagination overhead
         )
         
         if debug:
@@ -244,66 +258,41 @@ class FantraxAPI:
                                     cell_keys.append(list(c.keys()))
                                 else:
                                     cell_keys.append(type(c).__name__)
-                            print(f"First 3 cells key sets: {cell_keys}")
-            if "paginatedResultSet" in response and isinstance(response["paginatedResultSet"], dict):
-                prs = response["paginatedResultSet"]
-                print(f"paginatedResultSet keys: {list(prs.keys())}")
-            if "tableHeader" in response:
-                th = response["tableHeader"]
-                if isinstance(th, dict):
-                    print(f"tableHeader keys: {list(th.keys())}")
-                    for k in ("columns", "rows", "headers"):
-                        if k in th:
-                            try:
-                                print(f"tableHeader.{k} length: {len(th[k])}")
-                            except Exception:
-                                pass
+                            for k in ("columns", "rows", "headers"):
+                                if k in th:
+                                    try:
+                                        print(f"tableHeader.{k} length: {len(th[k])}")
+                                    except Exception:
+                                        pass
                 elif isinstance(th, list):
                     print(f"tableHeader length: {len(th)}")
         
-        # Extract player rows robustly from various possible shapes
-        players = []
-        rows = []
-
-        stats_table = response.get("statsTable")
-        if isinstance(stats_table, dict):
-            rows = stats_table.get("rows") or stats_table.get("data") or []
-        elif isinstance(stats_table, list):
-            aggregated_rows = []
-            for item in stats_table:
-                if isinstance(item, dict):
-                    if "rows" in item and isinstance(item["rows"], list):
-                        aggregated_rows.extend(item["rows"])
-                    elif "data" in item and isinstance(item["data"], list):
-                        aggregated_rows.extend(item["data"])
-                elif isinstance(item, list):
-                    aggregated_rows.extend(item)
-            rows = aggregated_rows
-
-        # Fallback: try paginatedResultSet common shapes
+        # Extract player rows robustly from first page
+        rows = self._extract_rows(response.get("statsTable"))
+        
+        # Fallback: try paginatedResultSet common shapes if statsTable is empty
         if not rows:
-            prs = response.get("paginatedResultSet")
-            if isinstance(prs, dict):
-                for key in ("results", "rows", "data", "items"):  # try common keys
-                    candidate = prs.get(key)
-                    if isinstance(candidate, list) and candidate:
-                        rows = candidate
-                        break
+            prs = response.get("paginatedResultSet") or {}
+            for key in ("results", "rows", "data", "items"):  # try common keys
+                candidate = prs.get(key)
+                if isinstance(candidate, list) and candidate:
+                    rows = candidate
+                    break
 
         if debug and rows:
             print(f"Total extracted rows (page 1): {len(rows)}")
             print(f"Sample row keys: {list(rows[0].keys())}")
 
-        # If paginated, fetch remaining pages
-        prs = response.get("paginatedResultSet")
+        # If paginated, fetch remaining pages with proper row extraction
+        prs = response.get("paginatedResultSet") or {}
         total_pages = 1
-        if isinstance(prs, dict):
-            try:
-                total_pages = int(prs.get("totalNumPages") or 1)
-            except Exception:
-                total_pages = 1
+        try:
+            total_pages = int(prs.get("totalNumPages") or 1)
+        except Exception:
+            total_pages = 1
 
         if total_pages > 1:
+            logger.info(f"Fetching {total_pages} total pages...")
             for page_num in range(2, total_pages + 1):
                 page_resp = self._request(
                     "getPlayerStats",
@@ -311,20 +300,32 @@ class FantraxAPI:
                     pageNumber=str(page_num),
                     statusOrTeamFilter="ALL",
                     view="STATS",
+                    positionOrGroup="ALL",  # Ensure all position groups are included
+                    maxResultsPerPage="500"  # Reduce pagination overhead
                 )
-                page_stats = page_resp.get("statsTable")
-                if isinstance(page_stats, dict):
-                    page_rows = page_stats.get("rows") or page_stats.get("data") or []
-                elif isinstance(page_stats, list):
-                    page_rows = page_stats
-                else:
-                    page_rows = []
+                
+                # Use the same row extraction logic for consistency
+                page_rows = self._extract_rows(page_resp.get("statsTable"))
+                
+                # Fallback for paginatedResultSet if statsTable is empty
+                if not page_rows:
+                    prs2 = page_resp.get("paginatedResultSet") or {}
+                    for key in ("results", "rows", "data", "items"):
+                        if isinstance(prs2.get(key), list) and prs2[key]:
+                            page_rows = prs2[key]
+                            break
+                
                 if page_rows:
                     rows.extend(page_rows)
+                    logger.info(f"Page {page_num}: +{len(page_rows)} rows (total: {len(rows)})")
+                else:
+                    logger.warning(f"Page {page_num}: No rows extracted")
 
         if debug and rows:
             print(f"Total extracted rows (all pages): {len(rows)}")
 
+        # Build Player objects from all extracted rows
+        players = []
         for player_data in rows:
             if isinstance(player_data, dict):
                 # If rows are table cells shape, try to extract core player info from 'scorer'
@@ -333,6 +334,11 @@ class FantraxAPI:
                     pos_list = scorer.get("posShortNames") or scorer.get("pos") or []
                     if isinstance(pos_list, str):
                         pos_list = [pos_list]
+                    
+                    # Debug: Log the first few players to see what's happening
+                    if len(players) < 3:
+                        logger.debug(f"Creating player from scorer data: {scorer.get('name')} - {scorer.get('teamShortName')}")
+                    
                     player_dict = {
                         "id": scorer.get("scorerId") or scorer.get("playerId") or scorer.get("id") or scorer.get("pid"),
                         "name": scorer.get("name") or scorer.get("fullName") or scorer.get("playerName"),
@@ -344,10 +350,32 @@ class FantraxAPI:
                         "status": scorer.get("status") or scorer.get("statusId"),
                         "injuryStatus": scorer.get("injuryStatus"),
                     }
-                    players.append(Player(self, player_dict))
+                    
+                    # Debug: Log the created player_dict
+                    if len(players) < 3:
+                        logger.debug(f"Created player_dict: {player_dict}")
+                    
+                    try:
+                        player_obj = Player(self, player_dict)
+                        players.append(player_obj)
+                        
+                        # Debug: Verify the Player object was created correctly
+                        if len(players) < 3:
+                            logger.debug(f"Player object created: {player_obj.name} - {player_obj.team} - {player_obj.position}")
+                    except Exception as e:
+                        logger.error(f"Failed to create Player object for {scorer.get('name')}: {e}")
+                        logger.error(f"player_dict: {player_dict}")
                 else:
-                    players.append(Player(self, player_data))
-            
+                    try:
+                        players.append(Player(self, player_data))
+                    except Exception as e:
+                        logger.error(f"Failed to create Player object from raw data: {e}")
+                        logger.error(f"player_data: {player_data}")
+        
+        # Sanity checks
+        logger.info(f"Total players: {len(players)}")
+        logger.info(f"Contains Moises Caicedo (05rb8)? {any(p.id=='05rb8' for p in players)}")
+        
         return players
 
     # Lineup helpers

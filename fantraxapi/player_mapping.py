@@ -5,11 +5,13 @@ This module provides functionality to:
 1. Store and retrieve player name mappings
 2. Match player names from external sources to Fantrax IDs
 3. Normalize player names for consistent matching
+4. Highlight players that are not mapped
 """
 from pathlib import Path
 from typing import Dict, List, Optional
 import re
 import yaml
+import logging
 from pydantic import BaseModel, Field
 from unidecode import unidecode
 
@@ -60,9 +62,9 @@ class PlayerMappingManager:
         # Convert to list of dicts for YAML
         data = [m.model_dump() for m in self._mappings.values()]
         
-        # Save to file
-        with open(self.mapping_file, 'w') as f:
-            yaml.safe_dump(data, f, sort_keys=False)
+        # Save to file with UTF-8 encoding and no unnecessary escaping
+        with open(self.mapping_file, 'w', encoding='utf-8') as f:
+            yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True, default_flow_style=False)
     
     def add_mapping(self, mapping: PlayerMapping) -> None:
         """
@@ -73,11 +75,8 @@ class PlayerMappingManager:
         """
         # Generate display name if not provided
         if not mapping.display_name:
-            # Try SofaScore name first as it's usually cleaner
-            if mapping.sofascore_name:
-                mapping.display_name = self._get_display_name(mapping.sofascore_name)
-            else:
-                mapping.display_name = self._get_display_name(mapping.fantrax_name)
+            # Use the new smart display name selection that analyzes all sources
+            mapping.display_name = self._get_best_display_name(mapping)
                 
         self._mappings[mapping.fantrax_id] = mapping
         self.save_mappings()
@@ -166,6 +165,88 @@ class PlayerMappingManager:
             
         # Default to first name
         return parts[0]
+
+    def _get_best_display_name(self, mapping: PlayerMapping) -> str:
+        """
+        Analyze all available names from different sources and pick the best display name.
+        
+        Priority order:
+        1. Most common full name across all sources (preferred)
+        2. SofaScore name (usually cleanest)
+        3. FFScout name (often preferred/display names)
+        4. Fantrax name (fallback)
+        
+        Args:
+            mapping: PlayerMapping instance to analyze
+            
+        Returns:
+            Best display name string (preferably the most common full name)
+        """
+        # Collect all available names
+        all_names = []
+        if mapping.sofascore_name:
+            all_names.append(("sofascore", mapping.sofascore_name))
+        if mapping.ffscout_name:
+            all_names.append(("ffscout", mapping.ffscout_name))
+        if mapping.fantrax_name:
+            all_names.append(("fantrax", mapping.fantrax_name))
+        all_names.extend([("other", name) for name in mapping.other_names if name])
+        
+        if not all_names:
+            return mapping.fantrax_name or "Unknown"
+        
+        # Priority 1: Find the most common full name across all sources
+        if len(all_names) > 1:
+            name_counts = {}
+            for source, name in all_names:
+                # Normalize name for comparison (remove extra spaces, etc.)
+                normalized_name = " ".join(name.split())
+                name_counts[normalized_name] = name_counts.get(normalized_name, 0) + 1
+            
+            # If we have a clear winner (most common name), use it
+            if name_counts:
+                most_common_name = max(name_counts.items(), key=lambda x: x[1])[0]
+                most_common_count = name_counts[most_common_name]
+                
+                # If the most common name appears more than once, it's our winner
+                if most_common_count > 1:
+                    return most_common_name
+        
+        # Priority 2: SofaScore name (usually cleanest and most standardized)
+        if mapping.sofascore_name:
+            return mapping.sofascore_name
+        
+        # Priority 3: FFScout name (often preferred/display names)
+        if mapping.ffscout_name:
+            return mapping.ffscout_name
+        
+        # Priority 4: Fantrax name (fallback)
+        if mapping.fantrax_name:
+            return mapping.fantrax_name
+        
+        # Fallback to first available name
+        return all_names[0][1]
+
+    def update_all_display_names(self) -> None:
+        """
+        Update display names for all existing mappings using the new smart selection logic.
+        This is useful after updating mappings to ensure all display names are optimal.
+        """
+        updated_count = 0
+        for mapping in self._mappings.values():
+            old_display_name = mapping.display_name
+            new_display_name = self._get_best_display_name(mapping)
+            
+            if new_display_name != old_display_name:
+                mapping.display_name = new_display_name
+                updated_count += 1
+                logging.info(f"Updated display name for {mapping.fantrax_name}: '{old_display_name}' -> '{new_display_name}'")
+        
+        if updated_count > 0:
+            self.save_mappings()
+            logging.info(f"Updated {updated_count} display names")
+        else:
+            logging.info("No display names needed updating")
 
     @staticmethod
     def _normalize_name(name: str) -> str:

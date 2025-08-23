@@ -1,0 +1,11 @@
+{
+  "timestamp_pacific": "20250822_0540pm",
+  "total_fantrax_players": 612,
+  "total_sofascore_players": 0,
+  "fantrax_with_sofascore_match": 367,
+  "fantrax_without_sofascore_match": 245,
+  "sofascore_with_fantrax_match": 0,
+  "sofascore_without_fantrax_match": 0,
+  "match_rate_fantrax": "60.0%",
+  "match_rate_sofascore": "N/A"
+}

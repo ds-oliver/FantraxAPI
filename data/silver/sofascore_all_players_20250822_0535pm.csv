@@ -1,0 +1,305 @@
+player_id,player_name,team_code,source,has_fantrax_match,fantrax_id,fantrax_name
+840217,Richarlison,TOT,ratings,False,,
+958878,Daniel Ballard,SUN,ratings,False,,
+50480,Chris Wood,NFO,ratings,False,,
+905163,Mohammed Kudus,TOT,ratings,False,,
+934354,Antoine Semenyo,BOU,ratings,False,,
+862967,Cody Gakpo,LIV,ratings,False,,
+839956,Erling Haaland,MCI,ratings,False,,
+159665,Mohamed Salah,LIV,ratings,True,03aqp,Mohamed Salah
+962012,Jan Paul van Hecke,BHA,ratings,True,05oh0,Jan-Paul van Hecke
+957602,Riccardo Calafiori,ARS,ratings,True,06nu7,Riccardo Calafiori
+581310,David Raya,ARS,ratings,False,,
+987650,Moisés Caicedo,CHE,ratings,False,,
+1048422,Hugo Ekitiké,LIV,ratings,False,,
+553606,Guglielmo Vicario,TOT,ratings,True,06cmb,Guglielmo Vicario
+101882,Fabian Schär,NEW,ratings,True,04tig,Fabian Schar
+975079,João Pedro,CHE,ratings,False,,
+893549,Tijjani Reijnders,MCI,ratings,True,06v06,Tijjani Reijnders
+877980,Wilson Isidor,SUN,ratings,True,06v0t,Wilson Isidor
+1002711,Pape Matar Sarr,TOT,ratings,False,,
+288205,Bruno Fernandes,MUN,ratings,True,05gcr,Bruno Fernandes
+1085180,Brennan Johnson,TOT,ratings,True,061ya,Brennan Johnson
+845386,Federico Chiesa,LIV,ratings,True,06phw,Federico Chiesa
+839981,Lucas Paquetá,WHU,ratings,False,,
+979128,Rayan Cherki,MCI,ratings,True,06v07,Rayan Cherki
+1136731,Rico Lewis,MCI,ratings,True,062x7,Rico Lewis
+826204,Boubacar Kamara,AVL,ratings,True,061va,Boubacar Kamara
+954056,Nico González,MCI,ratings,True,06rm7,Nico González
+833956,Matty Cash,AVL,ratings,True,05o4b,Matty Cash
+162653,Nick Pope,NEW,ratings,True,044ei,Nick Pope
+151545,Virgil van Dijk,LIV,ratings,True,03vlj,Virgil van Dijk
+547410,Martin Ødegaard,ARS,ratings,True,05r9b,Martin Odegaard
+931278,Rayan Aït-Nouri,MCI,ratings,True,05os4,Rayan Ait-Nouri
+913654,Pedro Porro,TOT,ratings,True,05n07,Pedro Porro
+826134,Trevoh Chalobah,CHE,ratings,False,,
+994546,Elliot Anderson,NFO,ratings,True,05opj,Elliot Anderson
+941168,William Saliba,ARS,ratings,True,0558w,William Saliba
+152077,John Stones,MCI,ratings,True,02yl5,John Stones
+834308,Gabriel Gudmundsson,LEE,ratings,False,,
+1403050,Josh Acheampong,CHE,ratings,True,06kwp,Josh Acheampong
+971037,Amad Diallo,MUN,ratings,True,05r34,Amad Diallo
+944327,Dan Ndoye,NFO,ratings,True,06zna,Dan Ndoye
+1168588,Eliezer Mayenda,SUN,ratings,True,06v0s,Eliezer Mayenda
+318941,Rúben Dias,MCI,ratings,True,05omu,Ruben Dias
+980643,James Trafford,MCI,ratings,True,05oz3,James Trafford
+882604,Đorđe Petrović,BOU,ratings,False,,
+352668,Tosin Adarabioyo,CHE,ratings,True,03yeg,Tosin Adarabioyo
+788134,Dean Henderson,CRY,ratings,True,03yww,Dean Henderson
+879674,Maxence Lacroix,CRY,ratings,True,06pia,Maxence Lacroix
+190877,Kenny Tete,FUL,ratings,True,05oeh,Kenny Tete
+885908,Reece James,CHE,ratings,True,051k7,Reece James
+803031,Matthijs de Ligt,MUN,ratings,True,06p4k,Matthijs de Ligt
+115365,Lewis Dunk,BHA,ratings,True,04e1c,Lewis Dunk
+931844,Chris Richards,CRY,ratings,True,0635j,Chris Richards
+879349,Pedro Neto,CHE,ratings,False,,
+891829,Matt O'Riley,BHA,ratings,False,,
+1065216,Oscar Bobb,MCI,ratings,True,05ye7,Oscar Bobb
+805137,Omar Alderete,SUN,ratings,True,0700t,Omar Alderete
+122951,Casemiro,MUN,ratings,True,0642l,Casemiro
+331209,Bernardo Silva,MCI,ratings,True,04fk6,Bernardo Silva
+923973,Amadou Onana,AVL,ratings,True,063hu,Amadou Onana
+1036269,Yasin Ayari,BHA,ratings,True,068yc,Yasin Ayari
+989034,Trai Hume,SUN,ratings,True,06v0g,Trai Hume
+889861,Anton Stach,LEE,ratings,False,,
+1015256,Rodrigo Muniz,FUL,ratings,True,061vn,Rodrigo Muniz
+829932,Cristian Romero,TOT,ratings,True,05uoc,Cristian Romero
+966837,Martín Zubimendi,ARS,ratings,True,06y9z,Martin Zubimendi
+861970,Kiernan Dewsbury-Hall,EVE,ratings,True,05gcc,Kiernan Dewsbury-Hall
+980634,Valentino Livramento,NEW,ratings,True,05s08,Valentino Livramento
+800417,Ola Aina,NFO,ratings,True,03frx,Ola Aina
+973431,Brenden Aaronson,LEE,ratings,True,061vp,Brenden Aaronson
+362682,Joachim Andersen,FUL,ratings,True,05os8,Joachim Andersen
+193554,Will Hughes,CRY,ratings,True,04f6o,Will Hughes
+1088897,Jenson Seelt,SUN,ratings,True,06v0f,Jenson Seelt
+979232,Anthony Elanga,NEW,ratings,True,05ogb,Anthony Elanga
+145188,James Tarkowski,EVE,ratings,True,0427d,James Tarkowski
+946695,Georginio Rutter,BHA,ratings,True,0689w,Georginio Rutter
+846036,Ben White,ARS,ratings,True,04e1e,Ben White
+161717,James Ward-Prowse,WHU,ratings,True,02oq8,James Ward-Prowse
+803185,Lukas Nmecha,LEE,ratings,True,04lnu,Lukas Nmecha
+794939,Marc Cucurella,CHE,ratings,False,,
+1199282,Murillo,NFO,ratings,True,06fwz,Murillo
+99090,Dan Burn,NEW,ratings,True,02lsa,Dan Burn
+988275,Tyrick Mitchell,CRY,ratings,True,05akv,Tyrick Mitchell
+1012928,Robin Roefs,SUN,ratings,True,06znb,Robin Roefs
+945798,Djed Spence,TOT,ratings,True,062ts,Djed Spence
+836675,Pascal Struijk,LEE,ratings,True,05mzz,Pascal Struijk
+929132,Jayden Bogle,LEE,ratings,True,05o8o,Jayden Bogle
+867442,Callum Hudson-Odoi,NFO,ratings,True,04mi4,Callum Hudson-Odoi
+1597265,Estêvão Willian,CHE,ratings,True,06yxe,Estevao Willian Almeida de Oliveira Gonçalves
+1194333,Abdukodir Khusanov,MCI,ratings,True,06r9w,Abdukodir Khusanov
+869792,Gabriel Magalhães,ARS,ratings,True,05nzu,Gabriel Magalhaes
+845286,Ismaïla Sarr,CRY,ratings,True,05748,Ismaila Sarr
+1153315,Leny Yoro,MUN,ratings,True,06mx0,Leny Yoro
+69256,Kieran Trippier,NEW,ratings,True,03dx3,Kieran Trippier
+877994,Marc Guéhi,CRY,ratings,True,050jq,Marc Guehi
+847097,Ethan Ampadu,LEE,ratings,True,04lav,Ethan Ampadu
+303638,Tyrone Mings,AVL,ratings,True,03rec,Tyrone Mings
+828640,Joe Rodon,LEE,ratings,True,03yqz,Joe Rodon
+846252,Ryan Yates,NFO,ratings,True,061y6,Ryan Yates
+792122,Josh Cullen,BUR,ratings,True,03hff,Josh Cullen
+886363,Matheus Cunha,MUN,ratings,True,067yz,Matheus Cunha
+959628,Mats Wieffer,BHA,ratings,True,06mpp,Mats Wieffer
+352770,Alex Iwobi,FUL,ratings,True,038ze,Alex Iwobi
+143040,Wataru Endo,LIV,ratings,True,06fso,Wataru Endo
+866469,Bruno Guimarães,NEW,ratings,True,05ylj,Bruno Guimaraes
+831424,Reinildo Mandava,SUN,ratings,False,,
+103335,Bernd Leno,FUL,ratings,True,04qor,Bernd Leno
+100390,Marco Bizot,AVL,ratings,True,06ymt,Marco Bizot
+998247,Micky van de Ven,TOT,ratings,True,06ezb,Micky van de Ven
+855647,Harvey Barnes,NEW,ratings,True,04abn,Harvey Barnes
+836694,Mason Mount,MUN,ratings,True,052cd,Mason Mount
+873554,Omar Marmoush,MCI,ratings,True,06rf9,Omar Marmoush
+1391251,Lucas Bergvall,TOT,ratings,True,06mn7,Lucas Bergvall
+869856,Dominik Szoboszlai,LIV,ratings,True,06cmm,Dominik Szoboszlai
+845273,Jean-Ricner Bellegarde,WOL,ratings,True,06fxv,Jean-Ricner Bellegarde
+970361,Jeremie Frimpong,LIV,ratings,True,06v05,Jeremie Frimpong
+1016907,Igor Thiago,BRE,ratings,True,06mn0,Igor Thiago
+865912,Morgan Gibbs-White,NFO,ratings,True,04qr9,Morgan Gibbs-White
+895324,Alexis Mac Allister,LIV,ratings,True,0522h,Alexis Mac Allister
+843200,Diogo Dalot,MUN,ratings,True,04qfz,Diogo Dalot
+1097425,Miloš Kerkez,LIV,ratings,True,06do9,Milos Kerkez
+190839,Luke Shaw,MUN,ratings,True,02oq6,Luke Shaw
+927353,Curtis Jones,LIV,ratings,True,04o82,Curtis Jones
+892673,Sandro Tonali,NEW,ratings,True,06cms,Sandro Tonali
+791190,Rodrigo Bentancur,TOT,ratings,True,05ylw,Rodrigo Bentancur
+1171539,Noah Sadiki,SUN,ratings,True,06y59,Noah Sadiki
+1109771,Adam Wharton,CRY,ratings,True,06jgs,Adam Wharton
+966869,Aaron Hickey,BRE,ratings,False,,
+1085950,Tim Iroegbunam,EVE,ratings,True,05t6z,Tim Iroegbunam
+1020680,Jaidon Anthony,BUR,ratings,True,061vk,Jaidon Anthony
+927083,Bryan Mbeumo,MUN,ratings,True,05trb,Bryan Mbeumo
+1128532,Habib Diarra,SUN,ratings,True,06y29,Habib Diarra
+552884,Jarrod Bowen,WHU,ratings,True,046c5,Jarrod Bowen
+901907,Lyle Foster,BUR,ratings,True,06c4o,Lyle Foster
+823085,Kyle Walker-Peters,WHU,ratings,True,03zsq,Kyle Walker-Peters
+870360,Daniel Muñoz,CRY,ratings,True,06jgi,Daniel Munoz
+1397168,Patrick Dorgu,MUN,ratings,True,06rlj,Patrick Dorgu
+1199043,Carlos Baleba,BHA,ratings,True,06fwi,Carlos Baleba
+974505,Enzo Fernández,CHE,ratings,False,,
+855731,David Brooks,BOU,ratings,True,04rh9,David Brooks
+836705,Kai Havertz,ARS,ratings,True,05o6h,Kai Havertz
+138530,Jordan Pickford,EVE,ratings,True,032f9,Jordan Pickford
+836168,Nikola Milenković,NFO,ratings,True,06mw0,Nikola Milenkovic
+355796,Jefferson Lerma,CRY,ratings,True,04tzt,Jefferson Lerma
+1142335,Archie Gray,TOT,ratings,True,05y7c,Archie Gray
+96538,Lucas Digne,AVL,ratings,True,04tm0,Lucas Digne
+927356,Neco Williams,NFO,ratings,True,05a6e,Neco Williams
+984014,Enzo Le Fée,SUN,ratings,True,06v0p,Enzo Le Fée
+800419,Tyler Adams,BOU,ratings,True,062h7,Tyler Adams
+371222,Saša Lukić,FUL,ratings,True,068yt,Sasa Lukic
+1126692,Antoni Milambo,BRE,ratings,True,06y4g,Antoni Milambo
+829570,Jack Harrison,LEE,ratings,True,04spq,Jack Harrison
+1084311,Justin Devenny,CRY,ratings,True,06kx1,Justin Devenny
+920546,Robert Sánchez,CHE,ratings,False,,
+895576,Marcus Tavernier,BOU,ratings,True,0639x,Marcus Tavernier
+864921,Eberechi Eze,CRY,ratings,True,05nt6,Eberechi Eze
+1019322,Florian Wirtz,LIV,ratings,True,06v21,Florian Wirtz
+998951,Wilfried Gnonto,LEE,ratings,True,064a0,Wilfried Gnonto
+555386,Ollie Watkins,AVL,ratings,True,05ocl,Ollie Watkins
+355528,Harry Wilson,FUL,ratings,True,03rxs,Harry Wilson
+894733,Marshall Munetsi,WOL,ratings,True,06rma,Marshall Munetsi
+106337,Idrissa Gueye,EVE,ratings,True,03rxa,Idrissa Gueye
+863653,Aaron Wan-Bissaka,WHU,ratings,True,04adp,Aaron Wan-Bissaka
+1142675,Chemsdine Talbi,SUN,ratings,True,06ybq,Chemsdine Talbi
+1015267,João Gomes,WOL,ratings,True,068yd,Joao Gomes
+945122,Matheus Nunes,MCI,ratings,True,063zi,Matheus Nunes
+117777,Granit Xhaka,SUN,ratings,True,0435m,Granit Xhaka
+1423711,Myles Lewis-Skelly,ARS,ratings,True,066sd,Myles Lewis-Skelly
+331737,Youri Tielemans,AVL,ratings,True,04yo7,Youri Tielemans
+1035996,André,WOL,ratings,True,06pic,Andre
+560128,Joelinton,NEW,ratings,True,0554i,Joelinton
+948261,Morgan Rogers,AVL,ratings,True,05uht,Morgan Rogers
+786186,Hee-Chan Hwang,WOL,ratings,True,05w91,Hwang Hee-Chan
+33902,Danny Welbeck,BHA,ratings,True,02lnx,Danny Welbeck
+871290,Lucas Perri,LEE,ratings,True,04ym7,Lucas Perri
+78152,Matz Sels,NFO,ratings,True,04f6h,Matz Sels
+1011895,Jota Silva,NFO,ratings,True,06nvg,Jota Silva
+1004505,Loum Tchaouna,BUR,ratings,True,06y27,Loum Tchaouna
+875137,Zian Flemming,BUR,ratings,True,06uzo,Zian Flemming
+110846,Michael Keane,EVE,ratings,True,0327r,Michael Keane
+876599,Jørgen Strand Larsen,WOL,ratings,True,06mow,Jorgen Strand Larsen
+982780,Cole Palmer,CHE,ratings,True,05l8q,Cole Palmer
+871886,Ao Tanaka,LEE,ratings,True,06uzy,Ao Tanaka
+1140599,Jamie Gittens,CHE,ratings,True,06y9n,Jamie Gittens
+803039,Donyell Malen,AVL,ratings,True,04ge7,Donyell Malen
+1105779,Andrey Santos,CHE,ratings,True,068a0,Andrey Santos
+997087,Liam Delap,CHE,ratings,True,05oig,Liam Delap
+996958,Malo Gusto,CHE,ratings,True,06clz,Malo Gusto
+892924,Hamed Junior Traorè,BOU,ratings,False,,
+958959,Jurriën Timber,ARS,ratings,True,06dmj,Jurrien Timber
+981619,Igor Jesus,NFO,ratings,False,,
+364612,João Palhinha,TOT,ratings,True,062dt,João Palhinha
+1153079,Jorrel Hato,CHE,ratings,True,06zqq,Jorrel Hato
+997152,Maxim De Cuyper,BHA,ratings,True,06y9m,Maxim De Cuyper
+250223,John McGinn,AVL,ratings,True,051k0,John McGinn
+1142679,Wilson Odobert,TOT,ratings,True,06fhy,Wilson Odobert
+795066,Marcus Edwards,BUR,ratings,True,044w8,Marcus Edwards
+372336,Jacob Murphy,NEW,ratings,True,03am7,Jacob Murphy
+827679,Ezri Konsa,AVL,ratings,True,052ca,Ezri Konsa
+42209,Martin Dúbravka,BUR,ratings,True,04mr4,Martin Dubravka
+1400650,Lewis Miley,NEW,ratings,True,06ab3,Lewis Miley
+329417,Timothy Castagne,FUL,ratings,True,05o4c,Timothy Castagne
+911679,Ilia Gruev,LEE,ratings,True,06v01,Ilia Gruev
+1104986,Alex Scott,BOU,ratings,True,06f8y,Alex Scott
+954044,Ki-Jana Hoever,WOL,ratings,True,04yjx,Ki-Jana Hoever
+868715,Jorge Cuenca,FUL,ratings,True,06nyw,Jorge Cuenca
+82566,Tom Cairney,FUL,ratings,True,0328q,Tom Cairney
+845464,Andy Irving,WHU,ratings,True,06kyx,Andy Irving
+1198075,Brajan Gruda,BHA,ratings,True,06p5s,Brajan Gruda
+934235,Bukayo Saka,ARS,ratings,True,04y92,Bukayo Saka
+799251,Mathias Jensen,BRE,ratings,True,05tr9,Mathias Jensen
+856714,Declan Rice,ARS,ratings,True,04agz,Declan Rice
+552036,Josh Laurent,BUR,ratings,True,03dyx,Josh Laurent
+1526628,Fer López,WOL,ratings,True,06v12,Fer Lopez
+936849,Kaoru Mitoma,BHA,ratings,True,062ci,Kaoru Mitoma
+987489,Beto,EVE,ratings,True,06fvn,Beto
+927361,James Garner,EVE,ratings,True,04spw,James Garner
+1009386,Hannibal Mejbri,BUR,ratings,True,05t6y,Hannibal Mejbri
+1065588,Diego Gómez,BHA,ratings,True,06r5b,Diego Gómez
+846425,Manuel Ugarte,MUN,ratings,True,06pib,Manuel Ugarte
+609752,Guido Rodríguez,WHU,ratings,True,06oav,Guido Rodríguez
+189061,Jack Grealish,EVE,ratings,True,02lm7,Jack Grealish
+922573,Gabriel Martinelli,ARS,ratings,True,052h5,Gabriel Martinelli
+843754,Ibrahim Sangaré,NFO,ratings,True,06fxu,Ibrahim Sangare
+113956,Callum Wilson,WHU,ratings,True,03r8x,Callum Wilson
+966547,Noni Madueke,ARS,ratings,True,068n8,Noni Madueke
+149380,Harry Maguire,MUN,ratings,True,03gu4,Harry Maguire
+914309,Iliman Ndiaye,EVE,ratings,True,05r94,Iliman Ndiaye
+826215,Ibrahima Konaté,LIV,ratings,True,05u7f,Ibrahima Konate
+592010,Mikel Merino,ARS,ratings,True,04hk9,Mikel Merino
+318927,Joe Gomez,LIV,ratings,False,,
+923894,Wesley Fofana,CHE,ratings,True,05opl,Wesley Fofana
+815890,Altay Bayındır,MUN,ratings,True,06fx0,Altay Bayindir
+286165,Adama Traoré,FUL,ratings,True,03u2b,Adama Traore
+1142703,Nico O'Reilly,MCI,ratings,True,067x8,Nico O'Reilly
+42694,Jordan Henderson,BRE,ratings,True,02lk5,Jordan Henderson
+791,James Milner,BHA,ratings,True,02lv9,James Milner
+861972,Calvin Bassey,FUL,ratings,True,0554g,Calvin Bassey
+1006387,Kevin Schade,BRE,ratings,True,067zv,Kevin Schade
+1137431,Michael Kayode,BRE,ratings,True,06rgg,Michael Kayode
+1013928,Hugo Bueno,WOL,ratings,True,05raa,Hugo Bueno
+1089582,Freddie Potts,WHU,ratings,True,05y5b,Freddie Potts
+848276,Jean-Philippe Mateta,CRY,ratings,True,05r8o,Jean-Philippe Mateta
+828639,Daniel James,LEE,ratings,True,03yr0,Daniel James
+972421,Keane Lewis-Potter,BRE,ratings,True,062p3,Keane Lewis-Potter
+867445,Emile Smith Rowe,FUL,ratings,True,04sat,Emile Smith Rowe
+1400106,Yankuba Minteh,BHA,ratings,True,06c6g,Yankuba Minteh
+361420,Dominic Solanke,TOT,ratings,True,03fgo,Dominic Solanke
+1048916,Lesley Ugochukwu,BUR,ratings,True,06eo0,Lesley Ugochukwu
+1471764,El Hadji Malick Diouf,WHU,ratings,True,06ymu,El Hadji Malick Diouf
+934386,Jérémy Doku,MCI,ratings,True,06fup,Jeremy Doku
+844096,Jhon Arias,WOL,ratings,True,06zce,Jhon Arias
+1395746,Thierno Barry,EVE,ratings,True,06ybp,Thierno Barry
+994363,Bart Verbruggen,BHA,ratings,True,06cmu,Bart Verbruggen
+885864,Frank Onyeka,BRE,ratings,True,05ue7,Frank Onyeka
+809276,Jacob Bruun Larsen,BUR,ratings,True,06dwm,Jacob Bruun Larsen
+1031283,David Möller Wolfe,WOL,ratings,True,06zqk,David Møller Wolfe
+2007889,Ben Winterburn,BOU,ratings,True,06qwh,Ben Winterburn
+924378,Sepp van den Berg,BRE,ratings,True,05220,Sepp van den Berg
+1546231,Joshua King,FUL,ratings,True,06jh3,Joshua King
+1110842,Simon Adingra,SUN,ratings,True,0626q,Simon Adingra
+986397,Benjamin Šeško,MUN,ratings,True,06zxy,Benjamin Sesko
+44614,Kyle Walker,BUR,ratings,True,02lp9,Kyle Walker
+243609,Alisson,LIV,ratings,True,04sjt,Alisson
+262911,Andrew Robertson,LIV,ratings,True,03gu5,Andrew Robertson
+1048888,Mathys Tel,TOT,ratings,True,06rm8,Mathys Tel
+44566,Adam Smith,BOU,ratings,True,02lp5,Adam Smith
+945217,Jean-Clair Todibo,WHU,ratings,True,06onx,Jean-Clair Todibo
+799041,Tomáš Souček,WHU,ratings,True,05gcp,Tomas Soucek
+998253,Jake O'Brien,EVE,ratings,True,062oh,Jake O'Brien
+877102,Nayef Aguerd,WHU,ratings,True,0620k,Nayef Aguerd
+991604,Fabio Carvalho,BRE,ratings,True,05ojf,Fabio Carvalho
+1017392,Carlos Alcaraz,EVE,ratings,True,0687c,Carlos Alcaraz
+825844,Ferdi Kadıoğlu,BHA,ratings,True,06phe,Ferdi Kadioglu
+827362,Caoimhin Kelleher,BRE,ratings,False,,
+793167,Sander Berge,FUL,ratings,True,05gcs,Sander Berge
+1006073,Rodrigo Gomes,WOL,ratings,True,06mn8,Rodrigo Gomes
+999028,Adrien Truffert,BOU,ratings,True,06uyc,Adrien Truffert
+973418,Toti Gomes,WOL,ratings,False,,
+914902,Anthony Gordon,NEW,ratings,True,04mdn,Anthony Gordon
+850823,Joël Piroe,LEE,ratings,True,06v02,Joel Piroe
+998490,Evanilson,BOU,ratings,True,06p6j,Evanilson
+1117223,Maxime Estève,BUR,ratings,True,06jgr,Maxime Esteve
+856640,Mads Hermansen,WHU,ratings,True,06mga,Mads Hermansen
+894474,Max Kilman,WHU,ratings,True,04yey,Max Kilman
+804508,Viktor Gyökeres,ARS,ratings,True,04tsb,Viktor Gyökeres
+143047,Matt Doherty,WOL,ratings,True,02m11,Matt Doherty
+1392044,Quilindschy Hartman,BUR,ratings,True,06v6n,Quilindschy Hartman
+1031258,Yehor Yarmolyuk,BRE,ratings,False,,
+1008456,Oliver Sonne,BUR,ratings,True,06uzl,Oliver Sonne
+830659,Marcos Senesi,BOU,ratings,True,063e7,Marcos Senesi
+132645,Niclas Füllkrug,WHU,ratings,True,06o2t,Niclas Füllkrug
+252669,José Sá,WOL,ratings,True,05udg,Jose Sa
+962408,Bafodé Diakité,BOU,ratings,True,0700u,Bafode Diakité
+875360,Hjalmar Ekdal,BUR,ratings,True,06c4h,Hjalmar Ekdal
+958916,Nathan Collins,BRE,ratings,False,,
+599128,Rico Henry,BRE,ratings,True,05tqz,Rico Henry
+192442,Raúl Jiménez,FUL,ratings,True,04qrc,Raul Jimenez
+1013842,Emmanuel Agbadou,WOL,ratings,True,06r7k,Emmanuel Agbadou
+1426228,Eli Junior Kroupi,BOU,ratings,False,,
+1394089,Chris Rigg,SUN,ratings,True,06v0l,Chris Rigg
+866191,Sean Longstaff,LEE,ratings,True,04ug0,Sean Longstaff
+1156586,James Hill,BOU,ratings,True,061vb,James Hill
+1122603,William Osula,NEW,ratings,True,05t6x,William Osula

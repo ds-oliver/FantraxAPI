@@ -1,0 +1,613 @@
+fantrax_id,player_name,team,team_code,position,has_sofascore_match,sofascore_id,sofascore_name
+061ya,Brennan Johnson,,,,True,1085180.0,Brennan Johnson
+06kwp,Josh Acheampong,,,,True,1403050.0,Josh Acheampong
+02lsa,Dan Burn,,,,True,99090.0,Dan Burn
+05w9i,Marc Cucurella,,,,True,794939.0,Marc Cucurella
+051k7,Reece James,,,,True,885908.0,Reece James
+0558w,William Saliba,,,,True,941168.0,William Saliba
+06v0g,Trai Hume,,,,True,989034.0,Trai Hume
+05n07,Pedro Porro,,,,True,913654.0,Pedro Porro
+06p4k,Matthijs de Ligt,,,,True,803031.0,Matthijs de Ligt
+04e1e,Ben White,,,,True,846036.0,Ben White
+05w7t,Pape Sarr,,,,False,,
+03hff,Josh Cullen,,,,True,792122.0,Josh Cullen
+0635j,Chris Richards,,,,True,931844.0,Chris Richards
+04rh9,David Brooks,,,,True,855731.0,David Brooks
+0427d,James Tarkowski,,,,True,145188.0,James Tarkowski
+05nzu,Gabriel Magalhaes,,,,True,869792.0,Gabriel Magalhães
+05s08,Valentino Livramento,,,,True,980634.0,Valentino Livramento
+05akv,Tyrick Mitchell,,,,True,988275.0,Tyrick Mitchell
+06mn0,Igor Thiago,,,,True,1016907.0,Igor Thiago
+05o4b,Matty Cash,,,,True,833956.0,Matty Cash
+0700t,Omar Alderete,,,,True,805137.0,Omar Alderete
+0522h,Alexis Mac Allister,,,,True,895324.0,Alexis Mac Allister
+05ye7,Oscar Bobb,,,,True,1065216.0,Oscar Bobb
+03dx3,Kieran Trippier,,,,True,69256.0,Kieran Trippier
+05gcr,Bruno Fernandes,,,,True,288205.0,Bruno Fernandes
+05opj,Elliot Anderson,,,,True,994546.0,Elliot Anderson
+05uoc,Cristian Romero,,,,True,829932.0,Cristian Romero
+04mup,Trevoh Chalobah,,,,True,826134.0,Trevoh Chalobah
+06v0s,Eliezer Mayenda,,,,True,1168588.0,Eliezer Mayenda
+03yqz,Joe Rodon,,,,True,828640.0,Joe Rodon
+04fk6,Bernardo Silva,,,,True,331209.0,Bernardo Silva
+04abn,Harvey Barnes,,,,True,855647.0,Harvey Barnes
+050jq,Marc Guehi,,,,True,877994.0,Marc Guéhi
+0639x,Marcus Tavernier,,,,True,895576.0,Marcus Tavernier
+06ezb,Micky van de Ven,,,,True,998247.0,Micky van de Ven
+05mzz,Pascal Struijk,,,,True,836675.0,Pascal Struijk
+06phw,Federico Chiesa,,,,True,845386.0,Federico Chiesa
+03frx,Ola Aina,,,,True,800417.0,Ola Aina
+04tm0,Lucas Digne,,,,True,96538.0,Lucas Digne
+067yz,Matheus Cunha,,,,True,886363.0,Matheus Cunha
+06v07,Rayan Cherki,,,,True,979128.0,Rayan Cherki
+02yl5,John Stones,,,,True,152077.0,John Stones
+06v0t,Wilson Isidor,,,,True,877980.0,Wilson Isidor
+06cmm,Dominik Szoboszlai,,,,True,869856.0,Dominik Szoboszlai
+06rm7,Nico González,,,,True,954056.0,Nico González
+062ts,Djed Spence,,,,True,945798.0,Djed Spence
+04lnu,Lukas Nmecha,,,,True,803185.0,Lukas Nmecha
+0689w,Georginio Rutter,,,,True,946695.0,Georginio Rutter
+06yb9,Reinildo Isnard Mandava,,,,False,,
+05r9b,Martin Odegaard,,,,True,547410.0,Martin Ødegaard
+06jgi,Daniel Munoz,,,,True,870360.0,Daniel Muñoz
+06zna,Dan Ndoye,,,,True,944327.0,Dan Ndoye
+05o8o,Jayden Bogle,,,,True,929132.0,Jayden Bogle
+05omu,Ruben Dias,,,,True,318941.0,Rúben Dias
+06ymu,El Hadji Malick Diouf,,,,True,1471764.0,El Hadji Malick Diouf
+03rec,Tyrone Mings,,,,True,303638.0,Tyrone Mings
+06fso,Wataru Endo,,,,True,143040.0,Wataru Endo
+06mx0,Leny Yoro,,,,True,1153315.0,Leny Yoro
+068yd,Joao Gomes,,,,True,1015267.0,João Gomes
+056iy,Pedro Neto,,,,True,879349.0,Pedro Neto
+0626q,Simon Adingra,,,,True,1110842.0,Simon Adingra
+061vn,Rodrigo Muniz,,,,True,1015256.0,Rodrigo Muniz
+06ybq,Chemsdine Talbi,,,,True,1142675.0,Chemsdine Talbi
+04lav,Ethan Ampadu,,,,True,847097.0,Ethan Ampadu
+06cms,Sandro Tonali,,,,True,892673.0,Sandro Tonali
+06mpp,Mats Wieffer,,,,True,959628.0,Mats Wieffer
+04e1c,Lewis Dunk,,,,True,115365.0,Lewis Dunk
+05ogb,Anthony Elanga,,,,True,979232.0,Anthony Elanga
+038ze,Alex Iwobi,,,,True,352770.0,Alex Iwobi
+06c4o,Lyle Foster,,,,True,901907.0,Lyle Foster
+05ocl,Ollie Watkins,,,,True,555386.0,Ollie Watkins
+05rb8,Moises Caicedo,,,,True,987650.0,Moisés Caicedo
+06jgs,Adam Wharton,,,,True,1109771.0,Adam Wharton
+05220,Sepp van den Berg,,,,True,924378.0,Sepp van den Berg
+068yr,Hamed Traore,,,,False,,
+04agz,Declan Rice,,,,True,856714.0,Declan Rice
+04mi4,Callum Hudson-Odoi,,,,True,867442.0,Callum Hudson-Odoi
+0435m,Granit Xhaka,,,,True,117777.0,Granit Xhaka
+04mdn,Anthony Gordon,,,,True,914902.0,Anthony Gordon
+063hu,Amadou Onana,,,,True,923973.0,Amadou Onana
+05trb,Bryan Mbeumo,,,,True,927083.0,Bryan Mbeumo
+05nt6,Eberechi Eze,,,,True,864921.0,Eberechi Eze
+06mn7,Lucas Bergvall,,,,True,1391251.0,Lucas Bergvall
+04y92,Bukayo Saka,,,,True,934235.0,Bukayo Saka
+05r34,Amad Diallo,,,,True,971037.0,Amad Diallo
+06mow,Jorgen Strand Larsen,,,,True,876599.0,Jørgen Strand Larsen
+05gcc,Kiernan Dewsbury-Hall,,,,True,861970.0,Kiernan Dewsbury-Hall
+05os8,Joachim Andersen,,,,True,362682.0,Joachim Andersen
+06v21,Florian Wirtz,,,,True,1019322.0,Florian Wirtz
+06y9n,Jamie Gittens,,,,True,1140599.0,Jamie Gittens
+03rxs,Harry Wilson,,,,True,355528.0,Harry Wilson
+05r94,Iliman Ndiaye,,,,True,914309.0,Iliman Ndiaye
+061va,Boubacar Kamara,,,,True,826204.0,Boubacar Kamara
+03dyx,Josh Laurent,,,,True,552036.0,Josh Laurent
+06fwi,Carlos Baleba,,,,True,1199043.0,Carlos Baleba
+02oq6,Luke Shaw,,,,True,190839.0,Luke Shaw
+062h7,Tyler Adams,,,,True,800419.0,Tyler Adams
+06mw0,Nikola Milenkovic,,,,True,836168.0,Nikola Milenković
+06y9z,Martin Zubimendi,,,,True,966837.0,Martín Zubimendi
+061vk,Jaidon Anthony,,,,True,1020680.0,Jaidon Anthony
+05tr9,Mathias Jensen,,,,True,799251.0,Mathias Jensen
+05ue7,Frank Onyeka,,,,True,885864.0,Frank Onyeka
+05748,Ismaila Sarr,,,,True,845286.0,Ismaïla Sarr
+05a6e,Neco Williams,,,,True,927356.0,Neco Williams
+046c5,Jarrod Bowen,,,,True,552884.0,Jarrod Bowen
+05uht,Morgan Rogers,,,,True,948261.0,Morgan Rogers
+05r8o,Jean-Philippe Mateta,,,,True,848276.0,Jean-Philippe Mateta
+06fwz,Murillo,,,,True,1199282.0,Murillo
+06fvn,Beto,,,,True,987489.0,Beto
+051k0,John McGinn,,,,True,250223.0,John McGinn
+05oh0,Jan-Paul van Hecke,,,,True,962012.0,Jan Paul van Hecke
+061vp,Brenden Aaronson,,,,True,973431.0,Brenden Aaronson
+06uzy,Ao Tanaka,,,,True,871886.0,Ao Tanaka
+04adp,Aaron Wan-Bissaka,,,,True,863653.0,Aaron Wan-Bissaka
+06y9m,Maxim De Cuyper,,,,True,997152.0,Maxim De Cuyper
+05l8q,Cole Palmer,,,,True,982780.0,Cole Palmer
+05ylj,Bruno Guimaraes,,,,True,866469.0,Bruno Guimarães
+06rlj,Patrick Dorgu,,,,True,1397168.0,Patrick Dorgu
+052cd,Mason Mount,,,,True,836694.0,Mason Mount
+06rma,Marshall Munetsi,,,,True,894733.0,Marshall Munetsi
+0327r,Michael Keane,,,,True,110846.0,Michael Keane
+03yr0,Daniel James,,,,True,828639.0,Daniel James
+05oeh,Kenny Tete,,,,True,190877.0,Kenny Tete
+052h5,Gabriel Martinelli,,,,True,922573.0,Gabriel Martinelli
+06zxy,Benjamin Sesko,,,,True,986397.0,Benjamin Šeško
+064a0,Wilfried Gnonto,,,,True,998951.0,Wilfried Gnonto
+062oh,Jake O'Brien,,,,True,998253.0,Jake O'Brien
+06jgr,Maxime Esteve,,,,True,1117223.0,Maxime Estève
+04spw,James Garner,,,,True,927361.0,James Garner
+0642l,Casemiro,,,,True,122951.0,Casemiro
+06r5b,Diego Gómez,,,,True,1065588.0,Diego Gómez
+06y59,Noah Sadiki,,,,True,1171539.0,Noah Sadiki
+06fxu,Ibrahim Sangare,,,,True,843754.0,Ibrahim Sangaré
+04yo7,Youri Tielemans,,,,True,331737.0,Youri Tielemans
+0687c,Carlos Alcaraz,,,,True,1017392.0,Carlos Alcaraz
+066r9,Ehor Yarmolyuk,,,,False,,
+06rgg,Michael Kayode,,,,True,1137431.0,Michael Kayode
+04qfz,Diogo Dalot,,,,True,843200.0,Diogo Dalot
+063e7,Marcos Senesi,,,,True,830659.0,Marcos Senesi
+06v6n,Quilindschy Hartman,,,,True,1392044.0,Quilindschy Hartman
+02lp5,Adam Smith,,,,True,44566.0,Adam Smith
+06v05,Jeremie Frimpong,,,,True,970361.0,Jeremie Frimpong
+068ym,Enzo Fernandez,,,,True,974505.0,Enzo Fernández
+06c6g,Yankuba Minteh,,,,True,1400106.0,Yankuba Minteh
+0647t,Lucas Paqueta,,,,True,839981.0,Lucas Paquetá
+05gcp,Tomas Soucek,,,,True,799041.0,Tomáš Souček
+06jh3,Joshua King,,,,True,1546231.0,Joshua King
+06y29,Habib Diarra,,,,True,1128532.0,Habib Diarra
+05y7c,Archie Gray,,,,True,1142335.0,Archie Gray
+06f8y,Alex Scott,,,,True,1104986.0,Alex Scott
+03rxa,Idrissa Gueye,,,,True,106337.0,Idrissa Gueye
+068yc,Yasin Ayari,,,,True,1036269.0,Yasin Ayari
+05tqz,Rico Henry,,,,True,599128.0,Rico Henry
+05raa,Hugo Bueno,,,,True,1013928.0,Hugo Bueno
+061y6,Ryan Yates,,,,True,846252.0,Ryan Yates
+06o2t,Niclas Füllkrug,,,,True,132645.0,Niclas Füllkrug
+04o82,Curtis Jones,,,,True,927353.0,Curtis Jones
+04yjx,Ki-Jana Hoever,,,,True,954044.0,Ki-Jana Hoever
+068yt,Sasa Lukic,,,,True,371222.0,Saša Lukić
+06kyx,Andy Irving,,,,True,845464.0,Andy Irving
+06uyc,Adrien Truffert,,,,True,999028.0,Adrien Truffert
+06pic,Andre,,,,True,1035996.0,André
+06v0f,Jenson Seelt,,,,True,1088897.0,Jenson Seelt
+04yey,Max Kilman,,,,True,894474.0,Max Kilman
+06zce,Jhon Arias,,,,True,844096.0,Jhon Arias
+02oq8,James Ward-Prowse,,,,True,161717.0,James Ward-Prowse
+06fxv,Jean-Ricner Bellegarde,,,,True,845273.0,Jean-Ricner Bellegarde
+05t6z,Tim Iroegbunam,,,,True,1085950.0,Tim Iroegbunam
+06nyw,Jorge Cuenca,,,,True,868715.0,Jorge Cuenca
+06do9,Milos Kerkez,,,,True,1097425.0,Miloš Kerkez
+04f6o,Will Hughes,,,,True,193554.0,Will Hughes
+06v02,Joel Piroe,,,,True,850823.0,Joël Piroe
+04ge7,Donyell Malen,,,,True,803039.0,Donyell Malen
+06v12,Fer Lopez,,,,True,1526628.0,Fer López
+06y4g,Antoni Milambo,,,,True,1126692.0,Antoni Milambo
+06fhy,Wilson Odobert,,,,True,1142679.0,Wilson Odobert
+05w91,Hwang Hee-Chan,,,,True,786186.0,Hee-Chan Hwang
+06r9w,Abdukodir Khusanov,,,,True,1194333.0,Abdukodir Khusanov
+068a0,Andrey Santos,,,,True,1105779.0,Andrey Santos
+05gcs,Sander Berge,,,,True,793167.0,Sander Berge
+06ab3,Lewis Miley,,,,True,1400650.0,Lewis Miley
+05oig,Liam Delap,,,,True,997087.0,Liam Delap
+05o6h,Kai Havertz,,,,True,836705.0,Kai Havertz
+0554i,Joelinton,,,,True,560128.0,Joelinton
+062p3,Keane Lewis-Potter,,,,True,972421.0,Keane Lewis-Potter
+06onx,Jean-Clair Todibo,,,,True,945217.0,Jean-Clair Todibo
+06fup,Jeremy Doku,,,,True,934386.0,Jérémy Doku
+05u7f,Ibrahima Konate,,,,True,826215.0,Ibrahima Konaté
+068n8,Noni Madueke,,,,True,966547.0,Noni Madueke
+05ojf,Fabio Carvalho,,,,True,991604.0,Fabio Carvalho
+06pib,Manuel Ugarte,,,,True,846425.0,Manuel Ugarte
+0554g,Calvin Bassey,,,,True,861972.0,Calvin Bassey
+05t6y,Hannibal Mejbri,,,,True,1009386.0,Hannibal Mejbri
+03fgo,Dominic Solanke,,,,True,361420.0,Dominic Solanke
+04tsb,Viktor Gyökeres,,,,True,804508.0,Viktor Gyökeres
+063zi,Matheus Nunes,,,,True,945122.0,Matheus Nunes
+06yxe,Estevao Willian Almeida de Oliveira Gonçalves,,,,True,1597265.0,Estêvão Willian
+06v0p,Enzo Le Fée,,,,True,984014.0,Enzo Le Fée
+05ylw,Rodrigo Bentancur,,,,True,791190.0,Rodrigo Bentancur
+06nvg,Jota Silva,,,,True,1011895.0,Jota Silva
+061vb,James Hill,,,,True,1156586.0,James Hill
+06kx1,Justin Devenny,,,,True,1084311.0,Justin Devenny
+02lm7,Jack Grealish,,,,True,189061.0,Jack Grealish
+06y27,Loum Tchaouna,,,,True,1004505.0,Loum Tchaouna
+06uzl,Oliver Sonne,,,,True,1008456.0,Oliver Sonne
+067zv,Kevin Schade,,,,True,1006387.0,Kevin Schade
+052ca,Ezri Konsa,,,,True,827679.0,Ezri Konsa
+04hk9,Mikel Merino,,,,True,592010.0,Mikel Merino
+06y9o,Igor Jesus Maciel da Cruz,,,,False,,
+04tzt,Jefferson Lerma,,,,True,355796.0,Jefferson Lerma
+06dwm,Jacob Bruun Larsen,,,,True,809276.0,Jacob Bruun Larsen
+05g2o,Joao Pedro,,,,True,975079.0,João Pedro
+06p5s,Brajan Gruda,,,,True,1198075.0,Brajan Gruda
+03gu5,Andrew Robertson,,,,True,262911.0,Andrew Robertson
+04spq,Jack Harrison,,,,True,829570.0,Jack Harrison
+06uzo,Zian Flemming,,,,True,875137.0,Zian Flemming
+06mn8,Rodrigo Gomes,,,,True,1006073.0,Rodrigo Gomes
+06oav,Guido Rodríguez,,,,True,609752.0,Guido Rodríguez
+06p6j,Evanilson,,,,True,998490.0,Evanilson
+03gu4,Harry Maguire,,,,True,149380.0,Harry Maguire
+03r93,Joseph Gomez,,,,False,,
+06c4h,Hjalmar Ekdal,,,,True,875360.0,Hjalmar Ekdal
+06v01,Ilia Gruev,,,,True,911679.0,Ilia Gruev
+0646f,Alexander Isak,,,,True,823941.0,Alexander Isak
+062ci,Kaoru Mitoma,,,,True,936849.0,Kaoru Mitoma
+04abb,Phil Foden,,,,True,859765.0,Phil Foden
+06ex4,Josko Gvardiol,,,,True,964994.0,Joško Gvardiol
+05uor,Yoane Wissa,,,,False,,
+03rzp,Antonee Robinson,,,,True,803174.0,Antonee Robinson
+06clt,Justin Kluivert,,,,True,851596.0,Justin Kluivert
+05y9n,Lewis Hall,,,,True,1136730.0,Lewis Hall
+063q8,Mikkel Damsgaard,,,,False,,
+06mvz,Savio,,,,False,,
+03am7,Jacob Murphy,,,,True,372336.0,Jacob Murphy
+04p0d,Dwight McNeil,,,,True,935543.0,Dwight McNeil
+0524k,Rodri,,,,True,827606.0,Rodri
+068lx,Dango Ouattara,,,,False,,
+05ybq,Vitalii Mykolenko,,,,True,876643.0,Vitaliy Mykolenko
+052cb,Ian Maatsen,,,,False,,
+06fxe,Ryan Gravenberch,,,,True,904897.0,Ryan Gravenberch
+02lnx,Danny Welbeck,,,,True,33902.0,Danny Welbeck
+06rm8,Mathys Tel,,,,True,1048888.0,Mathys Tel
+06cm1,Nicolas Jackson,,,,True,1085381.0,Nicolas Jackson
+05ylx,Dejan Kulusevski,,,,True,928124.0,Dejan Kulusevski
+05uhj,Conor Bradley,,,,True,1008402.0,Conor Bradley
+06p4j,Noussair Mazraoui,,,,False,,
+06ybp,Thierno Barry,,,,True,1395746.0,Thierno Barry
+04sat,Emile Smith Rowe,,,,True,867445.0,Emile Smith Rowe
+05l27,Jarrad Branthwaite,,,,True,979563.0,Jarrad Branthwaite
+0520r,Leandro Trossard,,,,True,135666.0,Leandro Trossard
+062dt,João Palhinha,,,,True,364612.0,João Palhinha
+0414o,James Maddison,,,,True,356398.0,James Maddison
+063y7,Destiny Udogie,,,,True,983572.0,Destiny Udogie
+065ao,Ethan Nwaneri,,,,True,1401702.0,Ethan Nwaneri
+060wh,Alejandro Garnacho,,,,True,1135873.0,Alejandro Garnacho
+05uhs,James Mcatee,,,,False,,
+06clz,Malo Gusto,,,,True,996958.0,Malo Gusto
+06zwj,Evann Guessand,,,,False,,
+04qfm,Ryan Sessegnon,,,,False,,
+03u2b,Adama Traore,,,,True,286165.0,Adama Traoré
+03yeg,Tosin Adarabioyo,,,,True,352668.0,Tosin Adarabioyo
+061ve,Ryan Christie,,,,True,322391.0,Ryan Christie
+051k3,Jacob Ramsey,,,,False,,
+062p5,Levi Colwill,,,,True,996911.0,Levi Colwill
+03jly,Andreas Pereira,,,,True,285949.0,Andreas Pereira
+04xjr,Harvey Elliott,,,,True,955245.0,Harvey Elliott
+05tr8,Christian Norgaard,,,,False,,
+06zqq,Jorrel Hato,,,,True,1153079.0,Jorrel Hato
+044w8,Marcus Edwards,,,,True,795066.0,Marcus Edwards
+0666p,Kobbie Mainoo,,,,True,1142175.0,Kobbie Mainoo
+043qy,Lewis Cook,,,,True,548188.0,Lewis Cook
+06mnm,Marc Guiu,,,,False,,
+03r8x,Callum Wilson,,,,True,113956.0,Callum Wilson
+067ys,Jack Hinshelwood,,,,False,,
+05rl4,Crysencio Summerville,,,,False,,
+0649j,Manuel Akanji,,,,True,383560.0,Manuel Akanji
+062a9,Sven Botman,,,,True,910046.0,Sven Botman
+04ge8,Reiss Nelson,,,,True,826139.0,Reiss Nelson
+06exb,Rasmus Hojlund,,,,True,1086417.0,Rasmus Højlund
+05gvx,Armando Broja,,,,False,,
+06r2g,Rio Ngumoha,,,,False,,
+0435t,Ilkay Gundogan,,,,False,,
+06mve,Joshua Zirkzee,,,,False,,
+06crm,Pau Torres,,,,False,,
+03zsq,Kyle Walker-Peters,,,,True,823085.0,Kyle Walker-Peters
+06xzd,Charalampos Kostoulas,,,,False,,
+051kl,Emiliano Buendia,,,,False,,
+05opl,Wesley Fofana,,,,True,923894.0,Wesley Fofana
+0700p,Malick Thiaw,,,,False,,
+06r9h,Romain Esse,,,,False,,
+066nn,Ben Doak,,,,False,,
+062pl,Lisandro Martinez,,,,True,859999.0,Lisandro Martínez
+05tr1,Ethan Pinnock,,,,False,,
+04ge9,Eddie Nketiah,,,,False,,
+05uns,Leon Bailey,,,,False,,
+045c8,Gabriel Jesus,,,,True,794839.0,Gabriel Jesus
+05n3v,Konstantinos Tsimikas,,,,True,786259.0,Konstantinos Tsimikas
+04rzl,Taiwo Awoniyi,,,,True,359664.0,Taiwo Awoniyi
+02lk5,Jordan Henderson,,,,True,42694.0,Jordan Henderson
+04ug0,Sean Longstaff,,,,True,866191.0,Sean Longstaff
+02y6o,Nathan Ake,,,,True,149663.0,Nathan Aké
+067yu,Facundo Buonanotte,,,,False,,
+06329,Manor Solomon,,,,True,862223.0,Manor Solomon
+06cm0,Christopher Nkunku,,,,True,769333.0,Christopher Nkunku
+05ts6,Yerson Mosquera,,,,False,,
+057cr,Kevin Danso,,,,False,,
+06xza,Eli Kroupi,,,,False,,
+062h9,Luis Sinisterra,,,,True,836070.0,Luis Sinisterra
+06zef,Adam Aznou,,,,False,,
+06yey,Borna Sosa,,,,False,,
+04e1k,Solly March,,,,False,,
+05t6x,William Osula,,,,True,1122603.0,William Osula
+04u41,Mateo Kovacic,,,,True,136710.0,Mateo Kovačić
+06zbm,Cristhian Mosquera,,,,False,,
+049tq,Dominic Calvert-Lewin,,,,False,,
+061xs,Julio Enciso,,,,False,,
+05unu,Romeo Lavia,,,,True,1069488.0,Roméo Lavia
+05o4c,Timothy Castagne,,,,True,329417.0,Timothy Castagne
+06v0m,Luke O'Nien,,,,False,,
+06f81,Edson Alvarez,,,,False,,
+03ek4,Patrick Bamford,,,,False,,
+06mnc,Daichi Kamada,,,,False,,
+06v0l,Chris Rigg,,,,True,1394089.0,Chris Rigg
+06xzc,Stefanos Tzimas,,,,False,,
+06kqy,Ayden Heaven,,,,False,,
+06v51,Jaka Bijol,,,,False,,
+05a6d,Tariq Lamptey,,,,False,,
+03brm,Patrick Roberts,,,,False,,
+06y26,Olivier Boscagli,,,,False,,
+06kyw,Claudio Echeverri,,,,False,,
+068sd,Jakub Kiwior,,,,True,976037.0,Jakub Kiwior
+06roj,Chido Obi-Martin,,,,False,,
+06uyd,Diego Coppola,,,,False,,
+04gw7,Jadon Sancho,,,,True,851100.0,Jadon Sancho
+06uzn,Lucas Pires,,,,False,,
+06p4l,Julian Araujo,,,,False,,
+06hze,Treymaurice Nyoni,,,,False,,
+06exa,Matheus Franca,,,,True,1116593.0,Matheus França
+05yct,Nathan Patterson,,,,True,1020141.0,Nathan Patterson
+06ygm,Jair Paula da Cunha Filho,,,,False,,
+04sft,Yves Bissouma,,,,True,844842.0,Yves Bissouma
+06mrz,Pedro Lima,,,,False,,
+06fy7,Nicolas Dominguez,,,,True,871765.0,Nicolás Domínguez
+05y5b,Freddie Potts,,,,True,1089582.0,Freddie Potts
+05mxa,Joel Veltman,,,,False,,
+04mqv,Emerson,,,,False,,
+06l4i,Tyrique George,,,,False,,
+03sbh,Enes Unal,,,,True,336655.0,Enes Ünal
+06v0y,Luka Vuskovic,,,,False,,
+0649i,Antony,,,,True,958380.0,Antony
+06635,Oliver Scarles,,,,False,,
+05g4d,Dennis Cirkin,,,,False,,
+05tre,Vitaly Janelt,,,,False,,
+06yb8,Diego León,,,,False,,
+068a1,Mykhailo Mudryk,,,,True,958966.0,Mykhaylo Mudryk
+06ys4,Sverre Nypan,,,,False,,
+03xrs,Axel Tuanzebe,,,,False,,
+062ot,Cheick Doucoure,,,,True,906047.0,Cheick Doucouré
+06mgp,Luis Guilherme,,,,False,,
+06v0j,Dan Neil,,,,False,,
+04ge6,Joe Willock,,,,True,888550.0,Joe Willock
+043c1,Oleksandr Zinchenko,,,,True,287643.0,Oleksandr Zinchenko
+06dqv,Luca Koleosho,,,,True,1216282.0,Luca Koleosho
+06804,Benoit Badiashile,,,,True,904827.0,Benoît Badiashile
+0687b,Alex Moreno,,,,False,,
+02lpf,Ross Barkley,,,,False,,
+06uns,Tom Watson,,,,False,,
+05uel,Kristoffer Ajer,,,,False,,
+06onv,Harrison Armstrong,,,,False,,
+062p0,Stefan Bajcetic,,,,True,1142636.0,Stefan Bajčetić
+05w9q,Odsonne Edouard,,,,True,795228.0,Odsonne Édouard
+04ml6,Konstantinos Mavropanos,,,,False,,
+062du,Darko Gyabi,,,,False,,
+05afj,Largie Ramazani,,,,False,,
+06dmn,George Earthy,,,,False,,
+06r9v,Andres García,,,,False,,
+05ubv,Omari Hutchinson,,,,False,,
+045yy,Arthur Masuaku,,,,False,,
+06fwx,Santiago Bueno,,,,True,846308.0,Santiago Bueno
+06ime,Radu Dragusin,,,,True,997103.0,Radu Drăguşin
+02lv9,James Milner,,,,True,791.0,James Milner
+056ir,Adam Webster,,,,False,,
+06eka,Igor Julio,,,,False,,
+06l2r,Harry Amass,,,,False,,
+04f67,Philip Billing,,,,True,548660.0,Philip Billing
+06uzv,Dario Essugo,,,,False,,
+02lpl,Seamus Coleman,,,,True,76632.0,Séamus Coleman
+02oo1,Ben Davies,,,,True,94758.0,Ben Davies
+06zxx,Divine Mukasa,,,,False,,
+05vyc,Aaron Ramsey,,,,True,1000142.0,Aaron Ramsey
+04azm,Connor Roberts,,,,True,804613.0,Connor Roberts
+06pig,Morato,,,,False,,
+06nvc,Asher Agbinone,,,,False,,
+04qos,Issa Diop,,,,True,825719.0,Issa Diop
+05r4r,Sam Greenwood,,,,False,,
+05n03,Kalvin Phillips,,,,False,,
+06v00,Sam Chambers,,,,False,,
+05746,Emil Krafth,,,,True,150396.0,Emil Krafth
+06few,Youssef Chermiti,,,,True,1145627.0,Youssef Chermiti
+06mnn,Chadi Riad,,,,False,,
+05o8k,Fabio Silva,,,,True,954076.0,Fábio Silva
+06r7f,Julio Soler,,,,False,,
+06zrt,Will Wright,,,,False,,
+06442,Zach Abbott,,,,False,,
+06dn2,Zeki Amdouni,,,,True,990550.0,Zeki Amdouni
+05r4h,Lamare Bogarde,,,,False,,
+02t1k,Nathaniel Clyne,,,,True,43215.0,Nathaniel Clyne
+03pig,Jamaal Lascelles,,,,True,153444.0,Jamaal Lascelles
+06do1,Zach Marsh,,,,False,,
+05x9k,Jeremy Sarmiento,,,,False,,
+06uzx,Isaac Schmidt,,,,False,,
+0372y,Matt Targett,,,,True,368134.0,Matt Targett
+03dxr,Ashley Barnes,,,,False,,
+06y28,Sebastiaan Bornauw,,,,False,,
+06xzb,Romelle Donovan,,,,False,,
+064op,Tyler Fredricson,,,,False,,
+06fwo,Enso Gonzalez,,,,True,1402232.0,Enso González
+06ewy,Alex Murphy,,,,True,1125214.0,Alex Murphy
+06phr,Gustavo Nunes,,,,False,,
+037mt,Harrison Reed,,,,True,365802.0,Harrison Reed
+05tr5,Mads Roerslev,,,,False,,
+061z3,Fabio Vieira,,,,True,904835.0,Fábio Vieira
+05wwd,Joshua Wilson-Esbrand,,,,False,,
+05ogg,Ajibola Alese,,,,False,,
+04qr0,Willy Boly,,,,True,139310.0,Willy Boly
+03ysd,Sam Byram,,,,False,,
+05w90,Maxwel Cornet,,,,False,,
+04u6i,Leander Dendoncker,,,,False,,
+05uh9,Bryan Gil,,,,True,910026.0,Bryan Gil
+06mnb,Samuel Iling-Junior,,,,False,,
+06zrq,Wellity Lucky,,,,False,,
+06rpm,Mateus Mané,,,,False,,
+05udw,Romaine Mundle,,,,False,,
+066iz,Lewis Orford,,,,False,,
+06zc0,Seung-Soo Park,,,,False,,
+05rjn,Jesurun Rak-Sakyi,,,,True,1101362.0,Jesurun Rak-Sakyi
+05nip,Dane Scarlett,,,,True,998772.0,Dane Scarlett
+061xw,Joe Worrall,,,,False,,
+06uzr,Jaydon Banel,,,,False,,
+06clx,Jordan Beyer,,,,True,927175.0,Jordan Beyer
+06ib6,Tawanda Chirewa,,,,True,1005725.0,Tawanda Chirewa
+066sh,Bashir Humphreys,,,,False,,
+06492,Sasa Kalajdzic,,,,True,870038.0,Saša Kalajdžić
+06nvb,Caleb Kporha,,,,False,,
+06cly,Enock Agyei,,,,False,,
+06v0v,Milan Aleksic,,,,False,,
+06r5m,Aaron Anselmino,,,,False,,
+06v0k,Alan Browne,,,,False,,
+06fuh,Hannes Delcroix,,,,True,826169.0,Hannes Delcroix
+06jgk,Romain Faivre,,,,True,913942.0,Romain Faivre
+05x12,Leo Fuhr Hjelde,,,,False,,
+05r2t,Niall Huggins,,,,False,,
+06ils,Yunus Konak,,,,False,,
+04tsf,Paris Maghoma,,,,False,,
+06mgk,Jayden Meghoma,,,,False,,
+061z5,Calvin Ramsay,,,,False,,
+06r3w,Remy Rees-Dottin,,,,False,,
+062oi,Kaden Rodney,,,,False,,
+05ue3,Albert Sambi Lokonga,,,,False,,
+062cj,Abdallah Sima,,,,False,,
+06ya6,Kota Takai,,,,False,,
+06fy5,Mike Tresor,,,,True,826183.0,Mike Trésor
+06kk4,Franco Umeh-Chibueze,,,,False,,
+05oji,Rhys Williams,,,,False,,
+06qwh,Ben Winterburn,,,,True,2007889.0,Ben Winterburn
+06mnd,Eric da Silva Moreira,,,,False,,
+068ys,Naouirou Ahamada,,,,True,997104.0,Naouirou Ahamada
+05ogh,Harrison Ashby,,,,False,,
+0643r,Owen Bevan,,,,False,,
+05tz8,Emmanuel Dennis,,,,False,,
+05uog,Lewis Dobbin,,,,False,,
+06441,Martial Godo,,,,False,,
+062ft,Tyrell Malacia,,,,False,,
+04ym3,Ian Poveda-Ocampo,,,,False,,
+062op,Omar Richards,,,,False,,
+06v0u,Ahmed Abdullahi,,,,False,,
+06zod,Dean Benamar,,,,False,,
+06zbt,Rio Cardines,,,,False,,
+06zvn,George Hemmings,,,,False,,
+06v0q,Harrison Jones,,,,False,,
+06c4p,Benson Manuel,,,,True,552632.0,Manuel Benson
+06hcm,Callum Marshall,,,,False,,
+05r93,Tyler Onyango,,,,True,1004342.0,Tyler Onyango
+05nuf,Myles Peart-Harris,,,,False,,
+05uh0,Joseph Anderson,,,,False,,
+06kwh,Benjamin Arthur,,,,False,,
+06xzn,Abdoullah Ba,,,,False,,
+06cm7,Josh Bowler,,,,False,,
+06zoe,Luke Browne,,,,False,,
+06zc3,Jun'ai Byfield,,,,False,,
+06zrr,Josh Davidson,,,,False,,
+06prv,Jamaldeen Jimoh,,,,False,,
+06zrs,Michael Laffey,,,,False,,
+0701y,Giovanni Leoni,,,,False,,
+04ylt,Chris Mepham,,,,True,865740.0,Chris Mepham
+06xzj,David Mota Veiga Teixeira do Carmo,,,,False,,
+06xzk,Timothee Pembélé,,,,False,,
+06xzq,Nazariy Rusyn,,,,False,,
+06xzp,Luis Hemir Silva Semedo,,,,False,,
+06zxz,Scott Bailey,,,,False,,
+0700s,Adam Berry,,,,False,,
+06zqj,Ethan Laidlaw,,,,False,,
+05vyh,Andy Moran,,,,False,,
+06mmk,Marko Stamenic,,,,False,,
+06zqi,Joshua Stephenson,,,,False,,
+06xzl,Nectarios Triantis,,,,False,,
+06xzm,Zak Johnson,,,,False,,
+0703h,Arnaud Kalimuendo,,,,False,,
+06xzo,Jay Matete,,,,False,,
+0703c,Nordi Mukiele,,,,False,,
+06v0w,Trey Ogunsuyi,,,,False,,
+0700r,Jimmy Sinclair,,,,False,,
+070bg,Jackson Tchatchoua,,,,False,,
+0700q,Archie Whitehall,,,,False,,
+06rf9,Omar Marmoush,,,,True,873554.0,Omar Marmoush
+04qrc,Raul Jimenez,,,,True,192442.0,Raúl Jiménez
+02lp9,Kyle Walker,,,,True,44614.0,Kyle Walker
+0700u,Bafode Diakité,,,,True,962408.0,Bafodé Diakité
+06eo0,Lesley Ugochukwu,,,,True,1048916.0,Lesley Ugochukwu
+06dmj,Jurrien Timber,,,,True,958959.0,Jurriën Timber
+0620k,Nayef Aguerd,,,,True,877102.0,Nayef Aguerd
+062og,Aaron Hickey,,,,False,,
+0328q,Tom Cairney,,,,True,82566.0,Tom Cairney
+066sd,Myles Lewis-Skelly,,,,True,1423711.0,Myles Lewis-Skelly
+06phe,Ferdi Kadioglu,,,,True,825844.0,Ferdi Kadıoğlu
+06zqk,David Møller Wolfe,,,,True,1031283.0,David Möller Wolfe
+05yg5,Toti,,,,False,,
+05u1m,Nathan Collins,,,,False,,
+067x8,Nico O'Reilly,,,,True,1142703.0,Nico O'Reilly
+06r7k,Emmanuel Agbadou,,,,True,1013842.0,Emmanuel Agbadou
+02m11,Matt Doherty,,,,True,143047.0,Matt Doherty
+04spp,Douglas Luiz,,,,False,,
+070ci,Amine Adli,,,,False,,
+070cj,Noah Okafor,,,,False,,
+05os4,Rayan Ait-Nouri,,,,True,931278.0,Rayan Aït-Nouri
+04qr9,Morgan Gibbs-White,,,,True,865912.0,Morgan Gibbs-White
+03aqp,Mohamed Salah,,,,True,159665.0,Mohamed Salah
+04tig,Fabian Schar,,,,True,101882.0,Fabian Schär
+06v06,Tijjani Reijnders,,,,True,893549.0,Tijjani Reijnders
+06pia,Maxence Lacroix,,,,True,879674.0,Maxence Lacroix
+062x7,Rico Lewis,,,,True,1136731.0,Rico Lewis
+06nu7,Riccardo Calafiori,,,,True,957602.0,Riccardo Calafiori
+03vlj,Virgil van Dijk,,,,True,151545.0,Virgil van Dijk
+06znb,Robin Roefs,,,,True,1012928.0,Robin Roefs
+044ei,Nick Pope,,,,True,162653.0,Nick Pope
+06ymt,Marco Bizot,,,,True,100390.0,Marco Bizot
+05oz3,James Trafford,,,,True,980643.0,James Trafford
+06cmb,Guglielmo Vicario,,,,True,553606.0,Guglielmo Vicario
+03yww,Dean Henderson,,,,True,788134.0,Dean Henderson
+04ym7,Lucas Perri,,,,True,871290.0,Lucas Perri
+04qor,Bernd Leno,,,,True,103335.0,Bernd Leno
+06fuw,Djordje Petrovic,,,,False,,
+032f9,Jordan Pickford,,,,True,138530.0,Jordan Pickford
+06fx0,Altay Bayindir,,,,True,815890.0,Altay Bayındır
+04mr4,Martin Dubravka,,,,True,42209.0,Martin Dúbravka
+04f6h,Matz Sels,,,,True,78152.0,Matz Sels
+06cmu,Bart Verbruggen,,,,True,994363.0,Bart Verbruggen
+045ob,Caoimhin Kelleher,,,,False,,
+04sjt,Alisson,,,,True,243609.0,Alisson
+02lz0,Emiliano Martinez,,,,False,,
+04fk5,Ederson,,,,False,,
+06dps,Andre Onana,,,,False,,
+05oef,Alphonse Areola,,,,False,,
+04amh,Aaron Ramsdale,,,,False,,
+06mga,Mads Hermansen,,,,True,856640.0,Mads Hermansen
+06xzg,Giorgi Mamardashvili,,,,False,,
+04u40,Kepa,,,,False,,
+05mzt,Illan Meslier,,,,False,,
+04rha,Jason Steele,,,,False,,
+06nv3,Filip Jørgensen,,,,False,,
+06v0d,Anthony Patterson,,,,False,,
+063c2,Gabriel Slonina,,,,False,,
+06r6s,Antonin Kinsky,,,,False,,
+05oz4,Karl Hein,,,,False,,
+062cw,Stefan Ortega,,,,False,,
+04vy4,Mark Travers,,,,False,,
+06v6m,Max Weiß,,,,False,,
+03dwz,Tom Heaton,,,,False,,
+02xtd,Sam Johnstone,,,,False,,
+05n0a,Wes Foderingham,,,,False,,
+06v04,Armin Pécsi,,,,False,,
+06jfe,Hakon Valdimarsson,,,,False,,
+03m5i,Freddie Woodman,,,,False,,
+06mx2,Carlos Miguel,,,,False,,
+06xze,Walter Benítez,,,,False,,
+05xtq,Matthew Cox,,,,False,,
+02lo6,Daniel Bentley,,,,False,,
+044i7,Angus Gunn,,,,False,,
+06v0e,Blondy Nna Noukeu,,,,False,,
+04gyd,Brandon Austin,,,,False,,
+02ls8,Marcus Bettinelli,,,,False,,
+056as,William Dennis,,,,False,,
+06zbw,Benjamin Lecomte,,,,False,,
+033l8,Simon Moore,,,,False,,
+03pif,Karl Darlow,,,,False,,
+05n09,Mark Gillespie,,,,False,,
+06cmt,Tom King,,,,False,,
+05ubh,Remi Matthews,,,,False,,
+06uzw,Alex Cairns,,,,False,,
+06jgu,Callan McKenna,,,,False,,
+02m3v,John Ruddy,,,,False,,
+06zeg,Max Thompson,,,,False,,
+05rc7,Harry Tyrer,,,,False,,
+06mex,Alex Paulsen,,,,False,,
+05u40,Ellery Balcombe,,,,False,,
+0645w,Krisztian Hegyi,,,,False,,
+05rbn,Thomas McGill,,,,False,,
+06avm,James Wright,,,,False,,
+06uzk,Etienne Green,,,,False,,
+06mfw,Vaclav Hladky,,,,False,,
+06on4,Julian Eyestone,,,,False,,
+05udg,Jose Sa,,,,True,252669.0,José Sá
