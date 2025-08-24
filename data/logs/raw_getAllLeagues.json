@@ -1,0 +1,1617 @@
+{
+  "data": {
+    "sDate": 1756079747141,
+    "adrt": 45,
+    "up": "168.2.3"
+  },
+  "roles": [
+    "02"
+  ],
+  "responses": [
+    {
+      "data": {
+        "filterSettings": {
+          "view": "LEAGUES"
+        },
+        "displayedSelections": {
+          "view": "LEAGUES"
+        },
+        "miscData": {
+          "deleteLeagueDialog": {
+            "alwaysShowOpener": false,
+            "options": [
+              {
+                "id": "option0",
+                "label": "Yes"
+              },
+              {
+                "id": "option1",
+                "label": "No"
+              }
+            ],
+            "text": "Are you sure you want to delete this league?"
+          }
+        },
+        "tableList": [
+          {
+            "caption": "Seasons Starting in 2025",
+            "header": {
+              "cells": [
+                {
+                  "sortDirection": 1,
+                  "name": "Year",
+                  "shortName": "Year",
+                  "key": "year"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Type",
+                  "shortName": "Type",
+                  "key": "type"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Name",
+                  "shortName": "Name",
+                  "key": "name"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Team",
+                  "shortName": "Team",
+                  "key": "team"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Standings/Division Rank",
+                  "shortName": "Rank",
+                  "key": "rank"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Draft/Deadline (PDT)",
+                  "shortName": "Draft/Deadline (PDT)",
+                  "key": "draft/deadline"
+                },
+                {
+                  "sortDirection": 1,
+                  "name": "Copy/Renew",
+                  "shortName": "Copy/Renew",
+                  "key": "copy/renew"
+                }
+              ]
+            },
+            "rows": [
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Bantah Supah XI League",
+                    "leagueId": "rqz0sshsmdd000g8"
+                  },
+                  {
+                    "content": "GG - DraftAlchemy",
+                    "leagueId": "rqz0sshsmdd000g8",
+                    "key": "teamRoster",
+                    "teamId": "sycibfs0mddbnsb1"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "19/9",
+                    "toolTip": "Last updated Sun Aug 24, 10:33 AM PDT PDT"
+                  },
+                  {
+                    "content": "Tue Aug 5 1:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "DraftPL Community League",
+                    "leagueId": "wpkabxe9md2ygbqb"
+                  },
+                  {
+                    "content": "BB - DraftAlchemy",
+                    "leagueId": "wpkabxe9md2ygbqb",
+                    "key": "teamRoster",
+                    "teamId": "5u6ce0wkmd8wxnnc"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "15/4",
+                    "toolTip": "Last updated Sun Aug 24, 7:52 AM PDT PDT"
+                  },
+                  {
+                    "content": "Sat Aug 9 6:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "DraftPL Lifestyle League",
+                    "leagueId": "mh7e70u9md30tdww"
+                  },
+                  {
+                    "content": "LL - DraftAlchemy",
+                    "leagueId": "mh7e70u9md30tdww",
+                    "key": "teamRoster",
+                    "teamId": "vxgqu675mdd9h11h"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "3/2",
+                    "toolTip": "Last updated Sun Aug 24, 4:18 PM PDT PDT"
+                  },
+                  {
+                    "content": "Wed Aug 6 5:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "DraftPL Roster Lock League",
+                    "leagueId": "2n2fdfaxmcm64shc"
+                  },
+                  {
+                    "content": "Gr - DraftAlchemy",
+                    "leagueId": "2n2fdfaxmcm64shc",
+                    "key": "teamRoster",
+                    "teamId": "ekzha63dmcm8fxhp"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "42/9",
+                    "toolTip": "Last updated Sun Aug 24, 4:44 PM PDT PDT"
+                  },
+                  {
+                    "content": "Fri Aug 1 12:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "DraftPL Super League",
+                    "leagueId": "10col873mcm62cqv"
+                  },
+                  {
+                    "content": "2A - DraftAlchemy",
+                    "leagueId": "10col873mcm62cqv",
+                    "key": "teamRoster",
+                    "teamId": "fhmidjjjmcm8dnys"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "7/1",
+                    "toolTip": "Last updated Sun Aug 24, 3:12 PM PDT PDT"
+                  },
+                  {
+                    "content": "Fri Aug 1 12:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "High Rollers League",
+                    "leagueId": "w2c4cy5xmcbxkxrn"
+                  },
+                  {
+                    "content": "Draft",
+                    "leagueId": "w2c4cy5xmcbxkxrn",
+                    "key": "teamRoster",
+                    "teamId": "g8ue9st4mcbzdfk9"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "9",
+                    "toolTip": "Last updated Mon Aug 18, 3:21 PM PDT PDT"
+                  },
+                  {
+                    "content": "Mon Aug 4 7:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "International Genie League",
+                    "leagueId": "d2k0bg7bmd66t1oo"
+                  },
+                  {
+                    "content": "SO - DraftAlchemy",
+                    "leagueId": "d2k0bg7bmd66t1oo",
+                    "key": "teamRoster",
+                    "teamId": "9tu2v6zgmdae5hp3"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "48/2",
+                    "toolTip": "Last updated Sun Aug 24, 11:21 AM PDT PDT"
+                  },
+                  {
+                    "content": "Mon Aug 4 11:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Intl. Friendship League",
+                    "leagueId": "o90qdw15mc719reh"
+                  },
+                  {
+                    "content": "1 - Yoro wizard, Harry! (hogan_m)",
+                    "leagueId": "o90qdw15mc719reh",
+                    "key": "teamRoster",
+                    "teamId": "3uxxpgpemc719rep"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "10/3",
+                    "toolTip": "Last updated Sun Aug 24, 3:00 PM PDT PDT"
+                  },
+                  {
+                    "content": "Sun Aug 10 3:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Intl. Friendship League (NEW)",
+                    "leagueId": "bsvc5gwpmc71a759"
+                  },
+                  {
+                    "leagueId": "bsvc5gwpmc71a759",
+                    "key": "teamRoster",
+                    "teamId": "bsvc5gwpmc71a759"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "-"
+                  },
+                  {
+                    "content": "Sat Aug 10 10:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "TDS Early Expert Mock Draft",
+                    "leagueId": "0z7r5871mc1yqc0s"
+                  },
+                  {
+                    "content": "Pick 4",
+                    "leagueId": "0z7r5871mc1yqc0s",
+                    "key": "teamRoster",
+                    "teamId": "d953m0nemc6dddcp"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "6",
+                    "toolTip": "Last updated Wed Aug 20, 5:48 AM PDT PDT"
+                  },
+                  {
+                    "content": "Sun Jun 22 10:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "testtest",
+                    "leagueId": "k23jvisdmdmk640t"
+                  },
+                  {
+                    "content": "testtest",
+                    "leagueId": "k23jvisdmdmk640t",
+                    "key": "teamRoster",
+                    "teamId": "bfwgev7ymdmk64d3"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "1",
+                    "toolTip": "Last updated Sun Jul 27, 8:38 PM PDT PDT"
+                  },
+                  {
+                    "content": ""
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2025-26"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "That's a Keeper! Season 01",
+                    "leagueId": "k4xfrfg0me291w37"
+                  },
+                  {
+                    "content": "draft_alchemy",
+                    "leagueId": "k4xfrfg0me291w37",
+                    "key": "teamRoster",
+                    "teamId": "0a4usnbgme291wgs"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "1",
+                    "toolTip": "Last updated Sat Aug 23, 10:40 AM PDT PDT"
+                  },
+                  {
+                    "content": "Tue Aug 12 11:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "caption": "Seasons Starting in 2024",
+            "header": {
+              "cells": [
+                {
+                  "sortDirection": 1,
+                  "name": "Year",
+                  "shortName": "Year",
+                  "key": "year"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Type",
+                  "shortName": "Type",
+                  "key": "type"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Name",
+                  "shortName": "Name",
+                  "key": "name"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Team",
+                  "shortName": "Team",
+                  "key": "team"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Standings/Division Rank",
+                  "shortName": "Rank",
+                  "key": "rank"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Draft/Deadline (PDT)",
+                  "shortName": "Draft/Deadline (PDT)",
+                  "key": "draft/deadline"
+                },
+                {
+                  "sortDirection": 1,
+                  "name": "Copy/Renew",
+                  "shortName": "Copy/Renew",
+                  "key": "copy/renew"
+                }
+              ]
+            },
+            "rows": [
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2024-25"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Boxing Day Perfect Xl 2024",
+                    "leagueId": "za52egmqm4px5cvm"
+                  },
+                  {
+                    "content": "DraftAlchemy",
+                    "leagueId": "za52egmqm4px5cvm",
+                    "key": "teamRoster",
+                    "teamId": "5d1zaprjm4xuroer"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "49",
+                    "toolTip": "Last updated Mon Jan 6, 10:30 PM PST PDT"
+                  },
+                  {
+                    "content": "Tue Dec 24 4:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2024-25"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "DraftPL Community League",
+                    "leagueId": "d6x8dcxmlyflfah0"
+                  },
+                  {
+                    "content": "AA - @DraftAlchemy",
+                    "leagueId": "d6x8dcxmlyflfah0",
+                    "key": "teamRoster",
+                    "teamId": "krdg3otblyos42ve"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "24/5",
+                    "toolTip": "Last updated Sun May 25, 2:29 PM PDT PDT"
+                  },
+                  {
+                    "content": "Sat Aug 3 10:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2024-25"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "DraftPL Super-League",
+                    "leagueId": "kyoar5oflxpb15p7"
+                  },
+                  {
+                    "content": "3A - ❗@DraftAlchemy",
+                    "leagueId": "kyoar5oflxpb15p7",
+                    "key": "teamRoster",
+                    "teamId": "0of83mixlxpb15pi"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "1/1",
+                    "toolTip": "Last updated Tue Jul 15, 9:20 AM PDT PDT"
+                  },
+                  {
+                    "content": "Sat Aug 3 12:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2024-25"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Final Day Perfect Xl 2025",
+                    "leagueId": "wutl4sz2mao665kn"
+                  },
+                  {
+                    "content": "oliver_hogan",
+                    "leagueId": "wutl4sz2mao665kn",
+                    "key": "teamRoster",
+                    "teamId": "0vk383ycmay2rmz6"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "13",
+                    "toolTip": "Last updated Thu Jun 5, 3:02 AM PDT PDT"
+                  },
+                  {
+                    "content": "Fri May 23 4:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2024-25"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "FX Mock",
+                    "leagueId": "ivox2yf9lzep0gxg"
+                  },
+                  {
+                    "content": "MOCKMOCK",
+                    "leagueId": "ivox2yf9lzep0gxg",
+                    "key": "teamRoster",
+                    "teamId": "c5rms8y9lzep0i02"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "9",
+                    "toolTip": "Last updated Mon Jun 23, 12:01 PM PDT PDT"
+                  },
+                  {
+                    "content": "Sat Aug 3 6:15 PM"
+                  },
+                  {
+                    "icon": "RENEW",
+                    "leagueId": "ivox2yf9lzep0gxg",
+                    "toolTip": "Copy/Renew League to current season"
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2024-25"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "International Genie League",
+                    "leagueId": "iq0vpno7lyeqya9w"
+                  },
+                  {
+                    "content": "SO - @DraftAlchemy",
+                    "leagueId": "iq0vpno7lyeqya9w",
+                    "key": "teamRoster",
+                    "teamId": "kztllu6zlyoyy341"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "109/4",
+                    "toolTip": "Last updated Thu Jun 5, 9:03 AM PDT PDT"
+                  },
+                  {
+                    "content": "Mon Aug 5 7:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2024-25"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Primera Liga | 2024-2025",
+                    "leagueId": "kmp6w3iclxndmh97"
+                  },
+                  {
+                    "content": "1 - Rubin’ One Out 4 the Future",
+                    "leagueId": "kmp6w3iclxndmh97",
+                    "key": "teamRoster",
+                    "teamId": "tjevsri5lxndmh9f"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "2/1",
+                    "toolTip": "Last updated Wed May 21, 12:43 PM PDT PDT"
+                  },
+                  {
+                    "content": "Sat Aug 10 10:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2024-25"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "SETX EPL",
+                    "leagueId": "4crtqlwrlyjbod8v"
+                  },
+                  {
+                    "content": "Live Fast, Ndiaye Young (@draftalchemy)",
+                    "leagueId": "4crtqlwrlyjbod8v",
+                    "key": "teamRoster",
+                    "teamId": "j8plu7m9lyjfatvg"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "1/1",
+                    "toolTip": "Last updated Tue May 20, 2:10 PM PDT PDT"
+                  },
+                  {
+                    "content": "Sun Aug 11 3:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2024-25"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "UMass Draft League",
+                    "leagueId": "uyr62q2hlyp2dsmq"
+                  },
+                  {
+                    "content": "Dible me Timber (@draftalchemy)",
+                    "leagueId": "uyr62q2hlyp2dsmq",
+                    "key": "teamRoster",
+                    "teamId": "jw8kdjkylyp2dsmw"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "1",
+                    "toolTip": "Last updated Sun May 25, 2:42 PM PDT PDT"
+                  },
+                  {
+                    "content": "Sun Aug 4 12:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "caption": "Seasons Starting in 2023",
+            "header": {
+              "cells": [
+                {
+                  "sortDirection": 1,
+                  "name": "Year",
+                  "shortName": "Year",
+                  "key": "year"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Type",
+                  "shortName": "Type",
+                  "key": "type"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Name",
+                  "shortName": "Name",
+                  "key": "name"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Team",
+                  "shortName": "Team",
+                  "key": "team"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Standings/Division Rank",
+                  "shortName": "Rank",
+                  "key": "rank"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Draft/Deadline (PDT)",
+                  "shortName": "Draft/Deadline (PDT)",
+                  "key": "draft/deadline"
+                },
+                {
+                  "sortDirection": 1,
+                  "name": "Copy/Renew",
+                  "shortName": "Copy/Renew",
+                  "key": "copy/renew"
+                }
+              ]
+            },
+            "rows": [
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2023-24"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Boxing Day Perfect Xl",
+                    "leagueId": "facg9e35lq7xd8sb"
+                  },
+                  {
+                    "content": "oliver_hogan",
+                    "leagueId": "facg9e35lq7xd8sb",
+                    "key": "teamRoster",
+                    "teamId": "2yi8eyo0lq88y0a9"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "66",
+                    "toolTip": "Last updated Thu Jan 11, 4:30 AM PST PDT"
+                  },
+                  {
+                    "content": "Sun Dec 24 4:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2023-24"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "DraftPL Super-League",
+                    "leagueId": "gsaq7toklj5v1rws"
+                  },
+                  {
+                    "content": "4B - [@DraftAlchemy]",
+                    "leagueId": "gsaq7toklj5v1rws",
+                    "key": "teamRoster",
+                    "teamId": "nw5i9h1zljd0nro1"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "26/4",
+                    "toolTip": "Last updated Mon Jun 3, 8:12 PM PDT PDT"
+                  },
+                  {
+                    "content": "Sat Jul 29 7:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2023-24"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "El Super Liga | 2023-2024 ",
+                    "leagueId": "d41pycnmlj3bmk8y"
+                  },
+                  {
+                    "content": "1 - @draftalchemy #commish",
+                    "leagueId": "d41pycnmlj3bmk8y",
+                    "key": "teamRoster",
+                    "teamId": "s3ab9baslj3bmk94"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "1/1",
+                    "toolTip": "Last updated Thu May 2, 2:44 PM PDT PDT"
+                  },
+                  {
+                    "content": "Mon Aug 7 6:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2023-24"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Experimental League",
+                    "leagueId": "rkltbekplm3opncl"
+                  },
+                  {
+                    "content": "@draftalchemy",
+                    "leagueId": "rkltbekplm3opncl",
+                    "key": "teamRoster",
+                    "teamId": "w237a5fxlm3owu9q"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "5",
+                    "toolTip": "Last updated Wed May 22, 10:43 PM PDT PDT"
+                  },
+                  {
+                    "content": "Sun Sep 3 12:00 PM"
+                  },
+                  {
+                    "icon": "RENEW",
+                    "leagueId": "rkltbekplm3opncl",
+                    "toolTip": "Copy/Renew League to current season"
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2023-24"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Final Day Perfect XI by TDS",
+                    "leagueId": "iz67rr19lvs7gkfm"
+                  },
+                  {
+                    "content": "@DraftAlchemy",
+                    "leagueId": "iz67rr19lvs7gkfm",
+                    "key": "teamRoster",
+                    "teamId": "7f5dj0dtlw28oh9k"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "33",
+                    "toolTip": "Last updated Thu May 30, 6:41 AM PDT PDT"
+                  },
+                  {
+                    "content": "Fri May 17 4:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2023-24"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Goalie Pickers",
+                    "leagueId": "vbpxcsgilsp5991v"
+                  },
+                  {
+                    "content": "@draftalchemy",
+                    "leagueId": "vbpxcsgilsp5991v",
+                    "key": "teamRoster",
+                    "teamId": "5bzgxc6hlsp5psw5"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "14",
+                    "toolTip": "Last updated Thu May 30, 6:41 AM PDT PDT"
+                  },
+                  {
+                    "content": "Sat Feb 17 4:30 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2023-24"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "New Scoring Pilot League",
+                    "leagueId": "dppm8rvflkkwj9qx"
+                  },
+                  {
+                    "content": "@draftalchemy",
+                    "leagueId": "dppm8rvflkkwj9qx",
+                    "key": "teamRoster",
+                    "teamId": "58gh42jglkpr42y4"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "6",
+                    "toolTip": "Last updated Thu May 2, 1:59 PM PDT PDT"
+                  },
+                  {
+                    "content": "Fri Aug 4 8:00 PM"
+                  },
+                  {
+                    "icon": "RENEW",
+                    "leagueId": "dppm8rvflkkwj9qx",
+                    "toolTip": "Copy/Renew League to current season"
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2023-24"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "UMass Draft League",
+                    "leagueId": "6h1ktijclj503rm8"
+                  },
+                  {
+                    "content": "@draftalchemy",
+                    "leagueId": "6h1ktijclj503rm8",
+                    "key": "teamRoster",
+                    "teamId": "6xl7bngwljontz16"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "1",
+                    "toolTip": "Last updated Fri May 24, 10:03 PM PDT PDT"
+                  },
+                  {
+                    "content": "Sat Aug 5 6:00 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "caption": "Seasons Starting in 2022",
+            "header": {
+              "cells": [
+                {
+                  "sortDirection": 1,
+                  "name": "Year",
+                  "shortName": "Year",
+                  "key": "year"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Type",
+                  "shortName": "Type",
+                  "key": "type"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Name",
+                  "shortName": "Name",
+                  "key": "name"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Team",
+                  "shortName": "Team",
+                  "key": "team"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Standings Rank",
+                  "shortName": "Rank",
+                  "key": "rank"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Draft/Deadline (PDT)",
+                  "shortName": "Draft/Deadline (PDT)",
+                  "key": "draft/deadline"
+                },
+                {
+                  "sortDirection": 1,
+                  "name": "Copy/Renew",
+                  "shortName": "Copy/Renew",
+                  "key": "copy/renew"
+                }
+              ]
+            },
+            "rows": [
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2022-23"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "El Super Liga (Stage 3) ",
+                    "leagueId": "zv6z0lnel5bbsv2x"
+                  },
+                  {
+                    "content": "Potential Banana Skin",
+                    "leagueId": "zv6z0lnel5bbsv2x",
+                    "key": "teamRoster",
+                    "teamId": "qdfqohuhl5bbsv32"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "1",
+                    "toolTip": "Last updated Sat Jun 3, 9:17 PM PDT PDT"
+                  },
+                  {
+                    "content": "Sun Jul 31 6:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2022-23"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Perfect XI 22/23 MS1",
+                    "leagueId": "asuj9z24l76hqopn"
+                  },
+                  {
+                    "content": "oliver_hogan",
+                    "leagueId": "asuj9z24l76hqopn",
+                    "key": "teamRoster",
+                    "teamId": "yld5xhlelalphwwf"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "98",
+                    "toolTip": "Last updated Sun Nov 27, 5:37 PM PST PDT"
+                  },
+                  {
+                    "content": "Sat Aug 27 4:30 AM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "caption": "Seasons Starting in 2021",
+            "header": {
+              "cells": [
+                {
+                  "sortDirection": 1,
+                  "name": "Year",
+                  "shortName": "Year",
+                  "key": "year"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Type",
+                  "shortName": "Type",
+                  "key": "type"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Name",
+                  "shortName": "Name",
+                  "key": "name"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Team",
+                  "shortName": "Team",
+                  "key": "team"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Standings Rank",
+                  "shortName": "Rank",
+                  "key": "rank"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Draft/Deadline (PDT)",
+                  "shortName": "Draft/Deadline (PDT)",
+                  "key": "draft/deadline"
+                },
+                {
+                  "sortDirection": 1,
+                  "name": "Copy/Renew",
+                  "shortName": "Copy/Renew",
+                  "key": "copy/renew"
+                }
+              ]
+            },
+            "rows": [
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2021-22"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "8 TEAM MOCK",
+                    "leagueId": "tq45nql8kqoefvpc"
+                  },
+                  {
+                    "content": "GET IN",
+                    "leagueId": "tq45nql8kqoefvpc",
+                    "key": "teamRoster",
+                    "teamId": "zu6yot4dkqoefvq2"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "6",
+                    "toolTip": "Last updated Mon Jul 25, 3:04 PM PDT PDT"
+                  },
+                  {
+                    "content": ""
+                  },
+                  {
+                    "icon": "RENEW",
+                    "leagueId": "tq45nql8kqoefvpc",
+                    "toolTip": "Copy/Renew League to current season"
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2021-22"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "La Liga Fantasía (Season 3)",
+                    "leagueId": "k9obt9h0krs87afr"
+                  },
+                  {
+                    "content": "Fantasy Whistleblower",
+                    "leagueId": "k9obt9h0krs87afr",
+                    "key": "teamRoster",
+                    "teamId": "2qsdy25ekrtq0tcf"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "5",
+                    "toolTip": "Last updated Sun May 22, 10:42 AM PDT PDT"
+                  },
+                  {
+                    "content": "Wed Aug 11 7:00 PM"
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "caption": "Seasons Starting in 2020",
+            "header": {
+              "cells": [
+                {
+                  "sortDirection": 1,
+                  "name": "Year",
+                  "shortName": "Year",
+                  "key": "year"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Type",
+                  "shortName": "Type",
+                  "key": "type"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Name",
+                  "shortName": "Name",
+                  "key": "name"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Team",
+                  "shortName": "Team",
+                  "key": "team"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Standings Rank",
+                  "shortName": "Rank",
+                  "key": "rank"
+                },
+                {
+                  "align": "LEFT",
+                  "sortDirection": 1,
+                  "name": "Draft/Deadline (PDT)",
+                  "shortName": "Draft/Deadline (PDT)",
+                  "key": "draft/deadline"
+                },
+                {
+                  "sortDirection": 1,
+                  "name": "Copy/Renew",
+                  "shortName": "Copy/Renew",
+                  "key": "copy/renew"
+                }
+              ]
+            },
+            "rows": [
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2020-21"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "8 TEAM MOCK",
+                    "leagueId": "gca95670keutycvk"
+                  },
+                  {
+                    "content": "GET IN",
+                    "leagueId": "gca95670keutycvk",
+                    "key": "teamRoster",
+                    "teamId": "djtr7slqkeutydbr"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "2",
+                    "toolTip": "Last updated Wed Aug 20, 11:56 AM PDT PDT"
+                  },
+                  {
+                    "content": ""
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2020-21"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "8 TEAM MOCK (2)",
+                    "leagueId": "bgfl1znmkevl2qsx"
+                  },
+                  {
+                    "content": "oliver_h",
+                    "leagueId": "bgfl1znmkevl2qsx",
+                    "key": "teamRoster",
+                    "teamId": "3iyr1di9kevl7qr6"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "4",
+                    "toolTip": "Last updated Sat May 28, 12:06 PM PDT PDT"
+                  },
+                  {
+                    "content": ""
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2020-21"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Call of Duty: FPLgg",
+                    "leagueId": "w2qoihx0kexknq5s"
+                  },
+                  {
+                    "content": "team ya boi",
+                    "leagueId": "w2qoihx0kexknq5s",
+                    "key": "teamRoster",
+                    "teamId": "d38qvsvhkexla0b7"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "5",
+                    "toolTip": "Last updated Thu Jul 28, 8:52 PM PDT PDT"
+                  },
+                  {
+                    "content": ""
+                  },
+                  {
+                    "icon": "RENEW",
+                    "leagueId": "w2qoihx0kexknq5s",
+                    "toolTip": "Copy/Renew League to current season"
+                  }
+                ]
+              },
+              {
+                "cells": [
+                  {
+                    "icon": "EPL",
+                    "content": "2020-21"
+                  },
+                  {
+                    "content": "EPL - Commissioner"
+                  },
+                  {
+                    "align": "LEFT",
+                    "content": "Moke draft (not real) ",
+                    "leagueId": "qr49zvxgkehbtpbq"
+                  },
+                  {
+                    "content": "Team oliver_hogan",
+                    "leagueId": "qr49zvxgkehbtpbq",
+                    "key": "teamRoster",
+                    "teamId": "xvkxl5s4kehc5qqw"
+                  },
+                  {
+                    "align": "CENTER",
+                    "content": "1",
+                    "toolTip": "Last updated Wed Aug 20, 11:56 AM PDT PDT"
+                  },
+                  {
+                    "content": ""
+                  },
+                  {
+                    "content": ""
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "displayedLists": {
+          "tabs": [
+            {
+              "name": "Leagues",
+              "id": "LEAGUES"
+            },
+            {
+              "name": "Mock Drafts",
+              "id": "MOCK_DRAFTS"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
