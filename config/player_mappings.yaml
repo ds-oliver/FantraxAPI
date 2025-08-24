@@ -78,8 +78,8 @@
   display_name: Ben White
 - fantrax_id: 05w7t
   fantrax_name: Pape Sarr
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 1002711
+  sofascore_name: Pape Matar Sarr
   ffscout_name: Pape Sarr
   other_names:
   - Sarr
@@ -120,7 +120,7 @@
   fantrax_name: Gabriel Magalhaes
   sofascore_id: 869792
   sofascore_name: Gabriel Magalhães
-  ffscout_name: null
+  ffscout_name: Gabriel
   other_names: []
   display_name: Gabriel Magalhães
 - fantrax_id: 05s08
@@ -143,14 +143,14 @@
   fantrax_name: Igor Thiago
   sofascore_id: 1016907
   sofascore_name: Igor Thiago
-  ffscout_name: null
+  ffscout_name: Thiago
   other_names: []
   display_name: Igor Thiago
 - fantrax_id: 05o4b
   fantrax_name: Matty Cash
   sofascore_id: 833956
   sofascore_name: Matty Cash
-  ffscout_name: null
+  ffscout_name: Cash
   other_names: []
   display_name: Matty Cash
 - fantrax_id: 0700t
@@ -367,11 +367,11 @@
   display_name: Georginio Rutter
 - fantrax_id: 06yb9
   fantrax_name: Reinildo Isnard Mandava
-  sofascore_id: null
-  sofascore_name: null
-  ffscout_name: null
+  sofascore_id: 831424
+  sofascore_name: Reinildo Mandava
+  ffscout_name: Reinildo
   other_names: []
-  display_name: Reinildo Isnard Mandava
+  display_name: Reinildo Mandava
 - fantrax_id: 05r9b
   fantrax_name: Martin Odegaard
   sofascore_id: 547410
@@ -415,7 +415,7 @@
   fantrax_name: El Hadji Malick Diouf
   sofascore_id: 1471764
   sofascore_name: El Hadji Malick Diouf
-  ffscout_name: null
+  ffscout_name: Diouf
   other_names: []
   display_name: El Hadji Malick Diouf
 - fantrax_id: 03rec
@@ -566,11 +566,11 @@
   display_name: Sepp van den Berg
 - fantrax_id: 068yr
   fantrax_name: Hamed Traore
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 892924
+  sofascore_name: Hamed Junior Traorè
   ffscout_name: null
   other_names: []
-  display_name: Hamed Traore
+  display_name: Hamed Junior Traorè
 - fantrax_id: 04agz
   fantrax_name: Declan Rice
   sofascore_id: 856714
@@ -945,7 +945,7 @@
   fantrax_name: Gabriel Martinelli
   sofascore_id: 922573
   sofascore_name: Gabriel Martinelli
-  ffscout_name: null
+  ffscout_name: Gabriel
   other_names: []
   display_name: Gabriel Martinelli
 - fantrax_id: 06zxy
@@ -959,7 +959,7 @@
   fantrax_name: Wilfried Gnonto
   sofascore_id: 998951
   sofascore_name: Wilfried Gnonto
-  ffscout_name: null
+  ffscout_name: Degnand Wilfried Gnonto
   other_names: []
   display_name: Wilfried Gnonto
 - fantrax_id: 062oh
@@ -1035,8 +1035,8 @@
   display_name: Carlos Alcaraz
 - fantrax_id: 066r9
   fantrax_name: Ehor Yarmolyuk
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 1031258
+  sofascore_name: Yehor Yarmolyuk
   ffscout_name: Ehor Yarmolyuk
   other_names:
   - Yarmolyuk
@@ -1571,7 +1571,7 @@
   fantrax_name: Ezri Konsa
   sofascore_id: 827679
   sofascore_name: Ezri Konsa
-  ffscout_name: null
+  ffscout_name: Ezri Konsa Ngoyo
   other_names: []
   display_name: Ezri Konsa
 - fantrax_id: 04hk9
@@ -1583,11 +1583,11 @@
   display_name: Mikel Merino
 - fantrax_id: 06y9o
   fantrax_name: Igor Jesus Maciel da Cruz
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 981619
+  sofascore_name: Igor Jesus
   ffscout_name: null
   other_names: []
-  display_name: Igor Jesus Maciel da Cruz
+  display_name: Igor Jesus
 - fantrax_id: 04tzt
   fantrax_name: Jefferson Lerma
   sofascore_id: 355796
@@ -1667,11 +1667,11 @@
   display_name: Harry Maguire
 - fantrax_id: 03r93
   fantrax_name: Joseph Gomez
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 318927
+  sofascore_name: Joe Gomez
   ffscout_name: null
   other_names: []
-  display_name: Joseph Gomez
+  display_name: Joe Gomez
 - fantrax_id: 06c4h
   fantrax_name: Hjalmar Ekdal
   sofascore_id: 875360
@@ -1746,8 +1746,8 @@
   display_name: Lewis Hall
 - fantrax_id: 063q8
   fantrax_name: Mikkel Damsgaard
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 907072
+  sofascore_name: Mikkel Damsgaard
   ffscout_name: Mikkel Damsgaard
   other_names:
   - Damsgaard
@@ -1783,8 +1783,8 @@
   display_name: Rodri
 - fantrax_id: 068lx
   fantrax_name: Dango Ouattara
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 1106451
+  sofascore_name: Dango Ouattara
   ffscout_name: null
   other_names: []
   display_name: Dango Ouattara
@@ -1798,8 +1798,8 @@
   display_name: Vitaliy Mykolenko
 - fantrax_id: 052cb
   fantrax_name: Ian Maatsen
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 976263
+  sofascore_name: Ian Maatsen
   ffscout_name: Ian Maatsen
   other_names:
   - Maatsen
@@ -1932,8 +1932,8 @@
   display_name: Malo Gusto
 - fantrax_id: 06zwj
   fantrax_name: Evann Guessand
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 930245
+  sofascore_name: Evann Guessand
   ffscout_name: null
   other_names: []
   display_name: Evann Guessand
@@ -1956,7 +1956,7 @@
   fantrax_name: Tosin Adarabioyo
   sofascore_id: 352668
   sofascore_name: Tosin Adarabioyo
-  ffscout_name: null
+  ffscout_name: Tosin
   other_names: []
   display_name: Tosin Adarabioyo
 - fantrax_id: 061ve
@@ -2031,8 +2031,8 @@
   display_name: Lewis Cook
 - fantrax_id: 06mnm
   fantrax_name: Marc Guiu
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 1414933
+  sofascore_name: Marc Guiu
   ffscout_name: null
   other_names: []
   display_name: Marc Guiu
@@ -2117,8 +2117,8 @@
   display_name: Joshua Zirkzee
 - fantrax_id: 06crm
   fantrax_name: Pau Torres
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 864169
+  sofascore_name: Pau Torres
   ffscout_name: Pau Torres
   other_names:
   - Torres
@@ -2139,11 +2139,11 @@
   display_name: Charalampos Kostoulas
 - fantrax_id: 051kl
   fantrax_name: Emiliano Buendia
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 783126
+  sofascore_name: Emiliano Buendía
   ffscout_name: null
   other_names: []
-  display_name: Emiliano Buendia
+  display_name: Emiliano Buendía
 - fantrax_id: 05opl
   fantrax_name: Wesley Fofana
   sofascore_id: 923894
@@ -2204,7 +2204,7 @@
   fantrax_name: Gabriel Jesus
   sofascore_id: 794839
   sofascore_name: Gabriel Jesus
-  ffscout_name: null
+  ffscout_name: Gabriel
   other_names: []
   display_name: Gabriel Jesus
 - fantrax_id: 05n3v
@@ -2273,8 +2273,8 @@
   display_name: Yerson Mosquera
 - fantrax_id: 057cr
   fantrax_name: Kevin Danso
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 794953
+  sofascore_name: Kevin Danso
   ffscout_name: null
   other_names: []
   display_name: Kevin Danso
@@ -2329,8 +2329,8 @@
   display_name: Mateo Kovačić
 - fantrax_id: 06zbm
   fantrax_name: Cristhian Mosquera
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 1144630
+  sofascore_name: Cristhian Mosquera
   ffscout_name: null
   other_names: []
   display_name: Cristhian Mosquera
@@ -2427,8 +2427,8 @@
   display_name: Tariq Lamptey
 - fantrax_id: 03brm
   fantrax_name: Patrick Roberts
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 361326
+  sofascore_name: Patrick Roberts
   ffscout_name: null
   other_names: []
   display_name: Patrick Roberts
@@ -2709,8 +2709,8 @@
   display_name: Tom Watson
 - fantrax_id: 05uel
   fantrax_name: Kristoffer Ajer
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 576384
+  sofascore_name: Kristoffer Ajer
   ffscout_name: null
   other_names: []
   display_name: Kristoffer Ajer
@@ -2975,8 +2975,8 @@
   display_name: Zeki Amdouni
 - fantrax_id: 05r4h
   fantrax_name: Lamare Bogarde
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 1089388
+  sofascore_name: Lamare Bogarde
   ffscout_name: null
   other_names: []
   display_name: Lamare Bogarde
@@ -3061,7 +3061,7 @@
   fantrax_name: Alex Murphy
   sofascore_id: 1125214
   sofascore_name: Alex Murphy
-  ffscout_name: null
+  ffscout_name: Murphy
   other_names: []
   display_name: Alex Murphy
 - fantrax_id: 06phr
@@ -3115,8 +3115,8 @@
   display_name: Willy Boly
 - fantrax_id: 03ysd
   fantrax_name: Sam Byram
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 254713
+  sofascore_name: Sam Byram
   ffscout_name: null
   other_names: []
   display_name: Sam Byram
@@ -3199,8 +3199,8 @@
   display_name: Dane Scarlett
 - fantrax_id: 061xw
   fantrax_name: Joe Worrall
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 838399
+  sofascore_name: Joe Worrall
   ffscout_name: null
   other_names: []
   display_name: Joe Worrall
@@ -3724,8 +3724,8 @@
   display_name: Jimmy Sinclair
 - fantrax_id: 070bg
   fantrax_name: Jackson Tchatchoua
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 1096210
+  sofascore_name: Jackson Tchatchoua
   ffscout_name: null
   other_names: []
   display_name: Jackson Tchatchoua
@@ -3790,8 +3790,8 @@
   display_name: Nayef Aguerd
 - fantrax_id: 062og
   fantrax_name: Aaron Hickey
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 966869
+  sofascore_name: Aaron Hickey
   ffscout_name: null
   other_names: []
   display_name: Aaron Hickey
@@ -3827,16 +3827,16 @@
   display_name: David Møller Wolfe
 - fantrax_id: 05yg5
   fantrax_name: Toti
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 973418
+  sofascore_name: Toti Gomes
   ffscout_name: Toti
   other_names: []
   display_name: Toti
 - fantrax_id: 05u1m
   fantrax_name: Nathan Collins
-  sofascore_id: null
-  sofascore_name: null
-  ffscout_name: null
+  sofascore_id: 958916
+  sofascore_name: Nathan Collins
+  ffscout_name: Nathan Collins
   other_names: []
   display_name: Nathan Collins
 - fantrax_id: 067x8
@@ -3871,15 +3871,15 @@
   display_name: Douglas Luiz
 - fantrax_id: 070ci
   fantrax_name: Amine Adli
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 991478
+  sofascore_name: Amine Adli
   ffscout_name: null
   other_names: []
   display_name: Amine Adli
 - fantrax_id: 070cj
   fantrax_name: Noah Okafor
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 865523
+  sofascore_name: Noah Okafor
   ffscout_name: null
   other_names: []
   display_name: Noah Okafor
@@ -4004,11 +4004,11 @@
   display_name: Bernd Leno
 - fantrax_id: 06fuw
   fantrax_name: Djordje Petrovic
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 882604
+  sofascore_name: Đorđe Petrović
   ffscout_name: Dorde Petrovic
   other_names: []
-  display_name: Dorde Petrovic
+  display_name: Đorđe Petrović
 - fantrax_id: 032f9
   fantrax_name: Jordan Pickford
   sofascore_id: 138530
@@ -4046,9 +4046,9 @@
   display_name: Bart Verbruggen
 - fantrax_id: 045ob
   fantrax_name: Caoimhin Kelleher
-  sofascore_id: null
-  sofascore_name: null
-  ffscout_name: null
+  sofascore_id: 827362
+  sofascore_name: Caoimhin Kelleher
+  ffscout_name: Caoimhin Kelleher
   other_names: []
   display_name: Caoimhin Kelleher
 - fantrax_id: 04sjt
@@ -4060,11 +4060,11 @@
   display_name: Alisson
 - fantrax_id: 02lz0
   fantrax_name: Emiliano Martinez
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 158263
+  sofascore_name: Emiliano Martínez
   ffscout_name: null
   other_names: []
-  display_name: Emiliano Martinez
+  display_name: Emiliano Martínez
 - fantrax_id: 04fk5
   fantrax_name: Ederson
   sofascore_id: null
@@ -4503,7 +4503,7 @@
   fantrax_name: David Raya
   sofascore_id: 581310
   sofascore_name: David Raya
-  ffscout_name: null
+  ffscout_name: David Raya Martin
   other_names: []
   display_name: David Raya
 - fantrax_id: 04yme
@@ -4520,3 +4520,31 @@
   ffscout_name: Matt O’Riley
   other_names: []
   display_name: Matt O'Riley
+- fantrax_id: 06zbp
+  fantrax_name: Max Dowman
+  sofascore_id: 1917626
+  sofascore_name: Max Dowman
+  ffscout_name: null
+  other_names: []
+  display_name: Max Dowman
+- fantrax_id: 06r7l
+  fantrax_name: Bradley Burrowes
+  sofascore_id: null
+  sofascore_name: null
+  ffscout_name: null
+  other_names: []
+  display_name: Bradley Burrowes
+- fantrax_id: 06ie2
+  fantrax_name: Sam Proctor
+  sofascore_id: null
+  sofascore_name: null
+  ffscout_name: null
+  other_names: []
+  display_name: Sam Proctor
+- fantrax_id: 06prt
+  fantrax_name: Triston Rowe
+  sofascore_id: null
+  sofascore_name: null
+  ffscout_name: null
+  other_names: []
+  display_name: Triston Rowe

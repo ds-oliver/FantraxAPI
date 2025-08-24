@@ -38,6 +38,7 @@ import pytz
 from thefuzz import fuzz
 from unidecode import unidecode
 import yaml
+import re
 
 # NEW: optional imports used by ESD + raw fallback
 try:
@@ -271,38 +272,119 @@ def extract_name_and_info(full_str: str) -> tuple[str, str, str, str]:
 def normalize_name(name: str, remove_accents: bool = False) -> str:
     if not name:
         return ""
+    
+    # Extract just the name part (before any parentheses)
     name, _, _, _ = extract_name_and_info(name)
+    
+    # Convert to lowercase
     name = name.lower()
+    
+    # Handle special characters that might appear in names BEFORE unidecode
+    name = name.replace("đ", "dj").replace("Đ", "dj")  # Đorđe Petrović -> djordje
+    name = name.replace("è", "e").replace("È", "e")  # Traorè
+    name = name.replace("ć", "c").replace("Ć", "c")  # Petrović
+    
+    # Remove accents if requested
     if remove_accents:
         name = unidecode(name)
+    
+    # Handle common separators and punctuation
     name = name.replace("-", " ").replace("'", "").replace(".", " ")
-    name = " ".join(name.split())
+    name = name.replace("_", " ").replace(",", " ")
+    
+    # Split into words and clean each word
+    words = name.split()
+    cleaned_words = []
+    
+    for word in words:
+        # Remove any remaining punctuation
+        word = re.sub(r'[^\w\s]', '', word)
+        if word:  # Only add non-empty words
+            cleaned_words.append(word)
+    
+    # Join words back together
+    name = " ".join(cleaned_words)
+    
     return name
 
 def standardize_team(team: str, code_mappings: dict, club_mappings: dict) -> str:
     if not team:
         return ""
-    team = team.strip().lower()
-
+    team = team.strip().upper()  # Convert to uppercase for consistency
+    
+    # First, check if it's already a standard code
+    if team in code_mappings:
+        return team
+    
+    # Check code mappings with variations
     for code, data in code_mappings.items():
         if isinstance(data, dict):
-            variations = [v.lower() for v in data.get("variations", [])]
-            if team in variations or team == code.lower():
+            variations = [v.upper() for v in data.get("variations", [])]
+            if team in variations:
                 return code
-
+    
+    # Check club mappings with all variations
     for code, data in club_mappings.items():
         if isinstance(data, dict):
             all_variations = [
-                data.get("long_name", "").lower(),
-                data.get("short_name", "").lower(),
-                code.lower(),
-                *[v.lower() for v in data.get("long_name_variations", [])],
-                *[v.lower() for v in data.get("short_name_variations", [])],
-                *[v.lower() for v in data.get("nicknames", [])],
+                data.get("long_name", "").upper(),
+                data.get("short_name", "").upper(),
+                code.upper(),
+                *[v.upper() for v in data.get("long_name_variations", [])],
+                *[v.upper() for v in data.get("short_name_variations", [])],
+                *[v.upper() for v in data.get("nicknames", [])],
             ]
             if team in all_variations:
                 return code
-
+    
+    # Special handling for common variations
+    team_lower = team.lower()
+    
+    # Handle Brentford variations specifically
+    if team_lower in ["brentford", "bre", "brf"]:
+        return "BRE"
+    
+    # Handle other common variations
+    if team_lower in ["arsenal", "ars"]:
+        return "ARS"
+    elif team_lower in ["aston_villa", "avl", "villa", "ast", "avfc"]:
+        return "AVL"
+    elif team_lower in ["bournemouth", "bou", "afcb"]:
+        return "BOU"
+    elif team_lower in ["brighton", "bha", "bri"]:
+        return "BHA"
+    elif team_lower in ["burnley", "bur"]:
+        return "BUR"
+    elif team_lower in ["chelsea", "che", "cfc"]:
+        return "CHE"
+    elif team_lower in ["crystal_palace", "cry", "pal"]:
+        return "CRY"
+    elif team_lower in ["everton", "eve"]:
+        return "EVE"
+    elif team_lower in ["fulham", "ful"]:
+        return "FUL"
+    elif team_lower in ["liverpool", "liv", "lfc"]:
+        return "LIV"
+    elif team_lower in ["manchester_city", "mci", "mnc", "man_city"]:
+        return "MCI"
+    elif team_lower in ["manchester_united", "mun", "man_utd"]:
+        return "MUN"
+    elif team_lower in ["newcastle", "new", "nufc"]:
+        return "NEW"
+    elif team_lower in ["nottingham_forest", "nfo", "not", "forest"]:
+        return "NFO"
+    elif team_lower in ["sheffield_united", "shu", "suf"]:
+        return "SHU"
+    elif team_lower in ["tottenham_hotspur", "tot", "thfc", "tottenham", "spurs"]:
+        return "TOT"
+    elif team_lower in ["west_ham", "whu", "wham"]:
+        return "WHU"
+    elif team_lower in ["wolves", "wol", "wwfc"]:
+        return "WOL"
+    elif team_lower in ["luton", "lut", "ltfc"]:
+        return "LUT"
+    
+    # Fuzzy matching for long team names
     if len(team) > 10:
         best_score = 0
         best_code = None
@@ -314,25 +396,100 @@ def standardize_team(team: str, code_mappings: dict, club_mappings: dict) -> str
                 ]
                 for name in names_to_try:
                     if name:
-                        score = fuzz.ratio(team, name)
+                        score = fuzz.ratio(team_lower, name)
                         if score > best_score and score >= 90:
                             best_score = score
                             best_code = code
         if best_code:
             return best_code
-
-    if team.startswith("manchester "):
-        if "city" in team or "mnc" in team or "mci" in team:
+    
+    # Handle special cases
+    if team_lower.startswith("manchester "):
+        if "city" in team_lower or "mnc" in team_lower or "mci" in team_lower:
             return "MCI"
-        if "united" in team or "utd" in team or "mun" in team:
+        if "united" in team_lower or "utd" in team_lower or "mun" in team_lower:
             return "MUN"
-
+    
+    # Handle directional names (West Ham, etc.)
     if len(team.split()) > 1:
         words = team.split()
-        if len(words) >= 2 and words[0] in ["west", "east", "north", "south"]:
+        if len(words) >= 2 and words[0].lower() in ["west", "east", "north", "south"]:
             return words[1][:3].upper()
         return words[0][:3].upper()
+    
+    # Default: return first 3 characters
     return team[:3].upper()
+
+def check_name_variations(name1: str, name2: str) -> bool:
+    """
+    Check if two names are variations of each other using common patterns.
+    This should be restrictive to avoid false positives.
+    """
+    norm1 = normalize_name(name1)
+    norm2 = normalize_name(name2)
+    
+    # Exact match
+    if norm1 == norm2:
+        return True
+    
+    # Check for common variations - be more restrictive
+    variations = [
+        # Pape Sarr vs Pape Matar Sarr (same person, different name format)
+        ("pape sarr", "pape matar sarr"),
+        
+        # Reinildo variations (same person, different name format)
+        ("reinildo mandava", "reinildo isnard mandava"),
+        
+        # Yehor vs Ehor (same person, spelling variation)
+        ("yehor yarmolyuk", "ehor yarmolyuk"),
+        
+        # Đorđe vs Djordje (same person, transliteration variation)
+        ("djordje petrovic", "djordje petrovic"),
+        
+        # Hamed variations (same person, different name format)
+        ("hamed traore", "hamed junior traore"),
+        
+        # Igor variations (same person, different name format)
+        ("igor jesus", "igor jesus maciel da cruz"),
+        
+        # Joe vs Joseph (same person, nickname variation)
+        ("joe gomez", "joseph gomez"),
+        
+        # Toti variations (same person, different name format)
+        ("toti", "toti gomes"),
+    ]
+    
+    for var1, var2 in variations:
+        if (norm1 == var1 and norm2 == var2) or (norm1 == var2 and norm2 == var1):
+            return True
+    
+    # Specific exclusions for names that look similar but are different players
+    exclusions = [
+        ("kyle walker", "kyle walker-peters"),  # Different players
+        ("kyle walker-peters", "kyle walker"),  # Different players
+    ]
+    
+    for excl1, excl2 in exclusions:
+        if (norm1 == excl1 and norm2 == excl2) or (norm1 == excl2 and norm2 == excl1):
+            return False  # Explicitly exclude these matches
+    
+    # Additional fuzzy matching - be very restrictive
+    if len(norm1) > 5 and len(norm2) > 5:  # Only for longer names
+        # Check if one name is contained within the other (but be careful)
+        # This should only work for very specific cases like "Pape Sarr" in "Pape Matar Sarr"
+        if norm1 in norm2 or norm2 in norm1:
+            # Additional safety check: the shorter name should be at least 3 words
+            # to avoid matching "Gabriel" to "Gabriel Jesus"
+            shorter_name = norm1 if len(norm1) < len(norm2) else norm2
+            if len(shorter_name.split()) >= 2:
+                return True
+        
+        # Check if names are very similar (high fuzzy match threshold)
+        from fuzzywuzzy import fuzz
+        if fuzz.ratio(norm1, norm2) >= 90:  # Increased from 85 to 90
+            return True
+    
+    return False
 
 def find_matches(
     name: str, 
@@ -348,36 +505,84 @@ def find_matches(
     norm_name_no_accents = normalize_name(name_only, remove_accents=True)
     std_team = standardize_team(team_code or team, code_mappings, club_mappings)
 
+    # Safety check: don't match single names to avoid false positives
+    name_words = norm_name.split()
+    if len(name_words) == 1:
+        # Single name - be very restrictive
+        threshold = max(threshold, 95)  # Require very high confidence
+
     for candidate, cand_team in candidates:
         cand_name, cand_team_info, cand_pos, _ = extract_name_and_info(candidate)
         norm_cand = normalize_name(cand_name)
         norm_cand_no_accents = normalize_name(cand_name, remove_accents=True)
         std_cand_team = standardize_team(cand_team or cand_team_info, code_mappings, club_mappings)
 
+        # CRITICAL: Team mismatch should be an absolute deal-breaker for similar names
+        # This prevents Kyle Walker-Peters (WHU) from matching to Kyle Walker (BUR)
+        if std_team != std_cand_team:
+            # Only allow team mismatches for very specific, high-confidence cases
+            # like known name variations (Pape Sarr vs Pape Matar Sarr)
+            if not check_name_variations(name_only, cand_name):
+                # Not a known variation - team mismatch is a deal-breaker
+                continue
+
+        # Calculate base name similarity score
         if norm_name == norm_cand:
             base_score = 100
         elif norm_name_no_accents == norm_cand_no_accents:
             base_score = 99
+        elif check_name_variations(name_only, cand_name):
+            # Known name variation - high confidence
+            base_score = 95
         else:
             len_diff = abs(len(norm_name) - len(norm_cand))
-            if len_diff > 5:
+            if len_diff > 8:  # Increased from 5 to allow more variation
                 continue
+                
+            # Try different fuzzy matching algorithms
             scores = [
                 fuzz.ratio(norm_name, norm_cand) * 1.0,
                 fuzz.token_sort_ratio(norm_name, norm_cand) * 0.9,
                 fuzz.token_set_ratio(norm_name, norm_cand) * 0.8,
             ]
             base_score = max(scores)
+            
+            # Apply length penalty (reduced penalty)
             if len_diff > 0:
-                base_score = base_score * (1 - len_diff * 0.05)
-
+                base_score = base_score * (1 - len_diff * 0.03)  # Reduced from 0.05 to 0.03
+        
+        # Additional safety checks for single names
+        cand_words = norm_cand.split()
+        if len(name_words) == 1 and len(cand_words) > 1:
+            # Single name trying to match multi-word name - be very restrictive
+            if base_score < 98:  # Require almost perfect match
+                continue
+        elif len(cand_words) == 1 and len(name_words) > 1:
+            # Multi-word name trying to match single name - be very restrictive
+            if base_score < 98:  # Require almost perfect match
+                continue
+        
+        # Check team match and apply penalties/bonuses
         if std_team == std_cand_team:
+            # Same team - boost the score
             if base_score >= 90:
                 base_score = 100
             elif base_score >= 80:
                 base_score = base_score * 1.2
         else:
-            base_score = base_score * 0.5
+            # Different teams - apply penalty based on name similarity
+            if base_score >= 95:
+                # Very high confidence name match - minimal penalty
+                base_score = base_score * 0.8
+            elif base_score >= 90:
+                # High confidence name match - moderate penalty
+                base_score = base_score * 0.7
+            elif base_score >= 85:
+                # Good confidence name match - standard penalty
+                base_score = base_score * 0.6
+            else:
+                # Lower confidence - heavy penalty
+                base_score = base_score * 0.5
 
         final_score = int(base_score)
         if final_score >= threshold:

@@ -1,0 +1,1728 @@
+{
+  "fantrax_without_sofascore": [
+    {
+      "fantrax_id": "068lx",
+      "fantrax_name": "Dango Ouattara",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05w7t",
+      "fantrax_name": "Pape Sarr",
+      "team": "TOT",
+      "team_code": "TOT",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06fuw",
+      "fantrax_name": "Djordje Petrovic",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06yb9",
+      "fantrax_name": "Reinildo Isnard Mandava",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "063q8",
+      "fantrax_name": "Mikkel Damsgaard",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "066r9",
+      "fantrax_name": "Ehor Yarmolyuk",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "045ob",
+      "fantrax_name": "Caoimhin Kelleher",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05u1m",
+      "fantrax_name": "Nathan Collins",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "068yr",
+      "fantrax_name": "Hamed Traore",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06y9o",
+      "fantrax_name": "Igor Jesus Maciel da Cruz",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "03r93",
+      "fantrax_name": "Joseph Gomez",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05uel",
+      "fantrax_name": "Kristoffer Ajer",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "062og",
+      "fantrax_name": "Aaron Hickey",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05uor",
+      "fantrax_name": "Yoane Wissa",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06mvz",
+      "fantrax_name": "Savio",
+      "team": "MCI",
+      "team_code": "MCI",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06p4j",
+      "fantrax_name": "Noussair Mazraoui",
+      "team": "MUN",
+      "team_code": "MUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05uhs",
+      "fantrax_name": "James Mcatee",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "04fk5",
+      "fantrax_name": "Ederson",
+      "team": "MCI",
+      "team_code": "MCI",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "051k3",
+      "fantrax_name": "Jacob Ramsey",
+      "team": "NEW",
+      "team_code": "NEW",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "04qfm",
+      "fantrax_name": "Ryan Sessegnon",
+      "team": "FUL",
+      "team_code": "FUL",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05tr8",
+      "fantrax_name": "Christian Norgaard",
+      "team": "ARS",
+      "team_code": "ARS",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06dps",
+      "fantrax_name": "Andre Onana",
+      "team": "MUN",
+      "team_code": "MUN",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05rl4",
+      "fantrax_name": "Crysencio Summerville",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05ubv",
+      "fantrax_name": "Omari Hutchinson",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "067ys",
+      "fantrax_name": "Jack Hinshelwood",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05oef",
+      "fantrax_name": "Alphonse Areola",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "0703h",
+      "fantrax_name": "Arnaud Kalimuendo",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "066nn",
+      "fantrax_name": "Ben Doak",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "049tq",
+      "fantrax_name": "Dominic Calvert-Lewin",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "05gvx",
+      "fantrax_name": "Armando Broja",
+      "team": "BUR",
+      "team_code": "BUR",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06r2g",
+      "fantrax_name": "Rio Ngumoha",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06mve",
+      "fantrax_name": "Joshua Zirkzee",
+      "team": "MUN",
+      "team_code": "MUN",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06r9h",
+      "fantrax_name": "Romain Esse",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "0435t",
+      "fantrax_name": "Ilkay Gundogan",
+      "team": "MCI",
+      "team_code": "MCI",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06xzd",
+      "fantrax_name": "Charalampos Kostoulas",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "0700p",
+      "fantrax_name": "Malick Thiaw",
+      "team": "NEW",
+      "team_code": "NEW",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "04amh",
+      "fantrax_name": "Aaron Ramsdale",
+      "team": "NEW",
+      "team_code": "NEW",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06xzg",
+      "fantrax_name": "Giorgi Mamardashvili",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "04ge9",
+      "fantrax_name": "Eddie Nketiah",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "04spp",
+      "fantrax_name": "Douglas Luiz",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05tr1",
+      "fantrax_name": "Ethan Pinnock",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "04u40",
+      "fantrax_name": "Kepa",
+      "team": "ARS",
+      "team_code": "ARS",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05mzt",
+      "fantrax_name": "Illan Meslier",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05ts6",
+      "fantrax_name": "Yerson Mosquera",
+      "team": "WOL",
+      "team_code": "WOL",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05uns",
+      "fantrax_name": "Leon Bailey",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "067yu",
+      "fantrax_name": "Facundo Buonanotte",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06xza",
+      "fantrax_name": "Eli Kroupi",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "04e1k",
+      "fantrax_name": "Solly March",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06yey",
+      "fantrax_name": "Borna Sosa",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "0701y",
+      "fantrax_name": "Giovanni Leoni",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06mnc",
+      "fantrax_name": "Daichi Kamada",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "061xs",
+      "fantrax_name": "Julio Enciso",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06v0m",
+      "fantrax_name": "Luke O'Nien",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06zef",
+      "fantrax_name": "Adam Aznou",
+      "team": "EVE",
+      "team_code": "EVE",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06v51",
+      "fantrax_name": "Jaka Bijol",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "04rha",
+      "fantrax_name": "Jason Steele",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06f81",
+      "fantrax_name": "Edson Alvarez",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06roj",
+      "fantrax_name": "Chido Obi-Martin",
+      "team": "MUN",
+      "team_code": "MUN",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06xzc",
+      "fantrax_name": "Stefanos Tzimas",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "0703c",
+      "fantrax_name": "Nordi Mukiele",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06nv3",
+      "fantrax_name": "Filip Jørgensen",
+      "team": "CHE",
+      "team_code": "CHE",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06uyd",
+      "fantrax_name": "Diego Coppola",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05a6d",
+      "fantrax_name": "Tariq Lamptey",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06v0d",
+      "fantrax_name": "Anthony Patterson",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06kqy",
+      "fantrax_name": "Ayden Heaven",
+      "team": "MUN",
+      "team_code": "MUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06y26",
+      "fantrax_name": "Olivier Boscagli",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06hze",
+      "fantrax_name": "Treymaurice Nyoni",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "063c2",
+      "fantrax_name": "Gabriel Slonina",
+      "team": "CHE",
+      "team_code": "CHE",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "03ek4",
+      "fantrax_name": "Patrick Bamford",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06r6s",
+      "fantrax_name": "Antonin Kinsky",
+      "team": "TOT",
+      "team_code": "TOT",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05oz4",
+      "fantrax_name": "Karl Hein",
+      "team": "ARS",
+      "team_code": "ARS",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06kyw",
+      "fantrax_name": "Claudio Echeverri",
+      "team": "MCI",
+      "team_code": "MCI",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05tre",
+      "fantrax_name": "Vitaly Janelt",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06ys4",
+      "fantrax_name": "Sverre Nypan",
+      "team": "MCI",
+      "team_code": "MCI",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "062cw",
+      "fantrax_name": "Stefan Ortega",
+      "team": "MCI",
+      "team_code": "MCI",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06ygm",
+      "fantrax_name": "Jair Paula da Cunha Filho",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06635",
+      "fantrax_name": "Oliver Scarles",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "04vy4",
+      "fantrax_name": "Mark Travers",
+      "team": "EVE",
+      "team_code": "EVE",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06v0y",
+      "fantrax_name": "Luka Vuskovic",
+      "team": "TOT",
+      "team_code": "TOT",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06p4l",
+      "fantrax_name": "Julian Araujo",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "04mqv",
+      "fantrax_name": "Emerson",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06l4i",
+      "fantrax_name": "Tyrique George",
+      "team": "CHE",
+      "team_code": "CHE",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06uzn",
+      "fantrax_name": "Lucas Pires",
+      "team": "BUR",
+      "team_code": "BUR",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06v6m",
+      "fantrax_name": "Max Weiß",
+      "team": "BUR",
+      "team_code": "BUR",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "02lpf",
+      "fantrax_name": "Ross Barkley",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06mrz",
+      "fantrax_name": "Pedro Lima",
+      "team": "WOL",
+      "team_code": "WOL",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05g4d",
+      "fantrax_name": "Dennis Cirkin",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06mgp",
+      "fantrax_name": "Luis Guilherme",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "03xrs",
+      "fantrax_name": "Axel Tuanzebe",
+      "team": "BUR",
+      "team_code": "BUR",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05mxa",
+      "fantrax_name": "Joel Veltman",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06v0j",
+      "fantrax_name": "Dan Neil",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06uns",
+      "fantrax_name": "Tom Watson",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "03dwz",
+      "fantrax_name": "Tom Heaton",
+      "team": "MUN",
+      "team_code": "MUN",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06yb8",
+      "fantrax_name": "Diego León",
+      "team": "MUN",
+      "team_code": "MUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "0687b",
+      "fantrax_name": "Alex Moreno",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06onv",
+      "fantrax_name": "Harrison Armstrong",
+      "team": "EVE",
+      "team_code": "EVE",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06dmn",
+      "fantrax_name": "George Earthy",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "02xtd",
+      "fantrax_name": "Sam Johnstone",
+      "team": "WOL",
+      "team_code": "WOL",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "04ml6",
+      "fantrax_name": "Konstantinos Mavropanos",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05n0a",
+      "fantrax_name": "Wes Foderingham",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "045yy",
+      "fantrax_name": "Arthur Masuaku",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06v04",
+      "fantrax_name": "Armin Pécsi",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06l2r",
+      "fantrax_name": "Harry Amass",
+      "team": "MUN",
+      "team_code": "MUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06uzv",
+      "fantrax_name": "Dario Essugo",
+      "team": "CHE",
+      "team_code": "CHE",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06r9v",
+      "fantrax_name": "Andres García",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06zxx",
+      "fantrax_name": "Divine Mukasa",
+      "team": "MCI",
+      "team_code": "MCI",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05afj",
+      "fantrax_name": "Largie Ramazani",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "056ir",
+      "fantrax_name": "Adam Webster",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06eka",
+      "fantrax_name": "Igor Julio",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06nvc",
+      "fantrax_name": "Asher Agbinone",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06r7f",
+      "fantrax_name": "Julio Soler",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06jfe",
+      "fantrax_name": "Hakon Valdimarsson",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "03m5i",
+      "fantrax_name": "Freddie Woodman",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06mx2",
+      "fantrax_name": "Carlos Miguel",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06442",
+      "fantrax_name": "Zach Abbott",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06xze",
+      "fantrax_name": "Walter Benítez",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05xtq",
+      "fantrax_name": "Matthew Cox",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05r4r",
+      "fantrax_name": "Sam Greenwood",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06do1",
+      "fantrax_name": "Zach Marsh",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06pig",
+      "fantrax_name": "Morato",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06zrt",
+      "fantrax_name": "Will Wright",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "02lo6",
+      "fantrax_name": "Daniel Bentley",
+      "team": "WOL",
+      "team_code": "WOL",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "044i7",
+      "fantrax_name": "Angus Gunn",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06v0e",
+      "fantrax_name": "Blondy Nna Noukeu",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06zc0",
+      "fantrax_name": "Seung-Soo Park",
+      "team": "NEW",
+      "team_code": "NEW",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06y28",
+      "fantrax_name": "Sebastiaan Bornauw",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "064op",
+      "fantrax_name": "Tyler Fredricson",
+      "team": "MUN",
+      "team_code": "MUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05n03",
+      "fantrax_name": "Kalvin Phillips",
+      "team": "MCI",
+      "team_code": "MCI",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06mnn",
+      "fantrax_name": "Chadi Riad",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05x9k",
+      "fantrax_name": "Jeremy Sarmiento",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05wwd",
+      "fantrax_name": "Joshua Wilson-Esbrand",
+      "team": "MCI",
+      "team_code": "MCI",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "04gyd",
+      "fantrax_name": "Brandon Austin",
+      "team": "TOT",
+      "team_code": "TOT",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "02ls8",
+      "fantrax_name": "Marcus Bettinelli",
+      "team": "MCI",
+      "team_code": "MCI",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "056as",
+      "fantrax_name": "William Dennis",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06xzb",
+      "fantrax_name": "Romelle Donovan",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06zbw",
+      "fantrax_name": "Benjamin Lecomte",
+      "team": "FUL",
+      "team_code": "FUL",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "033l8",
+      "fantrax_name": "Simon Moore",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06v0v",
+      "fantrax_name": "Milan Aleksic",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "05ogg",
+      "fantrax_name": "Ajibola Alese",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06uzr",
+      "fantrax_name": "Jaydon Banel",
+      "team": "BUR",
+      "team_code": "BUR",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "03dxr",
+      "fantrax_name": "Ashley Barnes",
+      "team": "BUR",
+      "team_code": "BUR",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "05w90",
+      "fantrax_name": "Maxwel Cornet",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "062du",
+      "fantrax_name": "Darko Gyabi",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06mnb",
+      "fantrax_name": "Samuel Iling-Junior",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06zrq",
+      "fantrax_name": "Wellity Lucky",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06rpm",
+      "fantrax_name": "Mateus Mané",
+      "team": "WOL",
+      "team_code": "WOL",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06phr",
+      "fantrax_name": "Gustavo Nunes",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "066iz",
+      "fantrax_name": "Lewis Orford",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05tr5",
+      "fantrax_name": "Mads Roerslev",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05ogh",
+      "fantrax_name": "Harrison Ashby",
+      "team": "NEW",
+      "team_code": "NEW",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "03pif",
+      "fantrax_name": "Karl Darlow",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05n09",
+      "fantrax_name": "Mark Gillespie",
+      "team": "NEW",
+      "team_code": "NEW",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05r2t",
+      "fantrax_name": "Niall Huggins",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "066sh",
+      "fantrax_name": "Bashir Humphreys",
+      "team": "BUR",
+      "team_code": "BUR",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06cmt",
+      "fantrax_name": "Tom King",
+      "team": "EVE",
+      "team_code": "EVE",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05ubh",
+      "fantrax_name": "Remi Matthews",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05udw",
+      "fantrax_name": "Romaine Mundle",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "05ue3",
+      "fantrax_name": "Albert Sambi Lokonga",
+      "team": "ARS",
+      "team_code": "ARS",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06cly",
+      "fantrax_name": "Enock Agyei",
+      "team": "BUR",
+      "team_code": "BUR",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06r5m",
+      "fantrax_name": "Aaron Anselmino",
+      "team": "CHE",
+      "team_code": "CHE",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06uzw",
+      "fantrax_name": "Alex Cairns",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "04u6i",
+      "fantrax_name": "Leander Dendoncker",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06441",
+      "fantrax_name": "Martial Godo",
+      "team": "FUL",
+      "team_code": "FUL",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "05x12",
+      "fantrax_name": "Leo Fuhr Hjelde",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06ils",
+      "fantrax_name": "Yunus Konak",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06nvb",
+      "fantrax_name": "Caleb Kporha",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "04tsf",
+      "fantrax_name": "Paris Maghoma",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06mgk",
+      "fantrax_name": "Jayden Meghoma",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "061z5",
+      "fantrax_name": "Calvin Ramsay",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06r3w",
+      "fantrax_name": "Remy Rees-Dottin",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "062op",
+      "fantrax_name": "Omar Richards",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "062oi",
+      "fantrax_name": "Kaden Rodney",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06uzx",
+      "fantrax_name": "Isaac Schmidt",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06ya6",
+      "fantrax_name": "Kota Takai",
+      "team": "TOT",
+      "team_code": "TOT",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05oji",
+      "fantrax_name": "Rhys Williams",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06mnd",
+      "fantrax_name": "Eric da Silva Moreira",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06v0u",
+      "fantrax_name": "Ahmed Abdullahi",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "0643r",
+      "fantrax_name": "Owen Bevan",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06v0k",
+      "fantrax_name": "Alan Browne",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06v00",
+      "fantrax_name": "Sam Chambers",
+      "team": "LEE",
+      "team_code": "LEE",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05tz8",
+      "fantrax_name": "Emmanuel Dennis",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "05uog",
+      "fantrax_name": "Lewis Dobbin",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06v0q",
+      "fantrax_name": "Harrison Jones",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06zrs",
+      "fantrax_name": "Michael Laffey",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06hcm",
+      "fantrax_name": "Callum Marshall",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06jgu",
+      "fantrax_name": "Callan McKenna",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "04ym3",
+      "fantrax_name": "Ian Poveda-Ocampo",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "02m3v",
+      "fantrax_name": "John Ruddy",
+      "team": "NEW",
+      "team_code": "NEW",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06zeg",
+      "fantrax_name": "Max Thompson",
+      "team": "NEW",
+      "team_code": "NEW",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05rc7",
+      "fantrax_name": "Harry Tyrer",
+      "team": "EVE",
+      "team_code": "EVE",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06kk4",
+      "fantrax_name": "Franco Umeh-Chibueze",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "05uh0",
+      "fantrax_name": "Joseph Anderson",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06zod",
+      "fantrax_name": "Dean Benamar",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06zbt",
+      "fantrax_name": "Rio Cardines",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06prv",
+      "fantrax_name": "Jamaldeen Jimoh",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06mex",
+      "fantrax_name": "Alex Paulsen",
+      "team": "BOU",
+      "team_code": "BOU",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05nuf",
+      "fantrax_name": "Myles Peart-Harris",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06xzk",
+      "fantrax_name": "Timothee Pembélé",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "062cj",
+      "fantrax_name": "Abdallah Sima",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06kwh",
+      "fantrax_name": "Benjamin Arthur",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06xzn",
+      "fantrax_name": "Abdoullah Ba",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06zxz",
+      "fantrax_name": "Scott Bailey",
+      "team": "NEW",
+      "team_code": "NEW",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05u40",
+      "fantrax_name": "Ellery Balcombe",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06cm7",
+      "fantrax_name": "Josh Bowler",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06zoe",
+      "fantrax_name": "Luke Browne",
+      "team": "CRY",
+      "team_code": "CRY",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06zc3",
+      "fantrax_name": "Jun'ai Byfield",
+      "team": "TOT",
+      "team_code": "TOT",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06zrr",
+      "fantrax_name": "Josh Davidson",
+      "team": "LIV",
+      "team_code": "LIV",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "0645w",
+      "fantrax_name": "Krisztian Hegyi",
+      "team": "WHU",
+      "team_code": "WHU",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06zvn",
+      "fantrax_name": "George Hemmings",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "062ft",
+      "fantrax_name": "Tyrell Malacia",
+      "team": "MUN",
+      "team_code": "MUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "05rbn",
+      "fantrax_name": "Thomas McGill",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "05vyh",
+      "fantrax_name": "Andy Moran",
+      "team": "BHA",
+      "team_code": "BHA",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06xzj",
+      "fantrax_name": "David Mota Veiga Teixeira do Carmo",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06v0w",
+      "fantrax_name": "Trey Ogunsuyi",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06xzq",
+      "fantrax_name": "Nazariy Rusyn",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06xzp",
+      "fantrax_name": "Luis Hemir Silva Semedo",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06mmk",
+      "fantrax_name": "Marko Stamenic",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06zqi",
+      "fantrax_name": "Joshua Stephenson",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06avm",
+      "fantrax_name": "James Wright",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "0700s",
+      "fantrax_name": "Adam Berry",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06uzk",
+      "fantrax_name": "Etienne Green",
+      "team": "BUR",
+      "team_code": "BUR",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06mfw",
+      "fantrax_name": "Vaclav Hladky",
+      "team": "BUR",
+      "team_code": "BUR",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06zqj",
+      "fantrax_name": "Ethan Laidlaw",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "F"
+    },
+    {
+      "fantrax_id": "06xzo",
+      "fantrax_name": "Jay Matete",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06xzl",
+      "fantrax_name": "Nectarios Triantis",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "0700q",
+      "fantrax_name": "Archie Whitehall",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06r7l",
+      "fantrax_name": "Bradley Burrowes",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "06on4",
+      "fantrax_name": "Julian Eyestone",
+      "team": "BRF",
+      "team_code": "BRF",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06xzm",
+      "fantrax_name": "Zak Johnson",
+      "team": "SUN",
+      "team_code": "SUN",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "06ie2",
+      "fantrax_name": "Sam Proctor",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "G"
+    },
+    {
+      "fantrax_id": "06prt",
+      "fantrax_name": "Triston Rowe",
+      "team": "AVL",
+      "team_code": "AVL",
+      "position": "D"
+    },
+    {
+      "fantrax_id": "0700r",
+      "fantrax_name": "Jimmy Sinclair",
+      "team": "NOT",
+      "team_code": "NFO",
+      "position": "M"
+    },
+    {
+      "fantrax_id": "05yg5",
+      "fantrax_name": "Toti",
+      "team": "WOL",
+      "team_code": "WOL",
+      "position": "D"
+    }
+  ],
+  "sofascore_without_fantrax": [
+    {
+      "player_id": 1106451,
+      "player_name": "Dango Ouattara",
+      "team_code": "BRE",
+      "source": "ratings"
+    },
+    {
+      "player_id": 907072,
+      "player_name": "Mikkel Damsgaard",
+      "team_code": "BRE",
+      "source": "ratings"
+    },
+    {
+      "player_id": 882604,
+      "player_name": "Đorđe Petrović",
+      "team_code": "BOU",
+      "source": "ratings"
+    },
+    {
+      "player_id": 1002711,
+      "player_name": "Pape Matar Sarr",
+      "team_code": "TOT",
+      "source": "ratings"
+    },
+    {
+      "player_id": 831424,
+      "player_name": "Reinildo Mandava",
+      "team_code": "SUN",
+      "source": "ratings"
+    },
+    {
+      "player_id": 966869,
+      "player_name": "Aaron Hickey",
+      "team_code": "BRE",
+      "source": "ratings"
+    },
+    {
+      "player_id": 576384,
+      "player_name": "Kristoffer Ajer",
+      "team_code": "BRE",
+      "source": "ratings"
+    },
+    {
+      "player_id": 827362,
+      "player_name": "Caoimhin Kelleher",
+      "team_code": "BRE",
+      "source": "ratings"
+    },
+    {
+      "player_id": 1031258,
+      "player_name": "Yehor Yarmolyuk",
+      "team_code": "BRE",
+      "source": "ratings"
+    },
+    {
+      "player_id": 958916,
+      "player_name": "Nathan Collins",
+      "team_code": "BRE",
+      "source": "ratings"
+    },
+    {
+      "player_id": 892924,
+      "player_name": "Hamed Junior Traorè",
+      "team_code": "BOU",
+      "source": "ratings"
+    },
+    {
+      "player_id": 981619,
+      "player_name": "Igor Jesus",
+      "team_code": "NFO",
+      "source": "ratings"
+    },
+    {
+      "player_id": 1426228,
+      "player_name": "Eli Junior Kroupi",
+      "team_code": "BOU",
+      "source": "ratings"
+    },
+    {
+      "player_id": 318927,
+      "player_name": "Joe Gomez",
+      "team_code": "LIV",
+      "source": "ratings"
+    },
+    {
+      "player_id": 973418,
+      "player_name": "Toti Gomes",
+      "team_code": "WOL",
+      "source": "ratings"
+    }
+  ],
+  "generated_at_pacific": "2025-08-23 02:20:18 PM PDT"
+}
