@@ -24,6 +24,9 @@ from utils.auth_helpers import (
     validate_logged_in,
 )
 
+# --- roster ops ---
+from utils.roster_ops import DropService
+
 # Prefer the token-aware builder; fall back to cookies-only builder if absent.
 try:
     from utils.auth_helpers import load_requests_session_from_artifacts  # type: ignore
@@ -202,7 +205,6 @@ def ui_login_section():
                         # Optional: keep a ready-to-use session in cache
                         st.session_state["__fantrax_cached_session__"] = sess
                         st.success("Headless login successful.")
-                        st.experimental_rerun()
                     except Exception as e:
                         logger.exception("Headless login failed")
                         st.error(str(e))
@@ -232,6 +234,8 @@ def ui_leagues_and_rosters_section():
     logger.info("Hydrating requests session from artifacts (cookies + storage if present)")
     try:
         session = load_requests_session_from_artifacts(st.session_state["auth_artifacts"])
+
+        service = DropService(session)
     except Exception:
         logger.exception("Failed to build session from artifacts")
         st.error("Could not create a session from your cookie/artifacts.")
@@ -414,33 +418,32 @@ def ui_leagues_and_rosters_section():
 
                 if submit_drop:
                     try:
-                        api = FantraxAPI(league_id=league_id, session=session)
                         period_arg = None
                         if not use_current_period:
-                            try:
-                                period_arg = api.drops.get_current_period()
-                            except Exception:
-                                period_arg = None
-                        ok = api.drops.drop_player(
+                            period_arg = service.get_current_period(league_id)
+                        ok = service.drop_player_single(
+                            league_id=league_id,
                             team_id=team_id,
                             scorer_id=drop_id,
                             period=period_arg,
                             skip_validation=skip_validation,
                         )
+
                         if ok:
                             st.success("Player dropped successfully. Refreshing roster...")
                             # Refresh roster
                             roster = get_roster_for_league(league_id, team_id, session)
-                            st.experimental_rerun()
                         else:
                             st.error("Drop failed (no confirmation).")
+
+                            # Add some more debug information here
+                            
                     except Exception as e:
                         logger.exception("Drop failed")
                         st.error(f"Drop failed: {e}")
         except Exception as e:
             logger.exception("Drop UI error")
             st.error(f"Could not load drop UI: {e}")
-
 
 def main():
     st.title("Fantrax Auth (BYOC) — Testbed")
