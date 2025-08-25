@@ -25,6 +25,11 @@
   "v": "167.0.1"
 }
 
+- Add Fantrax "Starting" Players view as an alternative starters source to drive lineup automation:
+  - Source: [Fantrax Players – Starting view](https://www.fantrax.com/fantasy/league/o90qdw15mc719reh/players;miscDisplayType=10;pageNumber=1;statusOrTeamFilter=ALL)
+  - UI API: `getPlayerStats` with `miscDisplayType: "10"`; entries in `statsTable[*].scorer.icons` that include `{ "typeId": "12" }` indicate starters.
+  - Use `scorerId`, `name`, `teamId`, and `posShortNames` to map to our roster and make lineup changes.
+
 # Important scripts
 
 python esd_export_schedule_and_lineups_v1.py --tournament-id 17 --output-dir data/sofascore --upcoming --with-lineups

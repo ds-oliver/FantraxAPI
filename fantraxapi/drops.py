@@ -152,26 +152,92 @@ class DropsService:
         }
         
         try:
+            # Log initial roster state
+            initial_roster = self._api.roster_info(team_id)
+            logger.info(f"Initial roster state before drop - team {team_id}:")
+            for row in initial_roster.rows:
+                if row.player:
+                    raw_data = getattr(row, '_raw', {})
+                    logger.info(f"  Player: {row.player.name} ({row.player.id})")
+                    logger.info(f"  Position: {getattr(row.pos, 'short_name', 'unknown')}")
+                    logger.info(f"  Status: {raw_data.get('statusId', 'unknown')}")
+                    logger.info(f"  Lock state: isLocked={raw_data.get('isLocked')}, "
+                              f"locked={raw_data.get('locked')}, lineupLocked={raw_data.get('lineupLocked')}")
+                    if raw_data.get('lockedReason'):
+                        logger.info(f"  Lock reason: {raw_data.get('lockedReason')}")
+
             # First get confirmation info
-            self._api._request("getClaimDropConfirmInfo", **confirm_data)
+            logger.info(f"Requesting drop confirmation for player {scorer_id}")
+            confirm_response = self._api._request("getClaimDropConfirmInfo", **confirm_data)
+            logger.info(f"Drop confirmation response: {confirm_response}")
             
-            # Then execute the drop
+            # Then execute the initial drop request
+            logger.info(f"Executing initial drop request for player {scorer_id}")
             response = self._api._request("createClaimDrop", **confirm_data)
+            logger.info(f"Initial drop execution response: {response}")
+            
+            # Check for warnings that need confirmation
+            if response and "txResponses" in response:
+                for tx_response in response["txResponses"]:
+                    if tx_response.get("confirm") and tx_response.get("transactionId"):
+                        logger.info(f"Drop requires confirmation. Transaction ID: {tx_response['transactionId']}")
+                        logger.info(f"Warning messages: {tx_response.get('detailMessages', [])}")
+                        
+                        # Send confirmation request
+                        confirm_tx_data = {
+                            "transactionId": tx_response["transactionId"],
+                            "confirm": True
+                        }
+                        logger.info("Sending drop confirmation request")
+                        confirm_response = self._api._request("confirmTransaction", **confirm_tx_data)
+                        logger.info(f"Drop confirmation response: {confirm_response}")
+                        
+                        # Check confirmation response
+                        if not confirm_response:
+                            logger.error("Drop confirmation returned empty response")
+                            raise FantraxException("No response received from drop confirmation")
+                        if "error" in confirm_response:
+                            logger.error(f"Drop confirmation contains error: {confirm_response['error']}")
+                            raise FantraxException(f"Drop confirmation failed: {confirm_response['error']}")
+                        
+                        # Original response is no longer relevant, use confirmation response
+                        response = confirm_response
             
             # Verify the drop was successful by checking the response
             if not response:
+                logger.error("Drop request returned empty response")
                 raise FantraxException("No response received from drop request")
                 
             # Check for error messages in response
             if "error" in response:
+                logger.error(f"Drop response contains error: {response['error']}")
                 raise FantraxException(f"Drop failed: {response['error']}")
                 
+            # Add delay before verification
+            import time
+            logger.info("Waiting 2 seconds before verifying roster update...")
+            time.sleep(2)
+                
             # Verify player is no longer on roster
+            logger.info(f"Verifying roster state after drop - team {team_id}")
             roster = self._api.roster_info(team_id)
+            player_found = False
             for row in roster.rows:
                 if row.player and row.player.id == scorer_id:
+                    player_found = True
+                    raw_data = getattr(row, '_raw', {})
+                    logger.error(f"Player still on roster after drop:")
+                    logger.error(f"  Player: {row.player.name} ({row.player.id})")
+                    logger.error(f"  Position: {getattr(row.pos, 'short_name', 'unknown')}")
+                    logger.error(f"  Status: {raw_data.get('statusId', 'unknown')}")
+                    logger.error(f"  Lock state: isLocked={raw_data.get('isLocked')}, "
+                               f"locked={raw_data.get('locked')}, lineupLocked={raw_data.get('lineupLocked')}")
+                    if raw_data.get('lockedReason'):
+                        logger.error(f"  Lock reason: {raw_data.get('lockedReason')}")
                     raise FantraxException("Player still on roster after drop attempt")
             
+            if not player_found:
+                logger.info("Success: Player no longer found on roster")
             return True
             
         except Exception as e:

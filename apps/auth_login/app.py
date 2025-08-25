@@ -2,6 +2,8 @@
 Streamlit: Bring your own Fantrax cookie/artifacts, list leagues, browse rosters.
 """
 
+# auth_login/app.py
+
 from __future__ import annotations
 
 import io
@@ -389,63 +391,104 @@ def ui_leagues_and_rosters_section():
             st.markdown("### Bench")
             st.table(_make_table(bench))
 
+        # app.py (inside the "else:" branch where a single roster is shown)
+
         # --- Drop player flow ---
         st.divider()
         st.subheader("Manage Roster — Drop a Player")
-        try:
-            # Build selection of players on roster
-            player_options = []
-            seen_ids = set()
-            for row in roster.rows:
-                if row.player and row.player.id and row.player.id not in seen_ids:
-                    seen_ids.add(row.player.id)
-                    label_txt = f"{row.player.name} ({row.player.team_short_name or row.player.team_name or ''})"
-                    player_options.append((label_txt, row.player.id))
 
-            if not player_options:
+        try:
+            label_to_meta = {}
+            for row in roster.rows:
+                if not row.player or not row.player.id:
+                    continue
+
+                pid = row.player.id
+                team_abbr = row.player.team_short_name or row.player.team_name or ""
+
+                # Use service’s status inference for labeling (does not refetch roster)
+                st_info = service._infer_drop_status_from_row(row, league_id)  # or expose a wrapper if you prefer not to use "_"
+                if not st_info["can_drop_now"]:
+                    suffix = " — LOCKED"
+                else:
+                    suffix = ""
+
+                label = f"{row.player.name} ({team_abbr}){suffix}"
+                if label in label_to_meta:
+                    label = f"{label} [{pid}]"
+                label_to_meta[label] = {"pid": pid, "locked": st_info["locked"]}
+
+            if not label_to_meta:
                 st.info("No players found on this roster.")
             else:
-                names = [p[0] for p in player_options]
-                choice = st.selectbox("Select a player to drop", options=names, key="drop_choice")
-                drop_id = dict(player_options)[choice]
                 with st.form("drop_form"):
-                    col1, col2 = st.columns([1,1])
-                    with col1:
-                        use_current_period = st.checkbox("Use current period", value=True)
-                    with col2:
-                        skip_validation = st.checkbox("Skip validation checks", value=False)
+                    choice = st.selectbox("Select a player to drop", options=list(label_to_meta.keys()))
+                    skip_validation = st.checkbox("Skip validation checks", value=False)
                     submit_drop = st.form_submit_button("Drop Player", type="primary")
 
                 if submit_drop:
                     try:
-                        period_arg = None
-                        if not use_current_period:
-                            period_arg = service.get_current_period(league_id)
+                        meta = label_to_meta[choice]
+                        logger.info(f"Drop attempt initiated for {choice}")
+                        
+                        # Log pre-drop state
+                        try:
+                            roster_before = service.get_roster(league_id, team_id)
+                            player_row = service._find_row(roster_before, meta["pid"])
+                            if player_row and player_row.player:
+                                logger.info(f"Pre-drop roster state: Player {player_row.player.name} ({meta['pid']}) "
+                                          f"found in position {player_row.pos.short_name if player_row.pos else 'unknown'}")
+                                # Log raw data for debugging
+                                raw_data = getattr(player_row, '_raw', {})
+                                logger.info(f"Player row raw data: {raw_data}")
+                            else:
+                                logger.warning(f"Player {meta['pid']} not found in pre-drop roster check")
+                        except Exception as e:
+                            logger.warning(f"Failed to log pre-drop state: {e}")
+
+                        # Attempt the drop
+                        logger.info(f"Executing drop with skip_validation={skip_validation}")
                         ok = service.drop_player_single(
                             league_id=league_id,
                             team_id=team_id,
-                            scorer_id=drop_id,
-                            period=period_arg,
+                            scorer_id=meta["pid"],
                             skip_validation=skip_validation,
                         )
-
+                        
+                        # Log post-drop state
+                        logger.info(f"Drop API result: {ok}")
                         if ok:
-                            st.success("Player dropped successfully. Refreshing roster...")
-
+                            try:
+                                roster_after = service.get_roster(league_id, team_id)
+                                player_still_present = service._find_row(roster_after, meta["pid"]) is not None
+                                logger.info(f"Post-drop roster check: player still present = {player_still_present}")
+                                
+                                if meta["locked"]:
+                                    logger.info("Drop successful but player locked - will take effect next gameweek")
+                                    st.success("Drop submitted and will be effective next gameweek.")
+                                else:
+                                    if player_still_present:
+                                        logger.warning("Drop reported success but player still on roster")
+                                        st.warning("Drop submitted but player still appears on roster. This may take a few minutes to update.")
+                                    else:
+                                        logger.info("Drop successful and player removed from roster")
+                                        st.success("Drop submitted. Your roster will update shortly.")
+                            except Exception as e:
+                                logger.warning(f"Failed to verify post-drop state: {e}")
+                                st.success("Drop submitted but could not verify roster update.")
                             st.rerun()
-                            # Refresh roster
-                            roster = get_roster_for_league(league_id, team_id, session)
                         else:
+                            logger.error("Drop failed - no confirmation from API")
                             st.error("Drop failed (no confirmation).")
-
-                            # Add some more debug information here
-                            
                     except Exception as e:
-                        logger.exception("Drop failed")
+                        logger.exception(f"Drop failed with exception: {str(e)}")
                         st.error(f"Drop failed: {e}")
+
         except Exception as e:
             logger.exception("Drop UI error")
             st.error(f"Could not load drop UI: {e}")
+
+
 
 def main():
     st.title("Fantrax Auth (BYOC) — Testbed")
