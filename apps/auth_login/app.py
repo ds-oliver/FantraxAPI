@@ -431,6 +431,8 @@ def ui_leagues_and_rosters_section():
 
                         if ok:
                             st.success("Player dropped successfully. Refreshing roster...")
+
+                            st.rerun()
                             # Refresh roster
                             roster = get_roster_for_league(league_id, team_id, session)
                         else:

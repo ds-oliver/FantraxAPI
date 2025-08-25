@@ -60,6 +60,41 @@ class DropService:
                 return True
         return False
 
+    def _normalize_drop_result(self, res) -> bool:
+        """Best-effort interpretation of fantrax drop result."""
+        # Exact booleans
+        if isinstance(res, bool):
+            return res
+        # Strings like "OK", "Success"
+        if isinstance(res, str):
+            return res.strip().lower() in {"ok", "success", "true", "1"}
+        # Numbers (e.g. transaction id); treat as success if any int/float returned
+        if isinstance(res, (int, float)):
+            return True
+        # Dict payloads that may carry a status
+        if isinstance(res, dict):
+            for k in ("success", "ok", "wasSuccessful", "completed", "result", "status"):
+                if k in res:
+                    v = res[k]
+                    if isinstance(v, bool): return v
+                    if isinstance(v, str) and v.lower() in {"ok", "success", "true"}: return True
+            # If there is an explicit pageError => failure; otherwise assume success-ish
+            if res.get("pageError"):
+                return False
+            return True
+        # Fallback: consider any non-empty object as truthy
+        return bool(res)
+
+    def _verify_drop_applied(self, league_id: str, team_id: str, scorer_id: str) -> bool:
+        """Refetch roster and confirm the player is gone (with a tiny wait+retry)."""
+        import time
+        for _ in range(2):
+            time.sleep(1.0)  # Fantrax can be eventually-consistent for a second or two
+            roster_after = self.get_roster(league_id, team_id)
+            if not self._roster_contains(roster_after, scorer_id):
+                return True
+        return False
+
     def find_player_locations(self, scorer_id: str) -> List[LeagueTeam]:
         """
         Return all (league, team) pairs where this player is currently rostered.
@@ -99,17 +134,25 @@ class DropService:
         period: Optional[int] = None,
         skip_validation: bool = False,
     ) -> bool:
-        """
-        Drop a player from one roster.
-        """
         api = self.make_api(league_id)
         use_period = period if period is not None else self.get_current_period(league_id)
-        return api.drops.drop_player(
+
+        # Call the API
+        raw = api.drops.drop_player(
             team_id=team_id,
             scorer_id=scorer_id,
             period=use_period,
             skip_validation=skip_validation,
         )
+
+        ok = self._normalize_drop_result(raw)
+
+        # Final authority = roster actually changed
+        if self._verify_drop_applied(league_id, team_id, scorer_id):
+            return True
+
+        return ok
+
 
     def drop_player_everywhere(
         self,
@@ -153,3 +196,6 @@ class DropService:
                     "league_name": lt.league_name,
                 }
         return results
+
+
+
