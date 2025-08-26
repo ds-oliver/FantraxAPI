@@ -1,8 +1,8 @@
 {
   "data": {
-    "sDate": 1756190387862,
+    "sDate": 1756238128297,
     "adrt": 45,
-    "up": "168.2.3"
+    "up": "169.0.1"
   },
   "roles": [
     "02"
@@ -142,8 +142,8 @@
                   },
                   {
                     "align": "CENTER",
-                    "content": "30/5",
-                    "toolTip": "Last updated Mon Aug 25, 4:00 PM PDT PDT"
+                    "content": "51/1",
+                    "toolTip": "Last updated Tue Aug 26, 4:43 AM PDT PDT"
                   },
                   {
                     "content": "Sat Aug 9 6:00 AM"
@@ -208,8 +208,8 @@
                   },
                   {
                     "align": "CENTER",
-                    "content": "27/7",
-                    "toolTip": "Last updated Mon Aug 25, 8:14 PM PDT PDT"
+                    "content": "46/10",
+                    "toolTip": "Last updated Tue Aug 26, 1:45 AM PDT PDT"
                   },
                   {
                     "content": "Fri Aug 1 12:00 AM"
@@ -307,8 +307,8 @@
                   },
                   {
                     "align": "CENTER",
-                    "content": "13/3",
-                    "toolTip": "Last updated Mon Aug 25, 2:40 PM PDT PDT"
+                    "content": "37/12",
+                    "toolTip": "Last updated Tue Aug 26, 3:40 AM PDT PDT"
                   },
                   {
                     "content": "Mon Aug 4 11:00 PM"
@@ -340,8 +340,8 @@
                   },
                   {
                     "align": "CENTER",
-                    "content": "24/9",
-                    "toolTip": "Last updated Mon Aug 25, 5:33 PM PDT PDT"
+                    "content": "30/6",
+                    "toolTip": "Last updated Tue Aug 26, 10:33 AM PDT PDT"
                   },
                   {
                     "content": "Sun Aug 10 3:00 PM"

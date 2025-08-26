@@ -35,11 +35,11 @@ release = fantraxapi.__version__
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.coverage',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.todo'
+	'sphinx.ext.autodoc',
+	'sphinx.ext.coverage',
+	'sphinx.ext.viewcode',
+	'sphinx.ext.napoleon',
+	'sphinx.ext.todo'
 ]
 
 # -- Napoleon Settings -----------------------------------------------------

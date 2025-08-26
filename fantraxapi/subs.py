@@ -13,10 +13,10 @@ log = logging.getLogger(__name__)
 
 # Stable mapping observed in FXPA payloads
 _ID_TO_CODE = {
-    701: "F",  # Forward
-    702: "M",  # Midfielder
-    703: "D",  # Defender
-    704: "G",  # Goalkeeper
+	701: "F",  # Forward
+	702: "M",  # Midfielder
+	703: "D",  # Defender
+	704: "G",  # Goalkeeper
 }
 
 # player_id (scorerId) -> {'G','D','M','F'}
@@ -116,68 +116,26 @@ class SubsService:
 	# ---------- Position helpers ----------
 	@staticmethod
 	def _pos_of_row(row: RosterRow, overrides: dict | None = None) -> str:
-		"""
-		Resolve a row's position as one of {'G','D','M','F'}.
-
-		Order of precedence:
-		1) UI override (pos_overrides)
-		2) Active slot's short name if this is a starter (pos_id != '0')
-		3) Single-eligibility cached code for bench rows (from warmers)
-		4) Player attributes / raw cells heuristic
-		"""
 		pid = getattr(getattr(row, "player", None), "id", None)
-
-		# (1) honour UI bucket override
 		if overrides and pid in overrides:
 			return overrides[pid]
-
-		# (2) if a starter, trust the active slot
 		sn = (getattr(getattr(row, "pos", None), "short_name", "") or "").upper()
-		if sn in {"G", "D", "M", "F"} and getattr(row, "pos_id", None) != "0":
+		if sn in {"G","D","M","F"} and getattr(row, "pos_id", None) != "0":
 			return sn
-
-		# (3) single-eligibility cache for bench rows
-		if pid and getattr(row, "pos_id", None) == "0":
-			cached = _ELIG_CACHE.get(pid)
-			if cached and len(cached) == 1:
-				return next(iter(cached))
-
-		# (4) fallbacks (player attrs, raw table)
-		pl = getattr(row, "player", None)
-		if pl:
-			for attr in ("position_short", "primary_position", "default_position", "pos_short", "display_position"):
-				v = (getattr(pl, attr, "") or "").upper()
-				if v[:1] in {"G", "D", "M", "F"}:
-					return v[:1]
-			poss = (getattr(pl, "positions", None) or getattr(pl, "eligible_positions", None) or [])
-			if isinstance(poss, (list, set, tuple)):
-				for val in poss:
-					vv = str(val).upper()[:1]
-					if vv in {"G", "D", "M", "F"}:
-						return vv
-
-		raw = getattr(row, "_raw", {}) or {}
-		for c in (raw.get("cells") or []):
-			txt = str(c.get("content") or c.get("toolTip") or c.get("tooltip") or "")
-			if txt:
-				t0 = txt.strip().upper()[:1]
-				if t0 in {"G", "D", "M", "F"}:
-					return t0
-		return "?"
-
+		elig = SubsService.eligible_positions_of_row(row)
+		if len(elig) == 1:
+			return next(iter(elig))
+		return next(iter(elig)) if elig else "?"
+	
 	@staticmethod
 	def _normalize_pos_token(tok: str) -> str:
 		if not tok:
 			return ""
 		t = str(tok).strip().upper()
-		if t in {"G", "GK", "GKP", "GOALKEEPER"}:
-			return "G"
-		if t in {"D", "DEF", "DEFENDER", "WB"}:
-			return "D"
-		if t in {"M", "MID", "MIDFIELDER", "CM", "DM", "AM", "W"}:
-			return "M"
-		if t in {"F", "FW", "FWD", "STRIKER", "ST"}:
-			return "F"
+		if t in {"G", "GK", "GKP", "GOALKEEPER"}: return "G"
+		if t in {"D", "DEF", "DEFENDER", "WB"}:	 return "D"
+		if t in {"M", "MID", "MIDFIELDER", "CM", "DM", "AM", "W"}: return "M"
+		if t in {"F", "FW", "FWD", "STRIKER", "ST"}: return "F"
 		return ""
 
 	@classmethod
@@ -204,61 +162,66 @@ class SubsService:
 				out.add(code)
 		return {x for x in out if x}
 
-	@classmethod
-	def eligible_positions_of_row(cls, row) -> set[str]:
+	@staticmethod
+	def eligible_positions_of_row(row) -> set[str]:
 		"""
-		Return eligible position codes for this roster row as a set in {'G','D','M','F'}.
-		- Starters: use active slot
-		- Bench: derive from player attrs and raw cells
+		Best-effort {'G','D','M','F'} for *any* row, starter or bench.
+		Tries (in order): starter slot, raw row hints, cache, player attrs.
 		"""
-		pos_short = (getattr(getattr(row, "pos", None), "short_name", "") or "").upper()
-		if pos_short in {"G", "D", "M", "F"} and getattr(row, "pos_id", None) != "0":
-			return {pos_short}
+		codes: Set[str] = set()
+		pid = getattr(getattr(row, "player", None), "id", None)
 
-		buckets: set[str] = set()
+		# Starter slot is authoritative if not a bench slot
+		sn = (getattr(getattr(row, "pos", None), "short_name", "") or "").upper()
+		if sn in {"G","D","M","F"} and getattr(row, "pos_id", None) != "0":
+			codes.add(sn)
+
+		# Raw fields often carry posShortNames/defaultPosId even on bench
+		raw = getattr(row, "_raw", {}) or {}
+		codes |= SubsService._map_slot_ids_to_codes(
+			raw.get("defaultPosId") or raw.get("posId") or raw.get("posIds") or raw.get("posIdsNoFlex"),
+			hint=raw.get("posShortNames") or raw.get("posShortName")
+		)
+
+		# Cache from earlier warmers / stats page lookups
+		if pid and pid in _ELIG_CACHE:
+			codes |= set(_ELIG_CACHE[pid])
+
+		# Player object fallbacks
 		pl = getattr(row, "player", None)
 		if pl:
-			for attr in ("positions", "eligible_positions", "eligiblePositions", "eligibilities"):
-				if hasattr(pl, attr):
-					buckets |= cls._extract_pos_codes_from_value(getattr(pl, attr))
-			for attr in ("position_short", "primary_position", "default_position", "pos_short", "display_position", "position"):
-				if hasattr(pl, attr):
-					buckets |= cls._extract_pos_codes_from_value(getattr(pl, attr))
+			for attr in ("position_short", "primary_position", "default_position", "pos_short", "display_position"):
+				v = (getattr(pl, attr, "") or "").upper()
+				if v[:1] in {"G","D","M","F"}:
+					codes.add(v[:1])
+			poss = (getattr(pl, "positions", None) or getattr(pl, "eligible_positions", None) or [])
+			if isinstance(poss, (list, set, tuple)):
+				for val in poss:
+					vv = str(val).upper()[:1]
+					if vv in {"G","D","M","F"}:
+						codes.add(vv)
 
-		raw = getattr(row, "_raw", {}) or {}
-		if "eligiblePositions" in raw:
-			buckets |= cls._extract_pos_codes_from_value(raw["eligiblePositions"])
-		for c in (raw.get("cells") or []):
-			if isinstance(c, dict):
-				for k in ("eligiblePositions", "positions", "pos", "position"):
-					if k in c:
-						buckets |= cls._extract_pos_codes_from_value(c[k])
-				for k in ("content", "toolTip", "tooltip"):
-					buckets |= cls._extract_pos_codes_from_value(c.get(k))
-
-		if not buckets and pos_short not in {"", "BN"}:
-			buckets.add(cls._normalize_pos_token(pos_short))
-
-		return {x for x in buckets if x in {"G", "D", "M", "F"}}
-
+		return {c for c in codes if c in {"G","D","M","F"}}
 	# ---- cache helpers -------------------------------------------------
 	@staticmethod
 	def _map_slot_ids_to_codes(ids, hint: Optional[str] = None) -> set[str]:
+		"""
+		Map Fantrax numeric pos ids (701/702/703/704) and/or a hint string (e.g. 'M/F')
+		to a set like {'M','F'}. We now *union* ids with hint (no early-return).
+		"""
 		out: Set[str] = set()
-		# Prefer a direct hint like "M" or "M/F" if present; do not early return
 		if hint:
 			for tok in str(hint).replace("/", " / ").replace("|", " | ").replace(",", " , ").split():
 				code = SubsService._normalize_pos_token(tok)
 				if code:
 					out.add(code)
-
 		if not ids:
 			return out
 		if isinstance(ids, (str, int, float)):
 			ids = [ids]
 		for x in ids:
 			try:
-				c = _ID_TO_CODE.get(int(x))
+				c = _ID_TO_CODE.get(int(x))	 # expects {701:'F',702:'M',703:'D',704:'G'}
 				if c:
 					out.add(c)
 			except Exception:
@@ -317,10 +280,6 @@ class SubsService:
 
 	@staticmethod
 	def warm_from_player_stats_response(payload: Any) -> None:
-		"""
-		Accepts the getPlayerStats response JSON (Players page).
-		Caches scorerId -> {'G','D','M','F'} using defaultPosId/posIds fields.
-		"""
 		try:
 			items = payload["responses"][0]["data"]["statsTable"]
 		except Exception:
@@ -334,27 +293,18 @@ class SubsService:
 			)
 			if pid and codes:
 				_ELIG_CACHE[pid] = codes
-
+				
 	def _fetch_and_cache_pos_from_stats(self, league_id: str, *, player_id: str, search_name: str) -> bool:
-		"""
-		On-demand fallback: call getPlayerStats with searchName, then cache pid->codes.
-		Returns True if cached.
-		"""
 		url = f"https://www.fantrax.com/fxpa/req?leagueId={league_id}"
 		body = {
 			"msgs": [{"method": "getPlayerStats", "data": {
 				"statusOrTeamFilter": "ALL",
 				"pageNumber": "1",
 				"searchName": search_name,
-			}}],
-			"uiv": 3, "refUrl": f"https://www.fantrax.com/fantasy/league/{league_id}/players",
-			"dt": 0, "at": 0, "av": "0.0"
+			}}],"uiv": 3,"refUrl": f"https://www.fantrax.com/fantasy/league/{league_id}/players","dt": 0,"at": 0,"av": "0.0"
 		}
 		try:
 			j = self.session.post(url, json=body, timeout=20).json()
-		except Exception:
-			return False
-		try:
 			rows = j["responses"][0]["data"]["statsTable"]
 		except Exception:
 			return False
@@ -369,11 +319,9 @@ class SubsService:
 					_ELIG_CACHE[player_id] = codes
 					return True
 		return False
-
 	def _ensure_codes_for_selection(self, league_id: str, roster: Roster, player_ids: List[str]) -> None:
 		"""
-		Make sure every selected player has a cached position set.
-		Uses (1) any raw row fields, else (2) one-shot getPlayerStats(searchName).
+		Ensure every selected player has eligibility cached (bench included).
 		"""
 		rmap = self._row_map(roster)
 		for pid in player_ids:
@@ -382,7 +330,6 @@ class SubsService:
 			row = rmap.get(pid)
 			if not row or not getattr(row, "player", None):
 				continue
-			# (1) try row._raw immediate fields
 			raw = getattr(row, "_raw", {}) or {}
 			codes = SubsService._map_slot_ids_to_codes(
 				raw.get("defaultPosId") or raw.get("posId") or raw.get("posIds") or raw.get("posIdsNoFlex"),
@@ -391,10 +338,16 @@ class SubsService:
 			if codes:
 				_ELIG_CACHE[pid] = codes
 				continue
-			# (2) active fallback via Players page
 			name = row.player.name or (getattr(row.player, "url_name", "") or "").replace("-", " ")
 			if name:
 				self._fetch_and_cache_pos_from_stats(league_id, player_id=pid, search_name=name)
+				
+	def _ensure_codes_for_roster(self, league_id: str, roster: Roster) -> None:
+		"""
+		Warm eligibilities for *all* rows so dropdowns can include bench players.
+		"""
+		ids = [r.player.id for r in roster.rows if getattr(r, "player", None)]
+		self._ensure_codes_for_selection(league_id, roster, ids)
 
 
 	# ---------- counts & maps ----------
@@ -421,7 +374,7 @@ class SubsService:
 			elif p == "M": m += 1
 			elif p == "F": f += 1
 		return Formation(g, d, m, f)
-
+	
 	def _current_starter_ids(self, roster: Roster) -> List[str]:
 		return [r.player.id for r in roster.get_starters() if getattr(r, "player", None)]
 
@@ -478,43 +431,50 @@ class SubsService:
 		return {"ok": bool(ok), "warnings": warnings, "errors": errors, "raw": raw}
 
 	# ---------- Validation (full XI) ----------
-	def preflight_set_lineup_by_ids(self, *, league_id: str, team_id: str, desired_starter_ids: List[str], ensure_unlocked: bool = True, pos_overrides: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+	def preflight_set_lineup_by_ids(
+		self,
+		*,
+		league_id: str,
+		team_id: str,
+		desired_starter_ids: List[str],
+		ensure_unlocked: bool = True,
+		pos_overrides: Optional[Dict[str, str]] = None,
+	) -> Dict[str, Any]:
 		warnings: List[str] = []
 		errors: List[str] = []
 
 		seen = set()
 		desired_starter_ids = [x for x in desired_starter_ids if not (x in seen or seen.add(x))]
 
-		try:
-			roster = self.get_roster(league_id, team_id)
-		except Exception as e:
-			raise RuntimeError(f"Failed to fetch roster: {e}")
-
+		roster = self.get_roster(league_id, team_id)
 		row_map = self._row_map(roster)
 
 		if len(desired_starter_ids) != 11:
 			errors.append(f"Exactly 11 starters required; got {len(desired_starter_ids)}.")
-
 		not_on_roster = [pid for pid in desired_starter_ids if pid not in row_map]
 		if not_on_roster:
 			errors.append(f"{len(not_on_roster)} selected not on roster.")
 		if errors:
 			return {"ok": False, "warnings": warnings, "errors": errors, "plan": [], "current_starters": [], "desired_starters": desired_starter_ids}
 
-		# Make sure bench eligibilities are known
 		self._ensure_codes_for_selection(league_id, roster, desired_starter_ids)
 
 		selected_rows = [row_map[pid] for pid in desired_starter_ids]
 		desired_counts = self._pos_counts_for_rows(selected_rows, pos_overrides)
-		if not desired_counts.is_legal():
+
+		def _legal_relaxed(c: Formation) -> bool:
+			total = c.gk + c.d + c.m + c.f
+			return (total == 11 and 0 <= c.gk <= 1 and 3 <= c.d <= 5 and 2 <= c.m <= 5 and 1 <= c.f <= 3)
+
+		if not _legal_relaxed(desired_counts):
 			errors.append(
 				f"Invalid formation {desired_counts.gk}-{desired_counts.d}-{desired_counts.m}-{desired_counts.f} "
-				"(needs 1 GK, 3-5 D, 2-5 M, 1-3 F; 11 total)."
+				"(needs GK 0–1, D 3–5, M 2–5, F 1–3; 11 total)."
 			)
 
-		gks = [r for r in selected_rows if self._pos_of_row(r, pos_overrides) == "G"]
-		if len(gks) != 1:
-			errors.append("You must select exactly 1 GK.")
+		if desired_counts.gk > 1:
+			errors.append("You can have at most 1 GK.")
+
 		if errors:
 			return {
 				"ok": False, "warnings": warnings, "errors": errors, "plan": [],
@@ -531,7 +491,7 @@ class SubsService:
 				return self._row_locked(row_map.get(pid))
 
 			locked_out = [pid for pid in to_out if _is_locked(pid)]
-			locked_in  = [pid for pid in to_in  if _is_locked(pid)]
+			locked_in  = [pid for pid in to_in	if _is_locked(pid)]
 			if locked_out:
 				names = ", ".join(row_map[x].player.name for x in locked_out)
 				errors.append(f"Cannot bench locked starters: {names}.")
@@ -545,7 +505,14 @@ class SubsService:
 					"desired_formation": f"{desired_counts.gk}-{desired_counts.d}-{desired_counts.m}-{desired_counts.f}",
 				}
 
-		plan = self._plan_swaps(roster, desired_starter_ids, ensure_unlocked=ensure_unlocked, warnings=warnings, errors=errors, pos_overrides=pos_overrides)
+		plan = self._plan_swaps(
+			roster,
+			desired_starter_ids,
+			ensure_unlocked=ensure_unlocked,
+			warnings=warnings,
+			errors=errors,
+			pos_overrides=pos_overrides,
+		)
 		current_ids = self._current_starter_ids(roster)
 		return {
 			"ok": not errors,
@@ -558,14 +525,21 @@ class SubsService:
 		}
 
 	# ---------- Planning ----------
-	def _plan_swaps(self, roster: Roster, desired_starter_ids: List[str], *, ensure_unlocked: bool, warnings: List[str], errors: List[str], pos_overrides: Optional[Dict[str, str]] = None) -> List[tuple]:
+	def _plan_swaps(
+		self,
+		roster: Roster,
+		desired_starter_ids: List[str],
+		*,
+		ensure_unlocked: bool,
+		warnings: List[str],
+		errors: List[str],
+		pos_overrides: Optional[Dict[str, str]] = None,
+	) -> List[tuple]:
 		row_map = self._row_map(roster)
-
 		current_starters = set(self._current_starter_ids(roster))
 		desired_set = set(desired_starter_ids)
 		to_add = [pid for pid in desired_starter_ids if pid not in current_starters]
 		to_remove = [pid for pid in current_starters if pid not in desired_set]
-
 		if not to_add and not to_remove:
 			return []
 
@@ -585,7 +559,7 @@ class SubsService:
 
 		plan: List[tuple] = []
 
-		# (1) safe same-pos swaps
+		# (1) same-position swaps
 		for p in ("G", "D", "M", "F"):
 			while add_by_pos[p] and rem_by_pos[p]:
 				inn = add_by_pos[p].pop()
@@ -595,14 +569,13 @@ class SubsService:
 					continue
 				plan.append((out, inn))
 
-		# (2) balancing swaps toward target
 		def _surplus(c: Formation, t: Formation) -> List[str]:
 			return ([p for p, diff in (("D", c.d - t.d), ("M", c.m - t.m), ("F", c.f - t.f)) if diff > 0])
 
 		def _deficit(c: Formation, t: Formation) -> List[str]:
 			return ([p for p, diff in (("D", t.d - c.d), ("M", t.m - c.m), ("F", t.f - c.f)) if diff > 0])
 
-		# GK first (should be rare with valid selections)
+		# GK balancing (works if target.gk == 0 or 1)
 		if cur.gk != target.gk:
 			if cur.gk > target.gk and rem_by_pos["G"]:
 				def_pos = _deficit(cur, target)
@@ -611,11 +584,6 @@ class SubsService:
 					out = rem_by_pos["G"].pop()
 					if _movable(picked_in) and _movable(out):
 						plan.append((out, picked_in))
-						cur = Formation(cur.gk - 1, cur.d + (1 if _pos(picked_in) == "D" else 0),
-						                cur.m + (1 if _pos(picked_in) == "M" else 0),
-						                cur.f + (1 if _pos(picked_in) == "F" else 0))
-					else:
-						warnings.append("Could not perform GK balancing swap due to locks.")
 			elif cur.gk < target.gk and add_by_pos["G"] and (rem_by_pos["D"] or rem_by_pos["M"] or rem_by_pos["F"]):
 				surplus = _surplus(cur, target) or ["D", "M", "F"]
 				picked_out = next((rem_by_pos[p].pop() for p in surplus if rem_by_pos[p]), None)
@@ -623,11 +591,6 @@ class SubsService:
 					inn = add_by_pos["G"].pop()
 					if _movable(inn) and _movable(picked_out):
 						plan.append((picked_out, inn))
-						cur = Formation(cur.gk + 1, cur.d - (1 if _pos(picked_out) == "D" else 0),
-						                cur.m - (1 if _pos(picked_out) == "M" else 0),
-						                cur.f - (1 if _pos(picked_out) == "F" else 0))
-					else:
-						warnings.append("Could not perform GK balancing swap due to locks.")
 
 		# Outfield balancing loop
 		safety = 100
@@ -650,42 +613,41 @@ class SubsService:
 						rem_by_pos[p_out].pop()
 						add_by_pos[p_in].pop()
 						continue
-					rem_by_pos[p_out].pop()
-					add_by_pos[p_in].pop()
+					rem_by_pos[p_out].pop(); add_by_pos[p_in].pop()
 					plan.append((out, inn))
-					if p_out == "D": cur = Formation(cur.gk, cur.d - 1, cur.m, cur.f)
-					if p_out == "M": cur = Formation(cur.gk, cur.d, cur.m - 1, cur.f)
-					if p_out == "F": cur = Formation(cur.gk, cur.d, cur.m, cur.f - 1)
-					if p_in  == "D": cur = Formation(cur.gk, cur.d + 1, cur.m, cur.f)
-					if p_in  == "M": cur = Formation(cur.gk, cur.d, cur.m + 1, cur.f)
-					if p_in  == "F": cur = Formation(cur.gk, cur.d, cur.m, cur.f + 1)
 					took = True
 					break
 				if took:
 					break
-			if not took:
-				warnings.append("Could not fully balance formation due to unavailable candidates (locks or empty bench).")
-				break
 
-		# (3) cleanup: any remaining same-pos pairs
+		# (3) cleanup
 		for p in ("D", "M", "F", "G"):
 			while add_by_pos[p] and rem_by_pos[p]:
-				inn = add_by_pos[p].pop()
-				out = rem_by_pos[p].pop()
+				inn = add_by_pos[p].pop(); out = rem_by_pos[p].pop()
 				if not (_movable(inn) and _movable(out)):
 					warnings.append(f"Skipped final same-pos swap due to locks: {row_map.get(out).player.name} ↔ {row_map.get(inn).player.name}")
 					continue
 				plan.append((out, inn))
 
-		leftovers = sum(len(v) for v in add_by_pos.values()) + sum(len(v) for v in rem_by_pos.values())
-		if leftovers:
-			warnings.append("Could not reach the exact selected XI due to locks or unavailable swaps. Will get as close as possible.")
 		return plan
-
+	
 	# ---------- Execute (full XI) ----------
-	def set_lineup_by_ids(self, *, league_id: str, team_id: str, desired_starter_ids: List[str], best_effort: bool = True, verify_each: bool = False, pos_overrides: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+	def set_lineup_by_ids(
+		self,
+		*,
+		league_id: str,
+		team_id: str,
+		desired_starter_ids: List[str],
+		best_effort: bool = True,
+		verify_each: bool = False,
+		pos_overrides: Optional[Dict[str, str]] = None,
+	) -> Dict[str, Any]:
 		pre = self.preflight_set_lineup_by_ids(
-			league_id=league_id, team_id=team_id, desired_starter_ids=desired_starter_ids, ensure_unlocked=True, pos_overrides=pos_overrides
+			league_id=league_id,
+			team_id=team_id,
+			desired_starter_ids=desired_starter_ids,
+			ensure_unlocked=True,
+			pos_overrides=pos_overrides,
 		)
 		if not pre["ok"] and not best_effort:
 			return pre | {"results": []}
@@ -709,8 +671,7 @@ class SubsService:
 				if not best_effort:
 					break
 		return pre | {"results": results}
-
-
+	
 # Optional convenience for UI code:
 def eligible_positions_of_row(row) -> set[str]:
 	return SubsService.eligible_positions_of_row(row)
