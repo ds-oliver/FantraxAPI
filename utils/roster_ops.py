@@ -12,6 +12,8 @@ from fantraxapi.objs import Roster, RosterRow
 # Reuse your existing helper so league/team mapping is consistent everywhere
 from utils.auth_helpers import fetch_user_leagues
 
+from fantraxapi.subs import SubsService
+
 log = logging.getLogger(__name__)
 
 
@@ -214,48 +216,90 @@ class DropService:
         team_id: str,
         scorer_id: str,
         skip_validation: bool = False,
-    ) -> bool:
-        log.info(f"Attempting to drop player {scorer_id} from team {team_id} in league {league_id}")
-        
-        # Get initial roster state for logging
+    ) -> Dict[str, Any]:
+        """
+        Perform a single-team drop. Returns a dict:
+        {
+        ok: bool,
+        scheduled: bool,
+        drop_period: Optional[int],
+        effective_msg: Optional[str],
+        messages: List[str],
+        verified: Optional[bool],   # present for immediate drops
+        raw: Any
+        }
+        """
+        log.info(
+            "Attempting to drop player %s from team %s in league %s",
+            scorer_id, team_id, league_id
+        )
+
+        # Pre-drop logging (best-effort)
         try:
             initial_roster = self.get_roster(league_id, team_id)
             player_row = self._find_row(initial_roster, scorer_id)
             if player_row and player_row.player:
-                log.info(f"Found player to drop: {player_row.player.name} ({scorer_id})")
-                status = self._infer_drop_status_from_row(player_row, league_id)
-                log.info(f"Player status: locked={status['locked']}, can_drop_now={status['can_drop_now']}, " 
-                        f"current_period={status['current_period']}, effective_period={status['effective_period']}")
+                st_inf = self._infer_drop_status_from_row(player_row, league_id)
+                log.info(
+                    "Found player to drop: %s (%s) | locked=%s, can_drop_now=%s, curr=%s, eff=%s",
+                    player_row.player.name, scorer_id,
+                    st_inf["locked"], st_inf["can_drop_now"],
+                    st_inf["current_period"], st_inf["effective_period"]
+                )
             else:
-                log.warning(f"Player {scorer_id} not found on initial roster check")
+                log.warning("Player %s not found on initial roster check", scorer_id)
         except Exception as e:
-            log.warning(f"Failed to get initial roster state: {e}")
+            log.warning("Failed to get initial roster state: %s", e)
 
         api = self.make_api(league_id)
 
-        # Don't pass period; let Fantrax infer (immediate if unlocked, next GW if locked)
         try:
             raw = api.drops.drop_player(
                 team_id=team_id,
                 scorer_id=scorer_id,
-                period=None,
+                period=None,                 # let server decide timing
                 skip_validation=skip_validation,
+                return_details=True,         # get messages/effective GW back
             )
-            log.info(f"Drop API response: {raw}")
-            result = self._normalize_drop_result(raw)
-            log.info(f"Normalized drop result: {result}")
-            
-            # Verify the drop if successful
-            if result:
-                verified = self._verify_drop_applied(league_id, team_id, scorer_id)
-                log.info(f"Drop verification result: {verified}")
-                if not verified:
-                    log.warning("Drop appeared successful but player still on roster")
-            
-            return result
+            log.info("Drop API response: %s", raw)
+
+            # Normalize/ensure 'ok' is present
+            ok = self._normalize_drop_result(raw)
+            if isinstance(raw, dict):
+                raw.setdefault("ok", bool(ok))
+            else:
+                raw = {"ok": bool(ok), "raw": raw, "messages": []}
+
+            # For immediate drops, attempt a quick verification
+            verified = None
+            if raw.get("ok") and not raw.get("scheduled"):
+                try:
+                    verified = self._verify_drop_applied(league_id, team_id, scorer_id)
+                    log.info("Drop verification result: %s", verified)
+                except Exception as e:
+                    log.warning("Drop verification failed: %s", e)
+                raw["verified"] = verified
+
+            if raw.get("ok") and raw.get("scheduled"):
+                log.info(
+                    "Drop scheduled by server (drop_period=%s). Message: %s",
+                    raw.get("drop_period"), raw.get("effective_msg")
+                )
+
+            return raw
+
         except Exception as e:
-            log.exception(f"Drop API call failed: {e}")
-            raise
+            log.exception("Drop API call failed: %s", e)
+            # Surface as a structured result so UI can show error text consistently
+            return {
+                "ok": False,
+                "scheduled": False,
+                "drop_period": None,
+                "effective_msg": None,
+                "messages": [str(e)],
+                "verified": None,
+                "raw": None,
+            }
 
 
     def drop_player_everywhere(
@@ -301,189 +345,107 @@ class DropService:
                 }
         return results
 
-
-
-
-
 class LineupService:
     """
-    Helpers for lineup discovery and swaps that reuse the caller's authenticated
-    requests.Session (Streamlit/app-managed). No cookie/bootstrap logic here.
-
-    Public methods are non-interactive and safe to call from the Streamlit app.
+    Thin façade that delegates to fantraxapi.subs.SubsService.
+    Keeps Session/auth ownership in the app layer.
     """
 
     def __init__(self, session: Session):
         self.session = session
+        self._svc = SubsService(session)
 
-    # ---------- core accessors ----------
+    # Optional: small helper so UI never needs _svc
+    def pos_of_row(self, row: RosterRow) -> str:
+        return SubsService._pos_of_row(row)
 
-    def make_api(self, league_id: str) -> FantraxAPI:
-        return FantraxAPI(league_id=league_id, session=self.session)
-
+    # ----- simple accessors -----
     def get_roster(self, league_id: str, team_id: str) -> Roster:
-        return self.make_api(league_id).roster_info(team_id)
+        return self._svc.get_roster(league_id, team_id)
 
     def list_starters(self, league_id: str, team_id: str) -> List[RosterRow]:
-        roster = self.get_roster(league_id, team_id)
-        return roster.get_starters()
+        return self._svc.list_starters(league_id, team_id)
 
     def list_bench(self, league_id: str, team_id: str) -> List[RosterRow]:
-        roster = self.get_roster(league_id, team_id)
-        return roster.get_bench_players()
+        return self._svc.list_bench(league_id, team_id)
 
-    # ---------- lookup helpers ----------
-
-    def _find_row_by_player_id(self, roster: Roster, player_id: str) -> Optional[RosterRow]:
-        for r in roster.rows:
-            if r.player and r.player.id == player_id:
-                return r
-        return None
-
-    def _find_row_by_player_name(self, roster: Roster, player_name: str) -> Optional[RosterRow]:
-        try:
-            return roster.get_player_by_name(player_name)
-        except Exception:
-            return None
-
-    # ---------- swap actions ----------
-
-    def _normalize_swap_result(self, res: Any) -> bool:
-        # Mirror the tolerant handling used for drops
-        if isinstance(res, bool):
-            return res
-        if res is None:
-            return True
-        if isinstance(res, dict) and not res:
-            return True
-        if isinstance(res, str):
-            return res.strip().lower() in {"ok", "success", "true", "1"}
-        if isinstance(res, (int, float)):
-            return True
-        if isinstance(res, dict):
-            for k in ("success", "ok", "wasSuccessful", "completed", "result", "status"):
-                if k in res:
-                    v = res[k]
-                    if isinstance(v, bool):
-                        return v
-                    if isinstance(v, str) and v.lower() in {"ok", "success", "true"}:
-                        return True
-            if res.get("pageError"):
-                return False
-            return True
-        return bool(res)
+    # ----- single swap helpers -----
+    def preflight_swap(
+        self, *, league_id: str, team_id: str, starter_player_id: str, bench_player_id: str
+    ) -> Dict[str, Any]:
+        return self._svc.preflight_swap(
+            league_id=league_id,
+            team_id=team_id,
+            starter_player_id=starter_player_id,
+            bench_player_id=bench_player_id,
+        )
 
     def swap_players_by_ids(
-        self,
-        *,
-        league_id: str,
-        team_id: str,
-        starter_player_id: str,
-        bench_player_id: str,
-    ) -> bool:
-        """
-        Swap a starter out for a bench player in. This is a thin wrapper around
-        FantraxAPI.swap_players(...) that performs minimal local validation and
-        normalizes the response to a bool.
-        """
-        log.info(f"Attempting to swap players in league={league_id}, team={team_id}: "
-                f"starter={starter_player_id} ↔ bench={bench_player_id}")
-        
-        api = self.make_api(league_id)
-
-        # Minimal validation to improve error messages before hitting the API
-        try:
-            roster = api.roster_info(team_id)
-            log.info("Successfully fetched initial roster state")
-        except Exception as e:
-            log.error("swap_players_by_ids: failed to fetch roster %s/%s: %s", league_id, team_id, e)
-            raise
-
-        starter_row = self._find_row_by_player_id(roster, starter_player_id)
-        bench_row = self._find_row_by_player_id(roster, bench_player_id)
-
-        # Log detailed player state
-        if starter_row and starter_row.player:
-            log.info(f"Starter found: {starter_row.player.name} ({starter_player_id})")
-            log.info(f"Starter position: {getattr(starter_row, 'pos_id', 'unknown')}, "
-                    f"raw data: {getattr(starter_row, '_raw', {})}")
-        else:
-            log.error(f"Starter player {starter_player_id} not found on roster")
-            raise ValueError("Starter player not found on roster")
-
-        if bench_row and bench_row.player:
-            log.info(f"Bench player found: {bench_row.player.name} ({bench_player_id})")
-            log.info(f"Bench position: {getattr(bench_row, 'pos_id', 'unknown')}, "
-                    f"raw data: {getattr(bench_row, '_raw', {})}")
-        else:
-            log.error(f"Bench player {bench_player_id} not found on roster")
-            raise ValueError("Bench player not found on roster")
-
-        # If roles were passed in the wrong order, try to infer and swap
-        if getattr(starter_row, "pos_id", None) == "0" and getattr(bench_row, "pos_id", None) != "0":
-            log.info("Players appear to be in wrong order, swapping roles")
-            starter_row, bench_row = bench_row, starter_row
-            starter_player_id, bench_player_id = bench_player_id, starter_player_id
-
-        # Let the API enforce formation/lock rules. We only provide clearer messages.
-        try:
-            log.info("Calling Fantrax API to perform swap")
-            raw = api.swap_players(team_id, starter_player_id, bench_player_id)
-            log.info(f"Swap API response: {raw}")
-            
-            ok = self._normalize_swap_result(raw)
-            log.info(f"Normalized swap result: {ok}")
-            
-            # Verify the swap if successful
-            if ok:
-                try:
-                    roster_after = api.roster_info(team_id)
-                    starter_after = self._find_row_by_player_id(roster_after, starter_player_id)
-                    bench_after = self._find_row_by_player_id(roster_after, bench_player_id)
-                    
-                    if starter_after and bench_after:
-                        log.info(f"Post-swap positions: {starter_player_id}={getattr(starter_after, 'pos_id', 'unknown')}, "
-                                f"{bench_player_id}={getattr(bench_after, 'pos_id', 'unknown')}")
-                    else:
-                        log.warning("Could not verify final positions after swap")
-                except Exception as e:
-                    log.warning(f"Failed to verify post-swap state: {e}")
-            
-            return bool(ok)
-        except Exception as e:
-            log.exception(f"Swap API call failed: {e}")
-            raise
+        self, *, league_id: str, team_id: str, starter_player_id: str, bench_player_id: str, verify: bool = True
+    ) -> Dict[str, Any]:
+        return self._svc.swap_players_by_ids(
+            league_id=league_id,
+            team_id=team_id,
+            starter_player_id=starter_player_id,
+            bench_player_id=bench_player_id,
+            verify=verify,
+        )
 
     def swap_players_by_names(
-        self,
-        *,
-        league_id: str,
-        team_id: str,
-        starter_player_name: str,
-        bench_player_name: str,
-    ) -> bool:
-        """
-        Convenience wrapper that resolves player names on the current roster and
-        performs the swap. If the provided names are reversed (bench/starter),
-        the method will auto-correct based on roster rows.
-        """
+        self, *, league_id: str, team_id: str, starter_player_name: str, bench_player_name: str, verify: bool = True
+    ) -> Dict[str, Any]:
         roster = self.get_roster(league_id, team_id)
 
-        starter_row = self._find_row_by_player_name(roster, starter_player_name)
-        bench_row = self._find_row_by_player_name(roster, bench_player_name)
-        if starter_row is None:
-            raise ValueError(f"Player not found: {starter_player_name}")
-        if bench_row is None:
-            raise ValueError(f"Player not found: {bench_player_name}")
+        def _by_name(name: str) -> str:
+            row = roster.get_player_by_name(name)
+            if not row or not getattr(row, "player", None):
+                raise ValueError(f"Player not found: {name}")
+            return row.player.id
 
-        # If both are starters or both are bench, still attempt the swap and
-        # let the API decide. If obviously reversed, flip them locally.
-        if getattr(starter_row, "pos_id", None) == "0" and getattr(bench_row, "pos_id", None) != "0":
-            starter_row, bench_row = bench_row, starter_row
+        starter_id = _by_name(starter_player_name)
+        bench_id = _by_name(bench_player_name)
 
         return self.swap_players_by_ids(
             league_id=league_id,
             team_id=team_id,
-            starter_player_id=starter_row.player.id,
-            bench_player_id=bench_row.player.id,
+            starter_player_id=starter_id,
+            bench_player_id=bench_id,
+            verify=verify,
+        )
+
+    # ----- bulk XI helpers -----
+    def preflight_set_lineup_by_ids(
+        self, *, league_id: str, team_id: str, desired_starter_ids: List[str]
+    ) -> Dict[str, Any]:
+        return self._svc.preflight_set_lineup_by_ids(
+            league_id=league_id, team_id=team_id, desired_starter_ids=desired_starter_ids, ensure_unlocked=True
+        )
+
+    def set_lineup_by_ids(
+        self,
+        *,
+        league_id: str,
+        team_id: str,
+        desired_starter_ids: List[str],
+        best_effort: bool = True,
+        verify_each: bool = False,
+    ) -> Dict[str, Any]:
+        return self._svc.set_lineup_by_ids(
+            league_id=league_id,
+            team_id=team_id,
+            desired_starter_ids=desired_starter_ids,
+            best_effort=best_effort,
+            verify_each=verify_each,
+        )
+
+    def set_lineup_by_names(self, *, league_id: str, team_id: str, names: List[str], **kwargs) -> Dict[str, Any]:
+        roster = self.get_roster(league_id, team_id)
+        want_ids = []
+        for n in names:
+            row = roster.get_player_by_name(n)
+            if not row or not getattr(row, "player", None):
+                raise ValueError(f"Player not found on roster: {n}")
+            want_ids.append(row.player.id)
+        return self.set_lineup_by_ids(
+            league_id=league_id, team_id=team_id, desired_starter_ids=want_ids, **kwargs
         )

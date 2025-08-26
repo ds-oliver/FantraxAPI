@@ -27,7 +27,10 @@ from utils.auth_helpers import (
 )
 
 # --- roster ops ---
-from utils.roster_ops import DropService
+from utils.roster_ops import DropService, LineupService
+
+from fantraxapi.subs import SubsService  # at top
+
 
 # Prefer the token-aware builder; fall back to cookies-only builder if absent.
 try:
@@ -392,7 +395,148 @@ def ui_leagues_and_rosters_section():
             st.markdown("### Bench")
             st.table(_make_table(bench))
 
-        # app.py (inside the "else:" branch where a single roster is shown)
+        # --- Pick Your XI (bulk set lineup) ---
+        st.divider()
+        st.subheader("Pick Your XI — Validate formation & apply")
+
+        lineup = LineupService(session)
+        current = lineup.get_roster(league_id, team_id)
+
+        # Build selectable pools
+        starters = [r for r in current.get_starters() if getattr(r, "player", None)]
+        bench = [r for r in current.get_bench_players() if getattr(r, "player", None)]
+        all_rows = starters + bench
+
+        def _lbl(r):
+            pos = getattr(getattr(r, "pos", None), "short_name", "—")
+            tm = r.player.team_short_name or r.player.team_name or ""
+            fppg = f"{r.fppg:.1f}" if r.fppg is not None else "-"
+            lock = ""
+            raw = getattr(r, "_raw", {}) or {}
+            if raw.get("isLocked") or raw.get("locked") or raw.get("lineupLocked"):
+                lock = " 🔒"
+            return f"{pos} • {r.player.name} ({tm}) — {fppg} FPPG{lock}"
+
+        # Build selectable pools (use robust resolver so bench rows get grouped correctly)
+        # --- Build selectable pools using eligibilities ---
+        starters = [r for r in current.get_starters() if getattr(r, "player", None)]
+
+        # Fallback bench resolution if API returns empty:
+        bench = [r for r in getattr(current, "get_bench_players", lambda: [])() or [] if getattr(r, "player", None)]
+        if not bench:
+            bench = [r for r in current.rows if getattr(r, "player", None) and getattr(r, "pos_id", None) == "0"]
+
+        all_rows = starters + bench
+
+        def _lbl(r):
+            pos = getattr(getattr(r, "pos", None), "short_name", "—")
+            tm = r.player.team_short_name or r.player.team_name or ""
+            fppg = f"{r.fppg:.1f}" if r.fppg is not None else "-"
+            lock = ""
+            raw = getattr(r, "_raw", {}) or {}
+            if raw.get("isLocked") or raw.get("locked") or raw.get("lineupLocked"):
+                lock = " 🔒"
+            return f"{pos} • {r.player.name} ({tm}) — {fppg} FPPG{lock}"
+
+        pool_by_pos: dict[str, list[str]] = {"G": [], "D": [], "M": [], "F": []}
+        id_by_label: dict[str, str] = {}
+        used_labels: set[str] = set()
+
+        def _add_to_pool(label_base: str, pid: str, codes: set[str]) -> None:
+            # ensure unique label text in case same player appears in multiple buckets
+            label = label_base
+            if label in used_labels:
+                label = f"{label_base} [{pid}]"
+            used_labels.add(label)
+            for code in codes:
+                pool_by_pos[code].append(label)
+            id_by_label[label] = pid
+
+        for r in all_rows:
+            if not getattr(r, "player", None):
+                continue
+            pid = r.player.id
+            label = _lbl(r)
+
+            elig = SubsService.eligible_positions_of_row(r)  # <- the robust resolver
+            if not elig:
+                # If still unknown, skip (safer than misclassifying)
+                continue
+            _add_to_pool(label, pid, elig)
+
+        # --- Preselect current XI in their current slots (not in every eligible bucket) ---
+        def _first_matching_label(row) -> str:
+            base = _lbl(row)
+            # find the exact (possibly suffixed) label we inserted for this player in their current slot
+            cur_code = (getattr(getattr(row, "pos", None), "short_name", "") or "").upper()[:1]
+            candidates = [lab for lab, _pid in id_by_label.items() if _pid == row.player.id]
+            for lab in candidates:
+                # prefer the bucket that matches current slot (cur_code)
+                if cur_code in {"G","D","M","F"}:
+                    if lab in pool_by_pos[cur_code]:
+                        return lab
+            # fallback to any label for this player
+            return candidates[0] if candidates else base
+
+        pre_G = [ _first_matching_label(r) for r in starters if (r.pos.short_name or "").upper().startswith("G") ]
+        pre_D = [ _first_matching_label(r) for r in starters if (r.pos.short_name or "").upper().startswith("D") ]
+        pre_M = [ _first_matching_label(r) for r in starters if (r.pos.short_name or "").upper().startswith("M") ]
+        pre_F = [ _first_matching_label(r) for r in starters if (r.pos.short_name or "").upper().startswith("F") ]
+
+        c1, c2 = st.columns(2)
+        with c1:
+            pick_G = st.multiselect("Goalkeepers (pick exactly 1)", options=pool_by_pos["G"], default=pre_G[:1], max_selections=1)
+            pick_D = st.multiselect("Defenders (3 to 5)", options=pool_by_pos["D"], default=pre_D)
+        with c2:
+            pick_M = st.multiselect("Midfielders (2 to 5)", options=pool_by_pos["M"], default=pre_M)
+            pick_F = st.multiselect("Forwards (1 to 3)", options=pool_by_pos["F"], default=pre_F)
+
+        desired_labels = pick_G + pick_D + pick_M + pick_F
+        desired_ids = [id_by_label[l] for l in desired_labels]
+
+        # Guard: no duplicate players across pools
+        if len(desired_ids) != len(set(desired_ids)):
+            st.error("You selected the same player in multiple positions. Each player can only be picked once.")
+            st.stop()
+
+        # Live validation summary
+        g = len(pick_G); d = len(pick_D); m = len(pick_M); f = len(pick_F)
+        total = g + d + m + f
+        st.caption(f"Selected formation: {g}-{d}-{m}-{f} (total {total})")
+
+        best_effort = st.checkbox("Best effort (apply what’s possible if some swaps fail/are locked)", value=True)
+        verify_each = st.checkbox("Verify after each swap", value=False)
+        apply_btn = st.button("Apply XI", type="primary", disabled=(total != 11))
+
+        if apply_btn:
+            with st.spinner("Validating and applying lineup…"):
+                pre = lineup.preflight_set_lineup_by_ids(league_id=league_id, team_id=team_id, desired_starter_ids=desired_ids)
+                if pre.get("warnings"):
+                    st.warning(" • ".join(pre["warnings"]))
+                if pre.get("errors"):
+                    st.error(" • ".join(pre["errors"]))
+                if pre.get("ok"):
+                    res = lineup.set_lineup_by_ids(
+                        league_id=league_id,
+                        team_id=team_id,
+                        desired_starter_ids=desired_ids,
+                        best_effort=best_effort,
+                        verify_each=verify_each,
+                    )
+                    rows = res.get("results", [])
+                    if rows:
+                        ok_ct = sum(1 for r in rows if r.get("ok"))
+                        fail_ct = sum(1 for r in rows if not r.get("ok"))
+                        st.success(f"Applied {ok_ct} swap(s); {fail_ct} failed.")
+                    if res.get("warnings"):
+                        st.warning(" • ".join(res["warnings"]))
+                    if res.get("errors"):
+                        st.error(" • ".join(res["errors"]))
+                    st.rerun()
+                else:
+                    st.error("Preflight failed. Fix issues above and try again.")
+
+
 
         # --- Drop player flow ---
         st.divider()
@@ -424,7 +568,7 @@ def ui_leagues_and_rosters_section():
             else:
                 with st.form("drop_form"):
                     choice = st.selectbox("Select a player to drop", options=list(label_to_meta.keys()))
-                    skip_validation = st.checkbox("Skip validation checks", value=False)
+                    skip_validation = st.checkbox("Skip validation checks", value=True)
                     submit_drop = st.form_submit_button("Drop Player", type="primary")
 
                 if submit_drop:

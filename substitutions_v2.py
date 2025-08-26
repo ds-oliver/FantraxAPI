@@ -4,6 +4,8 @@ Example script showing how to make lineup substitutions using FantraxAPI.
 This demonstrates the actual substitution functionality.
 """
 
+# substitutions_v2.py
+
 import os
 import sys
 import pickle
