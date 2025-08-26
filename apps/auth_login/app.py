@@ -66,6 +66,7 @@ st.set_page_config(page_title="Fantrax (BYOC) — Leagues & Rosters", page_icon=
 LOG_PATH = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log"
 configure_logging(LOG_PATH)
 logger = logging.getLogger(__name__)
+logger.info("="*100)
 logger.info("Streamlit app started (BYOC mode)")
 
 

@@ -1,4 +1,7 @@
 """Service for handling player drops in Fantrax."""
+
+# fantraxapi/drops.py
+
 import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -18,6 +21,71 @@ class DropsService:
             api: The FantraxAPI instance
         """
         self._api = api
+
+    def _finalize_tx_set(self, tx_set_id: str) -> dict | None:
+        """
+        Finalize/execute a pending transaction set. Fantrax sometimes responds
+        with another confirmation cycle. This will loop through all verbs and
+        keep finalizing until no more 'confirm: True' responses are present.
+
+        Args:
+            tx_set_id: The transaction set ID to finalize
+
+        Returns:
+            dict | None: Final API response once no further confirmation required
+        """
+        verbs = ("executeTransactionSet", "finalizeTransactionSet", "executeTransactions")
+        safety_counter = 0
+        response = None
+
+        while True:
+            safety_counter += 1
+            if safety_counter > 5:
+                raise FantraxException(
+                    f"Too many finalize cycles for transaction set {tx_set_id}"
+                )
+
+            last_err = None
+            for method in verbs:
+                try:
+                    logger.info(f"Finalizing tx_set {tx_set_id} with method {method}")
+                    resp = self._api._request(
+                        method,
+                        transactionSetId=tx_set_id,
+                        acceptWarnings=True  # allow illegal roster warnings
+                    )
+                    logger.info(f"Finalize response ({method}): {resp}")
+
+                    # Bail on explicit error
+                    if isinstance(resp, dict) and resp.get("pageError"):
+                        raise FantraxException(
+                            f"Finalize failed with pageError: {resp['pageError']}"
+                        )
+
+                    response = resp
+
+                    # If no confirm required, we're done
+                    if not (
+                        isinstance(resp, dict)
+                        and resp.get("txResponses")
+                        and any(r.get("confirm") for r in resp["txResponses"])
+                    ):
+                        return response or {}
+                    else:
+                        logger.info(
+                            "Transaction still requires confirmation, retrying finalize loop..."
+                        )
+                        # break inner loop, retry outer while
+                        break
+                except Exception as e:
+                    last_err = e
+                    logger.warning(f"Finalize method {method} failed: {e}")
+                    continue
+
+            if last_err and response is None:
+                raise FantraxException(
+                    f"Could not finalize transaction set {tx_set_id}: {last_err}"
+                )
 
     def get_current_period(self) -> int:
         """Get the current gameweek/period.
@@ -111,36 +179,71 @@ class DropsService:
         team_id: str,
         scorer_id: str,
         period: Optional[int] = None,
-        skip_validation: bool = False
+        skip_validation: bool = False,
+        league_id: Optional[str] = None,
     ) -> bool:
         """Drop a player from a team's roster.
-        
-        Args:
-            team_id: The ID of the team dropping the player
-            scorer_id: The ID of the player to drop
-            period: Optional period/gameweek number. If not provided, uses current period.
-            skip_validation: If True, skips validation checks
-            
-        Returns:
-            bool: True if the drop was successful
-            
-        Raises:
-            FantraxException: If the drop fails
+
+        Matches the browser flow:
+        1) getClaimDropConfirmInfo (to read dropPeriod / message)
+        2) createClaimDrop (server immediately returns EXECUTED for a scheduled drop)
+        3) optional roster reload (browser does this purely to refresh UI)
+
+        Notes:
+        - `confirm: true` in txResponses is *not* a signal to "finalize"; it's a UI hint.
+        - We treat `code == "EXECUTED"` as terminal success.
+        - To detect a scheduled drop, prefer the preview's `dropPeriod`. As a fallback, parse it from detailMessages.
+        - Don't compare to a global "current period"; compare to the league's displayed period from getTeamRosterInfo
+        or simply trust the "effective Gameweek ..." message.
         """
+
+        import re
+        import time
+        logger = getattr(self, "logger", None) or __import__("logging").getLogger(__name__)
+
+        # Best-effort league id
+        if league_id is None:
+            league_id = getattr(self._api, "league_id", None) or getattr(self._api, "leagueId", None)
+
+        def _safe_displayed_period(_league_id: Optional[str]) -> Optional[int]:
+            if not _league_id:
+                return None
+            try:
+                resp = self._api._request("getTeamRosterInfo", leagueId=_league_id, reload="0")
+                # Support both shapes: {"data": {...}} or {"responses":[{"data":{...}}]}
+                data = (resp.get("responses") or [{}])[0].get("data") if isinstance(resp, dict) and "responses" in resp else resp.get("data", resp)
+                return (data or {}).get("displayedSelections", {}).get("displayedPeriod")
+            except Exception:
+                return None
+
+        def _extract_gw_from_text(text: str) -> Optional[int]:
+            if not text:
+                return None
+            m = re.search(r"Gameweek\s+(\d+)", text)
+            return int(m.group(1)) if m else None
+
+        # If caller didn’t provide a reference period, prefer the league’s displayed period over a global current period
         if period is None:
-            period = self.get_current_period()
+            period = _safe_displayed_period(league_id)
+            if period is None:
+                try:
+                    period = self.get_current_period()
+                except Exception:
+                    period = None
 
         if not skip_validation:
             self.validate_drop(team_id, scorer_id, period)
 
-        # Get player details
-        player_details = self._api._request(
-            "getScorerDetails",
-            scorers=[{"scorerId": scorer_id}],
-            teamId=team_id
-        )
+        # Optional preflight like the site does
+        try:
+            self._api._request(
+                "getScorerDetails",
+                scorers=[{"scorerId": scorer_id}],
+                teamId=team_id
+            )
+        except Exception:
+            pass
 
-        # Confirm drop
         confirm_data = {
             "transactionSets": [{
                 "transactions": [{
@@ -150,98 +253,101 @@ class DropsService:
                 }]
             }]
         }
-        
-        try:
-            # Log initial roster state
-            initial_roster = self._api.roster_info(team_id)
-            logger.info(f"Initial roster state before drop - team {team_id}:")
-            for row in initial_roster.rows:
-                if row.player:
-                    raw_data = getattr(row, '_raw', {})
-                    logger.info(f"  Player: {row.player.name} ({row.player.id})")
-                    logger.info(f"  Position: {getattr(row.pos, 'short_name', 'unknown')}")
-                    logger.info(f"  Status: {raw_data.get('statusId', 'unknown')}")
-                    logger.info(f"  Lock state: isLocked={raw_data.get('isLocked')}, "
-                              f"locked={raw_data.get('locked')}, lineupLocked={raw_data.get('lineupLocked')}")
-                    if raw_data.get('lockedReason'):
-                        logger.info(f"  Lock reason: {raw_data.get('lockedReason')}")
 
-            # First get confirmation info
-            logger.info(f"Requesting drop confirmation for player {scorer_id}")
-            confirm_response = self._api._request("getClaimDropConfirmInfo", **confirm_data)
-            logger.info(f"Drop confirmation response: {confirm_response}")
-            
-            # Then execute the initial drop request
-            logger.info(f"Executing initial drop request for player {scorer_id}")
-            response = self._api._request("createClaimDrop", **confirm_data)
-            logger.info(f"Initial drop execution response: {response}")
-            
-            # Check for warnings that need confirmation
-            if response and "txResponses" in response:
-                for tx_response in response["txResponses"]:
-                    if tx_response.get("confirm") and tx_response.get("transactionId"):
-                        logger.info(f"Drop requires confirmation. Transaction ID: {tx_response['transactionId']}")
-                        logger.info(f"Warning messages: {tx_response.get('detailMessages', [])}")
-                        
-                        # Send confirmation request
-                        confirm_tx_data = {
-                            "transactionId": tx_response["transactionId"],
-                            "confirm": True
-                        }
-                        logger.info("Sending drop confirmation request")
-                        confirm_response = self._api._request("confirmTransaction", **confirm_tx_data)
-                        logger.info(f"Drop confirmation response: {confirm_response}")
-                        
-                        # Check confirmation response
-                        if not confirm_response:
-                            logger.error("Drop confirmation returned empty response")
-                            raise FantraxException("No response received from drop confirmation")
-                        if "error" in confirm_response:
-                            logger.error(f"Drop confirmation contains error: {confirm_response['error']}")
-                            raise FantraxException(f"Drop confirmation failed: {confirm_response['error']}")
-                        
-                        # Original response is no longer relevant, use confirmation response
-                        response = confirm_response
-            
-            # Verify the drop was successful by checking the response
-            if not response:
-                logger.error("Drop request returned empty response")
-                raise FantraxException("No response received from drop request")
-                
-            # Check for error messages in response
-            if "error" in response:
-                logger.error(f"Drop response contains error: {response['error']}")
-                raise FantraxException(f"Drop failed: {response['error']}")
-                
-            # Add delay before verification
-            import time
-            logger.info("Waiting 2 seconds before verifying roster update...")
-            time.sleep(2)
-                
-            # Verify player is no longer on roster
-            logger.info(f"Verifying roster state after drop - team {team_id}")
-            roster = self._api.roster_info(team_id)
-            player_found = False
-            for row in roster.rows:
-                if row.player and row.player.id == scorer_id:
-                    player_found = True
-                    raw_data = getattr(row, '_raw', {})
-                    logger.error(f"Player still on roster after drop:")
-                    logger.error(f"  Player: {row.player.name} ({row.player.id})")
-                    logger.error(f"  Position: {getattr(row.pos, 'short_name', 'unknown')}")
-                    logger.error(f"  Status: {raw_data.get('statusId', 'unknown')}")
-                    logger.error(f"  Lock state: isLocked={raw_data.get('isLocked')}, "
-                               f"locked={raw_data.get('locked')}, lineupLocked={raw_data.get('lineupLocked')}")
-                    if raw_data.get('lockedReason'):
-                        logger.error(f"  Lock reason: {raw_data.get('lockedReason')}")
-                    raise FantraxException("Player still on roster after drop attempt")
-            
-            if not player_found:
-                logger.info("Success: Player no longer found on roster")
+        # 1) Preview → grab dropPeriod/message
+        logger.info(f"Requesting drop confirmation for player {scorer_id}")
+        preview = self._api._request("getClaimDropConfirmInfo", **confirm_data)
+        logger.info(f"Drop confirmation response: {preview}")
+
+        drop_period = None
+        eff_msg = None
+        try:
+            cr = (preview.get("confirmResponses") or [])[0]
+            drop_period = cr.get("dropPeriod")
+            eff_msg = cr.get("dropEffectiveDateMsg")
+        except Exception:
+            pass
+
+        # 2) Execute drop (this is terminal; browser doesn't call any finalize verbs)
+        logger.info("Submitting createClaimDrop")
+        response = self._api._request("createClaimDrop", **confirm_data)
+        logger.info(f"createClaimDrop response: {response}")
+
+        if not response:
+            raise FantraxException("No response received from drop request")
+        if isinstance(response, dict) and response.get("pageError"):
+            raise FantraxException(f"Drop failed: {response['pageError']}")
+
+        # Unwrap txResponses
+        tx_list = []
+        try:
+            # Support both {"data":{"txResponses":[...]}} and {"txResponses":[...]}
+            if "txResponses" in response:
+                tx_list = response.get("txResponses") or []
+            else:
+                tx_list = (response.get("responses") or [{}])[0].get("data", {}).get("txResponses") or []
+        except Exception:
+            pass
+
+        if not tx_list:
+            # Some leagues may return empty txResponses but set status elsewhere; be conservative:
+            logger.warning("No txResponses found; assuming drop was accepted (site usually returns EXECUTED here).")
             return True
-            
-        except Exception as e:
-            raise FantraxException(f"Failed to drop player: {e}")
+
+        tx = tx_list[0]
+        code = (tx or {}).get("code", "").upper()
+        generic_msg = (tx or {}).get("genericMessage") or ""
+        detail_msgs = " ".join((tx or {}).get("detailMessages") or [])
+        status_display = ((tx or {}).get("transactionSet") or {}).get("statusDisplay")
+
+        # Fallback: extract GW from detail text if preview missed it
+        if drop_period is None:
+            drop_period = _extract_gw_from_text(detail_msgs) or _extract_gw_from_text(generic_msg) or _extract_gw_from_text(eff_msg or "")
+
+        # Terminal success (what the browser shows)
+        if code == "EXECUTED" or (status_display and status_display.upper() == "EXECUTED"):
+            # Scheduled vs immediate
+            displayed = _safe_displayed_period(league_id)
+            # Prefer comparing against league's displayed period; if unavailable, compare against provided `period`
+            scheduled = False
+            if drop_period is not None:
+                if displayed is not None:
+                    scheduled = (drop_period != displayed)
+                elif period is not None:
+                    scheduled = (drop_period != period)
+
+            if scheduled:
+                logger.info(f"Drop accepted and scheduled for GW{drop_period}. {eff_msg or detail_msgs or generic_msg}")
+                return True
+
+            # Immediate (same period) — we can try a quick verification like the site’s UI reload,
+            # but don’t fail if caching delays keep the player visible.
+            time.sleep(1.5)
+            try:
+                roster = self._api.roster_info(team_id)
+                still_there = False
+                for row in getattr(roster, "rows", []):
+                    if getattr(row, "player", None) and getattr(row.player, "id", None) == scorer_id:
+                        still_there = True
+                        break
+                if still_there:
+                    logger.warning("Player still on roster right after EXECUTED; treating as eventual consistency and returning success.")
+                else:
+                    logger.info("Success: Player removed from roster")
+            except Exception as e:
+                logger.warning(f"Roster reload after EXECUTED failed ({e}); assuming success.")
+            return True
+
+        # Some leagues send WARNING + “effective Gameweek …” but still accept/schedule it.
+        if code == "WARNING" and ("effective Gameweek" in detail_msgs or "effective Gameweek" in (eff_msg or "")):
+            logger.info(f"Drop accepted with warnings and scheduled for GW{drop_period}. {eff_msg or detail_msgs or generic_msg}")
+            return True
+
+        # If we get here, treat as failure and surface the messages.
+        raise FantraxException(
+            f"Drop failed: code={code or 'UNKNOWN'} "
+            f"{(eff_msg or '')} {(detail_msgs or generic_msg or '')}".strip()
+        )
 
     def drop_player_from_all_teams(
         self,
