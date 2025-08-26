@@ -115,16 +115,34 @@ class SubsService:
 
 	# ---------- Position helpers ----------
 	@staticmethod
-	def _pos_of_row(row: RosterRow) -> str:
+	def _pos_of_row(row: RosterRow, overrides: dict | None = None) -> str:
 		"""
-		Return one of {'G','D','M','F'} for a roster row.
-		- Starters: use row.pos.short_name
-		- Bench: derive from player fields or raw cells
+		Resolve a row's position as one of {'G','D','M','F'}.
+
+		Order of precedence:
+		1) UI override (pos_overrides)
+		2) Active slot's short name if this is a starter (pos_id != '0')
+		3) Single-eligibility cached code for bench rows (from warmers)
+		4) Player attributes / raw cells heuristic
 		"""
+		pid = getattr(getattr(row, "player", None), "id", None)
+
+		# (1) honour UI bucket override
+		if overrides and pid in overrides:
+			return overrides[pid]
+
+		# (2) if a starter, trust the active slot
 		sn = (getattr(getattr(row, "pos", None), "short_name", "") or "").upper()
-		if sn in {"G", "D", "M", "F"}:
+		if sn in {"G", "D", "M", "F"} and getattr(row, "pos_id", None) != "0":
 			return sn
 
+		# (3) single-eligibility cache for bench rows
+		if pid and getattr(row, "pos_id", None) == "0":
+			cached = _ELIG_CACHE.get(pid)
+			if cached and len(cached) == 1:
+				return next(iter(cached))
+
+		# (4) fallbacks (player attrs, raw table)
 		pl = getattr(row, "player", None)
 		if pl:
 			for attr in ("position_short", "primary_position", "default_position", "pos_short", "display_position"):
@@ -227,14 +245,12 @@ class SubsService:
 	@staticmethod
 	def _map_slot_ids_to_codes(ids, hint: Optional[str] = None) -> set[str]:
 		out: Set[str] = set()
-		# Prefer a direct hint like "M" or "M/F" if present
+		# Prefer a direct hint like "M" or "M/F" if present; do not early return
 		if hint:
 			for tok in str(hint).replace("/", " / ").replace("|", " | ").replace(",", " , ").split():
 				code = SubsService._normalize_pos_token(tok)
 				if code:
 					out.add(code)
-			if out:
-				return out
 
 		if not ids:
 			return out
@@ -299,6 +315,88 @@ class SubsService:
 		if codes:
 			_ELIG_CACHE[player_id] = codes
 
+	@staticmethod
+	def warm_from_player_stats_response(payload: Any) -> None:
+		"""
+		Accepts the getPlayerStats response JSON (Players page).
+		Caches scorerId -> {'G','D','M','F'} using defaultPosId/posIds fields.
+		"""
+		try:
+			items = payload["responses"][0]["data"]["statsTable"]
+		except Exception:
+			return
+		for row in (items or []):
+			sc = (row or {}).get("scorer") or {}
+			pid = sc.get("scorerId")
+			codes = SubsService._map_slot_ids_to_codes(
+				sc.get("defaultPosId") or sc.get("posIds") or sc.get("posIdsNoFlex"),
+				hint=sc.get("posShortNames"),
+			)
+			if pid and codes:
+				_ELIG_CACHE[pid] = codes
+
+	def _fetch_and_cache_pos_from_stats(self, league_id: str, *, player_id: str, search_name: str) -> bool:
+		"""
+		On-demand fallback: call getPlayerStats with searchName, then cache pid->codes.
+		Returns True if cached.
+		"""
+		url = f"https://www.fantrax.com/fxpa/req?leagueId={league_id}"
+		body = {
+			"msgs": [{"method": "getPlayerStats", "data": {
+				"statusOrTeamFilter": "ALL",
+				"pageNumber": "1",
+				"searchName": search_name,
+			}}],
+			"uiv": 3, "refUrl": f"https://www.fantrax.com/fantasy/league/{league_id}/players",
+			"dt": 0, "at": 0, "av": "0.0"
+		}
+		try:
+			j = self.session.post(url, json=body, timeout=20).json()
+		except Exception:
+			return False
+		try:
+			rows = j["responses"][0]["data"]["statsTable"]
+		except Exception:
+			return False
+		for r in rows or []:
+			sc = (r or {}).get("scorer") or {}
+			if sc.get("scorerId") == player_id:
+				codes = SubsService._map_slot_ids_to_codes(
+					sc.get("defaultPosId") or sc.get("posIds") or sc.get("posIdsNoFlex"),
+					hint=sc.get("posShortNames"),
+				)
+				if codes:
+					_ELIG_CACHE[player_id] = codes
+					return True
+		return False
+
+	def _ensure_codes_for_selection(self, league_id: str, roster: Roster, player_ids: List[str]) -> None:
+		"""
+		Make sure every selected player has a cached position set.
+		Uses (1) any raw row fields, else (2) one-shot getPlayerStats(searchName).
+		"""
+		rmap = self._row_map(roster)
+		for pid in player_ids:
+			if pid in _ELIG_CACHE:
+				continue
+			row = rmap.get(pid)
+			if not row or not getattr(row, "player", None):
+				continue
+			# (1) try row._raw immediate fields
+			raw = getattr(row, "_raw", {}) or {}
+			codes = SubsService._map_slot_ids_to_codes(
+				raw.get("defaultPosId") or raw.get("posId") or raw.get("posIds") or raw.get("posIdsNoFlex"),
+				hint=raw.get("posShortNames") or raw.get("posShortName"),
+			)
+			if codes:
+				_ELIG_CACHE[pid] = codes
+				continue
+			# (2) active fallback via Players page
+			name = row.player.name or (getattr(row.player, "url_name", "") or "").replace("-", " ")
+			if name:
+				self._fetch_and_cache_pos_from_stats(league_id, player_id=pid, search_name=name)
+
+
 	# ---------- counts & maps ----------
 	def _pos_counts_for_ids(self, roster: Roster, player_ids: List[str]) -> Formation:
 		g = d = m = f = 0
@@ -312,12 +410,12 @@ class SubsService:
 				elif p == "F": f += 1
 		return Formation(g, d, m, f)
 
-	def _pos_counts_for_rows(self, rows: List[RosterRow]) -> Formation:
+	def _pos_counts_for_rows(self, rows: List[RosterRow], overrides: dict | None = None) -> Formation:
 		g = d = m = f = 0
 		for r in rows:
 			if not getattr(r, "player", None):
 				continue
-			p = self._pos_of_row(r)
+			p = self._pos_of_row(r, overrides)
 			if p == "G": g += 1
 			elif p == "D": d += 1
 			elif p == "M": m += 1
@@ -380,7 +478,7 @@ class SubsService:
 		return {"ok": bool(ok), "warnings": warnings, "errors": errors, "raw": raw}
 
 	# ---------- Validation (full XI) ----------
-	def preflight_set_lineup_by_ids(self, *, league_id: str, team_id: str, desired_starter_ids: List[str], ensure_unlocked: bool = True) -> Dict[str, Any]:
+	def preflight_set_lineup_by_ids(self, *, league_id: str, team_id: str, desired_starter_ids: List[str], ensure_unlocked: bool = True, pos_overrides: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
 		warnings: List[str] = []
 		errors: List[str] = []
 
@@ -403,15 +501,18 @@ class SubsService:
 		if errors:
 			return {"ok": False, "warnings": warnings, "errors": errors, "plan": [], "current_starters": [], "desired_starters": desired_starter_ids}
 
+		# Make sure bench eligibilities are known
+		self._ensure_codes_for_selection(league_id, roster, desired_starter_ids)
+
 		selected_rows = [row_map[pid] for pid in desired_starter_ids]
-		desired_counts = self._pos_counts_for_rows(selected_rows)
+		desired_counts = self._pos_counts_for_rows(selected_rows, pos_overrides)
 		if not desired_counts.is_legal():
 			errors.append(
 				f"Invalid formation {desired_counts.gk}-{desired_counts.d}-{desired_counts.m}-{desired_counts.f} "
 				"(needs 1 GK, 3-5 D, 2-5 M, 1-3 F; 11 total)."
 			)
 
-		gks = [r for r in selected_rows if self._pos_of_row(r) == "G"]
+		gks = [r for r in selected_rows if self._pos_of_row(r, pos_overrides) == "G"]
 		if len(gks) != 1:
 			errors.append("You must select exactly 1 GK.")
 		if errors:
@@ -444,7 +545,7 @@ class SubsService:
 					"desired_formation": f"{desired_counts.gk}-{desired_counts.d}-{desired_counts.m}-{desired_counts.f}",
 				}
 
-		plan = self._plan_swaps(roster, desired_starter_ids, ensure_unlocked=ensure_unlocked, warnings=warnings, errors=errors)
+		plan = self._plan_swaps(roster, desired_starter_ids, ensure_unlocked=ensure_unlocked, warnings=warnings, errors=errors, pos_overrides=pos_overrides)
 		current_ids = self._current_starter_ids(roster)
 		return {
 			"ok": not errors,
@@ -457,7 +558,7 @@ class SubsService:
 		}
 
 	# ---------- Planning ----------
-	def _plan_swaps(self, roster: Roster, desired_starter_ids: List[str], *, ensure_unlocked: bool, warnings: List[str], errors: List[str]) -> List[tuple]:
+	def _plan_swaps(self, roster: Roster, desired_starter_ids: List[str], *, ensure_unlocked: bool, warnings: List[str], errors: List[str], pos_overrides: Optional[Dict[str, str]] = None) -> List[tuple]:
 		row_map = self._row_map(roster)
 
 		current_starters = set(self._current_starter_ids(roster))
@@ -471,11 +572,11 @@ class SubsService:
 		def _movable(pid: str) -> bool:
 			return True if not ensure_unlocked else not self._row_locked(row_map.get(pid))
 
-		cur = self._pos_counts_for_rows([row_map[pid] for pid in current_starters])
-		target = self._pos_counts_for_rows([row_map[pid] for pid in desired_starter_ids])
+		cur = self._pos_counts_for_rows([row_map[pid] for pid in current_starters], pos_overrides)
+		target = self._pos_counts_for_rows([row_map[pid] for pid in desired_starter_ids], pos_overrides)
 
 		def _pos(pid: str) -> str:
-			return self._pos_of_row(row_map[pid])
+			return self._pos_of_row(row_map[pid], pos_overrides)
 
 		add_by_pos = {"G": [], "D": [], "M": [], "F": []}
 		rem_by_pos = {"G": [], "D": [], "M": [], "F": []}
@@ -582,9 +683,9 @@ class SubsService:
 		return plan
 
 	# ---------- Execute (full XI) ----------
-	def set_lineup_by_ids(self, *, league_id: str, team_id: str, desired_starter_ids: List[str], best_effort: bool = True, verify_each: bool = False) -> Dict[str, Any]:
+	def set_lineup_by_ids(self, *, league_id: str, team_id: str, desired_starter_ids: List[str], best_effort: bool = True, verify_each: bool = False, pos_overrides: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
 		pre = self.preflight_set_lineup_by_ids(
-			league_id=league_id, team_id=team_id, desired_starter_ids=desired_starter_ids, ensure_unlocked=True
+			league_id=league_id, team_id=team_id, desired_starter_ids=desired_starter_ids, ensure_unlocked=True, pos_overrides=pos_overrides
 		)
 		if not pre["ok"] and not best_effort:
 			return pre | {"results": []}

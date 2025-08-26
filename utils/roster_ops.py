@@ -418,7 +418,11 @@ class LineupService:
         self, *, league_id: str, team_id: str, desired_starter_ids: List[str]
     ) -> Dict[str, Any]:
         return self._svc.preflight_set_lineup_by_ids(
-            league_id=league_id, team_id=team_id, desired_starter_ids=desired_starter_ids, ensure_unlocked=True
+            league_id=league_id,
+            team_id=team_id,
+            desired_starter_ids=desired_starter_ids,
+            ensure_unlocked=True,
+            pos_overrides=None,
         )
 
     def set_lineup_by_ids(
@@ -436,6 +440,7 @@ class LineupService:
             desired_starter_ids=desired_starter_ids,
             best_effort=best_effort,
             verify_each=verify_each,
+            pos_overrides=None,
         )
 
     def set_lineup_by_names(self, *, league_id: str, team_id: str, names: List[str], **kwargs) -> Dict[str, Any]:
