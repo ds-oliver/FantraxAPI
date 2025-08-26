@@ -28,7 +28,6 @@ from utils.auth_helpers import (
 
 # --- roster ops ---
 from utils.roster_ops import DropService, LineupService
-
 from fantraxapi.subs import SubsService  # at top
 
 
@@ -63,6 +62,33 @@ except Exception:
             ch.setFormatter(fmt)
             root.addHandler(ch)
 
+
+# ---- Reload fantraxapi.subs first, then roster_ops so both see the fresh class ----
+import sys, importlib, inspect
+from pathlib import Path
+
+REPO_ROOT = str(Path(__file__).resolve().parents[2])  # /Users/hogan/FantraxAPI
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
+import fantraxapi.subs as _subs_mod
+_subs_mod = importlib.reload(_subs_mod)  # ensure we use your edited file
+SubsService = _subs_mod.SubsService
+# prefer module-level helper if exported; else classmethod
+eligible_positions_of_row = getattr(_subs_mod, "eligible_positions_of_row", _subs_mod.SubsService.eligible_positions_of_row)
+
+import utils.roster_ops as _ro_mod
+_ro_mod = importlib.reload(_ro_mod)      # make roster_ops bind to the refreshed SubsService
+DropService = _ro_mod.DropService
+LineupService = _ro_mod.LineupService
+
+# tiny one-time sanity checks (useful in the UI expander too)
+_SUBS_SYNC = {
+    "subs_file": getattr(_subs_mod, "__file__", None),
+    "subs_class_has_method": hasattr(SubsService, "eligible_positions_of_row"),
+    "subs_class_id": id(SubsService),
+    "ro_lineup_cls_id": id(LineupService),
+}
 
 st.set_page_config(page_title="Fantrax (BYOC) — Leagues & Rosters", page_icon="🔐", layout="wide")
 
@@ -231,6 +257,105 @@ def ui_login_section():
 
 
 def ui_leagues_and_rosters_section():
+    import json as _json
+    import fantraxapi.subs as _subs_mod
+
+    # --- tiny sync + cache UI ---
+    with st.expander("fantraxapi.subs diagnostics", expanded=False):
+        st.code(_json.dumps(_SUBS_SYNC, indent=2))
+
+    with st.expander("Prime eligibility cache (optional)", expanded=False):
+        txt = st.text_area(
+            "Paste an FXPA request or response JSON (e.g., confirmOrExecuteTeamRosterChanges or a swap preview with fantasyResponse.scorerMap).",
+            height=180,
+        )
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("Warm from response JSON"):
+                try:
+                    payload = _json.loads(txt)
+                    _subs_mod.SubsService.warm_from_swap_response(payload)
+                    st.success(f"Warmed from response. Cache size: {len(getattr(_subs_mod, '_ELIG_CACHE', {}))}")
+                except Exception as e:
+                    st.error(f"Parse/prime failed: {e}")
+        with c2:
+            if st.button("Warm from request JSON"):
+                try:
+                    payload = _json.loads(txt)
+                    _subs_mod.SubsService.warm_from_fxpa_request(payload)
+                    st.success(f"Warmed from request. Cache size: {len(getattr(_subs_mod, '_ELIG_CACHE', {}))}")
+                except Exception as e:
+                    st.error(f"Parse/prime failed: {e}")
+
+    # --- one-time hot patch for bench position detection (affects validator) ---
+    def _patch_pos_of_row_once():
+        if st.session_state.get("__patched_pos_of_row__"):
+            return
+        _orig = _subs_mod.SubsService._pos_of_row
+        _id_to_code = getattr(_subs_mod, "_ID_TO_CODE", {701: "F", 702: "M", 703: "D", 704: "G"})
+        _cache = getattr(_subs_mod, "_ELIG_CACHE", {})
+
+        def _map_slot_ids_to_codes(ids, hint=None):
+            # hint like "M/F" wins immediately
+            out = set()
+            if hint:
+                for tok in str(hint).replace("/", " / ").replace("|", " | ").replace(",", " , ").split():
+                    c = _subs_mod.SubsService._normalize_pos_token(tok)
+                    if c:
+                        out.add(c)
+                if out:
+                    return out
+            if ids is None:
+                return set()
+            if isinstance(ids, (str, int, float)):
+                ids = [ids]
+            for x in ids:
+                try:
+                    code = _id_to_code.get(int(x))
+                    if code:
+                        out.add(code)
+                except Exception:
+                    pass
+            return out
+
+        def _pick_one(codes: set[str]) -> str:
+            # deterministic preference order
+            for p in ("G", "D", "M", "F"):
+                if p in codes:
+                    return p
+            return next(iter(codes)) if codes else "?"
+
+        def _patched(row):
+            # starters: trust slot
+            sn = (getattr(getattr(row, "pos", None), "short_name", "") or "").upper()
+            if sn in {"G", "D", "M", "F"} and getattr(row, "pos_id", None) != "0":
+                return sn
+
+            # cache by player id (from warmed payloads)
+            pid = getattr(getattr(row, "player", None), "id", None)
+            if pid and isinstance(_cache, dict):
+                codes = _cache.get(pid)
+                if codes:
+                    return _pick_one(set(codes))
+
+            # raw FXPA fields on the row
+            raw = getattr(row, "_raw", {}) or {}
+            for k in ("defaultPosId", "posId", "posIdsNoFlex", "posIds"):
+                if k in raw:
+                    codes = _map_slot_ids_to_codes(raw.get(k), raw.get("posShortNames") or raw.get("posShortName"))
+                    if codes:
+                        return _pick_one(codes)
+
+            # fall back to original heuristics (player attrs / cells text)
+            return _orig(row)
+
+        # install
+        _subs_mod.SubsService._pos_of_row = staticmethod(_patched)
+        st.session_state["__patched_pos_of_row__"] = True
+
+    _patch_pos_of_row_once()
+
+    # --------------- main UI ---------------
     st.header("Your Leagues and Rosters")
 
     if "auth_artifacts" not in st.session_state:
@@ -240,7 +365,6 @@ def ui_leagues_and_rosters_section():
     logger.info("Hydrating requests session from artifacts (cookies + storage if present)")
     try:
         session = load_requests_session_from_artifacts(st.session_state["auth_artifacts"])
-
         service = DropService(session)
     except Exception:
         logger.exception("Failed to build session from artifacts")
@@ -280,23 +404,20 @@ def ui_leagues_and_rosters_section():
             try:
                 probe = {"msgs": [{"method": "getAllLeagues", "data": {"view": "LEAGUES"}}]}
                 j = session.post("https://www.fantrax.com/fxpa/req", json=probe, timeout=20).json()
-                import json as _json
                 st.code(_json.dumps(j, indent=2)[:1500])
             except Exception:
                 st.caption("Probe failed.")
 
-    # ---- Normal path: list leagues via fxpa, then show rosters ----
+    # ---- list leagues ----
     logger.info("Fetching user leagues via fxpa getAllLeagues")
     leagues = fetch_user_leagues(session)
     if not leagues:
         st.error("No leagues found (cookie may be expired).")
-        # Manual fallback: ask for leagueId then proceed with cookies-only auth
         st.subheader("Manual league selection (fallback)")
         league_id_input = st.text_input("Enter a Fantrax league ID")
         if not league_id_input:
             st.info("You can find the league ID in the Fantrax league URL.")
             st.stop()
-
         try:
             api = FantraxAPI(league_id_input, session=session)
             teams = api.teams
@@ -304,18 +425,15 @@ def ui_leagues_and_rosters_section():
             logger.exception("Failed to load teams for manual league ID")
             st.error(f"Failed to load teams for league {league_id_input}: {e}")
             st.stop()
-
         team_options = {f"{t.name} ({t.team_id})": t.team_id for t in teams}
         team_label = st.selectbox("Select your team", options=list(team_options.keys()))
         team_id = team_options[team_label]
-
         try:
             roster = api.roster_info(team_id)
         except Exception as e:
             logger.exception("Failed to fetch roster for manual league path")
             st.error(f"Failed to fetch roster: {e}")
             st.stop()
-
         st.subheader(f"Roster — {team_label}")
         starters = roster.get_starters()
         bench = roster.get_bench_players()
@@ -402,48 +520,64 @@ def ui_leagues_and_rosters_section():
         lineup = LineupService(session)
         current = lineup.get_roster(league_id, team_id)
 
-        # Build selectable pools
+        assert hasattr(SubsService, "eligible_positions_of_row"), "Stale SubsService: restart Streamlit."
+
+        with st.expander("eligibility probe", expanded=False):
+            try:
+                ben = [r for r in current.get_bench_players() if getattr(r, "player", None)]
+                if ben:
+                    sample = ben[0]
+                    raw = getattr(sample, "_raw", {}) or {}
+                    # derive a single bench bucket from raw ids
+                    def _bench_bucket_code(r):
+                        ids = raw.get("defaultPosId") or raw.get("posId") or raw.get("posIdsNoFlex") or raw.get("posIds")
+                        hint = raw.get("posShortNames") or raw.get("posShortName")
+                        codes = _subs_mod.SubsService._map_slot_ids_to_codes(ids, hint) if hasattr(_subs_mod.SubsService, "_map_slot_ids_to_codes") else set()
+                        for p in ("G", "D", "M", "F"):
+                            if p in codes:
+                                return p, ("raw.posId" if "posId" in raw or "defaultPosId" in raw or "posIds" in raw or "posIdsNoFlex" in raw else "n/a")
+                        return "", "n/a"
+                    code, src = _bench_bucket_code(sample)
+                    st.write({
+                        "player": sample.player.name,
+                        "pos_id": getattr(sample, "pos_id", None),
+                        "elig_direct": list(eligible_positions_of_row(sample)),
+                        "bench_bucket_code": code or "",
+                        "bench_bucket_source": src,
+                        "subs_file": _SUBS_SYNC["subs_file"],
+                        "subs_class_has_method": _SUBS_SYNC["subs_class_has_method"],
+                    })
+                else:
+                    st.caption("No bench rows to probe.")
+            except Exception as e:
+                st.error(f"probe failed: {e}")
+
+        # Build selectable pools (resolved labels even for bench)
         starters = [r for r in current.get_starters() if getattr(r, "player", None)]
         bench = [r for r in current.get_bench_players() if getattr(r, "player", None)]
-        all_rows = starters + bench
-
-        def _lbl(r):
-            pos = getattr(getattr(r, "pos", None), "short_name", "—")
-            tm = r.player.team_short_name or r.player.team_name or ""
-            fppg = f"{r.fppg:.1f}" if r.fppg is not None else "-"
-            lock = ""
-            raw = getattr(r, "_raw", {}) or {}
-            if raw.get("isLocked") or raw.get("locked") or raw.get("lineupLocked"):
-                lock = " 🔒"
-            return f"{pos} • {r.player.name} ({tm}) — {fppg} FPPG{lock}"
-
-        # Build selectable pools (use robust resolver so bench rows get grouped correctly)
-        # --- Build selectable pools using eligibilities ---
-        starters = [r for r in current.get_starters() if getattr(r, "player", None)]
-
-        # Fallback bench resolution if API returns empty:
-        bench = [r for r in getattr(current, "get_bench_players", lambda: [])() or [] if getattr(r, "player", None)]
         if not bench:
             bench = [r for r in current.rows if getattr(r, "player", None) and getattr(r, "pos_id", None) == "0"]
-
         all_rows = starters + bench
 
         def _lbl(r):
-            pos = getattr(getattr(r, "pos", None), "short_name", "—")
+            # use resolved code; fall back to first eligibility; else "Res"
+            code = SubsService._pos_of_row(r)
+            if code not in {"G", "D", "M", "F"}:
+                elig = eligible_positions_of_row(r)
+                code = next(iter(sorted(elig))) if elig else "Res"
             tm = r.player.team_short_name or r.player.team_name or ""
             fppg = f"{r.fppg:.1f}" if r.fppg is not None else "-"
             lock = ""
             raw = getattr(r, "_raw", {}) or {}
             if raw.get("isLocked") or raw.get("locked") or raw.get("lineupLocked"):
                 lock = " 🔒"
-            return f"{pos} • {r.player.name} ({tm}) — {fppg} FPPG{lock}"
+            return f"{code} • {r.player.name} ({tm}) — {fppg} FPPG{lock}"
 
         pool_by_pos: dict[str, list[str]] = {"G": [], "D": [], "M": [], "F": []}
         id_by_label: dict[str, str] = {}
         used_labels: set[str] = set()
 
         def _add_to_pool(label_base: str, pid: str, codes: set[str]) -> None:
-            # ensure unique label text in case same player appears in multiple buckets
             label = label_base
             if label in used_labels:
                 label = f"{label_base} [{pid}]"
@@ -457,31 +591,25 @@ def ui_leagues_and_rosters_section():
                 continue
             pid = r.player.id
             label = _lbl(r)
-
-            elig = SubsService.eligible_positions_of_row(r)  # <- the robust resolver
+            elig = eligible_positions_of_row(r)
             if not elig:
-                # If still unknown, skip (safer than misclassifying)
                 continue
             _add_to_pool(label, pid, elig)
 
-        # --- Preselect current XI in their current slots (not in every eligible bucket) ---
+        # --- Preselect current XI in their current slots ---
         def _first_matching_label(row) -> str:
             base = _lbl(row)
-            # find the exact (possibly suffixed) label we inserted for this player in their current slot
-            cur_code = (getattr(getattr(row, "pos", None), "short_name", "") or "").upper()[:1]
+            cur_code = SubsService._pos_of_row(row)
             candidates = [lab for lab, _pid in id_by_label.items() if _pid == row.player.id]
             for lab in candidates:
-                # prefer the bucket that matches current slot (cur_code)
-                if cur_code in {"G","D","M","F"}:
-                    if lab in pool_by_pos[cur_code]:
-                        return lab
-            # fallback to any label for this player
+                if cur_code in {"G", "D", "M", "F"} and lab in pool_by_pos[cur_code]:
+                    return lab
             return candidates[0] if candidates else base
 
-        pre_G = [ _first_matching_label(r) for r in starters if (r.pos.short_name or "").upper().startswith("G") ]
-        pre_D = [ _first_matching_label(r) for r in starters if (r.pos.short_name or "").upper().startswith("D") ]
-        pre_M = [ _first_matching_label(r) for r in starters if (r.pos.short_name or "").upper().startswith("M") ]
-        pre_F = [ _first_matching_label(r) for r in starters if (r.pos.short_name or "").upper().startswith("F") ]
+        pre_G = [_first_matching_label(r) for r in starters if SubsService._pos_of_row(r) == "G"]
+        pre_D = [_first_matching_label(r) for r in starters if SubsService._pos_of_row(r) == "D"]
+        pre_M = [_first_matching_label(r) for r in starters if SubsService._pos_of_row(r) == "M"]
+        pre_F = [_first_matching_label(r) for r in starters if SubsService._pos_of_row(r) == "F"]
 
         c1, c2 = st.columns(2)
         with c1:
@@ -499,10 +627,10 @@ def ui_leagues_and_rosters_section():
             st.error("You selected the same player in multiple positions. Each player can only be picked once.")
             st.stop()
 
-        # Live validation summary
+        # Live validation summary (based on UI buckets)
         g = len(pick_G); d = len(pick_D); m = len(pick_M); f = len(pick_F)
         total = g + d + m + f
-        st.caption(f"Selected formation: {g}-{d}-{m}-{f} (total {total})")
+        st.caption(f"Selected formation (UI buckets): {g}-{d}-{m}-{f} (total {total})")
 
         best_effort = st.checkbox("Best effort (apply what’s possible if some swaps fail/are locked)", value=True)
         verify_each = st.checkbox("Verify after each swap", value=False)
@@ -511,6 +639,9 @@ def ui_leagues_and_rosters_section():
         if apply_btn:
             with st.spinner("Validating and applying lineup…"):
                 pre = lineup.preflight_set_lineup_by_ids(league_id=league_id, team_id=team_id, desired_starter_ids=desired_ids)
+                # Show what the validator thinks (after hot-patch this should match UI)
+                if "desired_formation" in pre:
+                    st.caption(f"Validator formation: {pre['desired_formation']}")
                 if pre.get("warnings"):
                     st.warning(" • ".join(pre["warnings"]))
                 if pre.get("errors"):
@@ -536,8 +667,6 @@ def ui_leagues_and_rosters_section():
                 else:
                     st.error("Preflight failed. Fix issues above and try again.")
 
-
-
         # --- Drop player flow ---
         st.divider()
         st.subheader("Manage Roster — Drop a Player")
@@ -547,17 +676,10 @@ def ui_leagues_and_rosters_section():
             for row in roster.rows:
                 if not row.player or not row.player.id:
                     continue
-
                 pid = row.player.id
                 team_abbr = row.player.team_short_name or row.player.team_name or ""
-
-                # Use service’s status inference for labeling (does not refetch roster)
-                st_info = service._infer_drop_status_from_row(row, league_id)  # or expose a wrapper if you prefer not to use "_"
-                if not st_info["can_drop_now"]:
-                    suffix = " — LOCKED"
-                else:
-                    suffix = ""
-
+                st_info = service._infer_drop_status_from_row(row, league_id)
+                suffix = " — LOCKED" if not st_info["can_drop_now"] else ""
                 label = f"{row.player.name} ({team_abbr}){suffix}"
                 if label in label_to_meta:
                     label = f"{label} [{pid}]"
@@ -575,15 +697,14 @@ def ui_leagues_and_rosters_section():
                     try:
                         meta = label_to_meta[choice]
                         logger.info(f"Drop attempt initiated for {choice}")
-                        
-                        # Log pre-drop state
                         try:
                             roster_before = service.get_roster(league_id, team_id)
                             player_row = service._find_row(roster_before, meta["pid"])
                             if player_row and player_row.player:
-                                logger.info(f"Pre-drop roster state: Player {player_row.player.name} ({meta['pid']}) "
-                                          f"found in position {player_row.pos.short_name if player_row.pos else 'unknown'}")
-                                # Log raw data for debugging
+                                logger.info(
+                                    f"Pre-drop roster state: Player {player_row.player.name} ({meta['pid']}) "
+                                    f"found in position {player_row.pos.short_name if player_row.pos else 'unknown'}"
+                                )
                                 raw_data = getattr(player_row, '_raw', {})
                                 logger.info(f"Player row raw data: {raw_data}")
                             else:
@@ -591,7 +712,6 @@ def ui_leagues_and_rosters_section():
                         except Exception as e:
                             logger.warning(f"Failed to log pre-drop state: {e}")
 
-                        # Attempt the drop
                         logger.info(f"Executing drop with skip_validation={skip_validation}")
                         ok = service.drop_player_single(
                             league_id=league_id,
@@ -599,15 +719,12 @@ def ui_leagues_and_rosters_section():
                             scorer_id=meta["pid"],
                             skip_validation=skip_validation,
                         )
-                        
-                        # Log post-drop state
                         logger.info(f"Drop API result: {ok}")
                         if ok:
                             try:
                                 roster_after = service.get_roster(league_id, team_id)
                                 player_still_present = service._find_row(roster_after, meta["pid"]) is not None
                                 logger.info(f"Post-drop roster check: player still present = {player_still_present}")
-                                
                                 if meta["locked"]:
                                     logger.info("Drop successful but player locked - will take effect next gameweek")
                                     st.success("Drop submitted and will be effective next gameweek.")
@@ -632,7 +749,6 @@ def ui_leagues_and_rosters_section():
         except Exception as e:
             logger.exception("Drop UI error")
             st.error(f"Could not load drop UI: {e}")
-
 
 
 def main():

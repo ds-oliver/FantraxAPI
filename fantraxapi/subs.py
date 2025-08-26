@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from requests import Session
 from fantraxapi import FantraxAPI
@@ -11,6 +11,16 @@ from fantraxapi.objs import Roster, RosterRow
 
 log = logging.getLogger(__name__)
 
+# Stable mapping observed in FXPA payloads
+_ID_TO_CODE = {
+    701: "F",  # Forward
+    702: "M",  # Midfielder
+    703: "D",  # Defender
+    704: "G",  # Goalkeeper
+}
+
+# player_id (scorerId) -> {'G','D','M','F'}
+_ELIG_CACHE: Dict[str, Set[str]] = {}
 
 # One canonical Formation model (top-level, used everywhere)
 @dataclass(frozen=True)
@@ -212,6 +222,82 @@ class SubsService:
 			buckets.add(cls._normalize_pos_token(pos_short))
 
 		return {x for x in buckets if x in {"G", "D", "M", "F"}}
+
+	# ---- cache helpers -------------------------------------------------
+	@staticmethod
+	def _map_slot_ids_to_codes(ids, hint: Optional[str] = None) -> set[str]:
+		out: Set[str] = set()
+		# Prefer a direct hint like "M" or "M/F" if present
+		if hint:
+			for tok in str(hint).replace("/", " / ").replace("|", " | ").replace(",", " , ").split():
+				code = SubsService._normalize_pos_token(tok)
+				if code:
+					out.add(code)
+			if out:
+				return out
+
+		if not ids:
+			return out
+		if isinstance(ids, (str, int, float)):
+			ids = [ids]
+		for x in ids:
+			try:
+				c = _ID_TO_CODE.get(int(x))
+				if c:
+					out.add(c)
+			except Exception:
+				pass
+		return out
+
+	@staticmethod
+	def warm_from_swap_response(payload: Any) -> None:
+		"""
+		Takes the swap/lineup response you posted earlier (with fantasyResponse.scorerMap)
+		and caches eligibilities.
+		"""
+		try:
+			sMap = payload["responses"][0]["data"]["fantasyResponse"]["scorerMap"]
+		except Exception:
+			return
+		for pid, info in sMap.items():
+			codes = set()
+			# posShortNames: e.g., 'F' or 'M/F'
+			if "posShortNames" in info:
+				codes |= SubsService._map_slot_ids_to_codes(None, hint=info["posShortNames"])
+			# posIds / posIdsNoFlex / defaultPosId
+			for k in ("posIds", "posIdsNoFlex", "defaultPosId"):
+				if k in info:
+					codes |= SubsService._map_slot_ids_to_codes(info[k], hint=info.get("posShortNames"))
+			if codes:
+				_ELIG_CACHE[pid] = codes
+
+	@staticmethod
+	def warm_from_fxpa_request(payload: Any) -> None:
+		"""
+		Accepts the exact request JSON you pasted for confirmOrExecuteTeamRosterChanges.
+		It learns player -> posId from data.fieldMap and caches codes.
+		"""
+		try:
+			msgs = payload.get("msgs") or []
+			for m in msgs:
+				if m.get("method") == "confirmOrExecuteTeamRosterChanges":
+					field_map = (m.get("data") or {}).get("fieldMap") or {}
+					for pid, meta in field_map.items():
+						ids = meta.get("posId")
+						codes = SubsService._map_slot_ids_to_codes(ids)
+						if codes:
+							_ELIG_CACHE[pid] = codes
+		except Exception:
+			pass
+
+	@staticmethod
+	def prime_player_position(player_id: str, *, pos_ids=None, pos_short: Optional[str]=None, default_pos_id=None) -> None:
+		"""
+		Manual priming hook if you fetch a player page elsewhere.
+		"""
+		codes = SubsService._map_slot_ids_to_codes(pos_ids or default_pos_id, hint=pos_short)
+		if codes:
+			_ELIG_CACHE[player_id] = codes
 
 	# ---------- counts & maps ----------
 	def _pos_counts_for_ids(self, roster: Roster, player_ids: List[str]) -> Formation:
