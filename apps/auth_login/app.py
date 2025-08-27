@@ -547,6 +547,9 @@ def ui_simple_subs_section():
             try:
                 # Get current period for debug probe
                 period_id = api._current_roster_limit_period()
+
+                logger.info(f"Current period: {period_id}")
+                
                 confirm_payload = {
                     "rosterLimitPeriod": period_id,
                     "fantasyTeamId": team_id,
