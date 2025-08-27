@@ -466,14 +466,38 @@ class SubsService:
 			raise ValueError("league_id is required")
 		
 		field_map = self._build_swap_field_map(team_id, out_id, in_id)
-		return self.confirm_or_execute_lineup(
+		
+		# First try with current period
+		confirm_resp = self.confirm_or_execute_lineup(
 			league_id=self.league_id,
 			fantasy_team_id=team_id,
-			roster_limit_period=0,  # Current period
+			roster_limit_period=0,  # Let server pick period
 			apply_to_future=False,
 			do_finalize=False,  # Confirm mode
 			field_map=field_map
 		)
+		
+		# Check response
+		model = confirm_resp.get("model", {})
+		pick_deadline_passed = bool(model.get("playerPickDeadlinePassed"))
+		current_period = int(model.get("rosterLimitPeriod", 0))
+		first_illegal_period = model.get("firstIllegalRosterPeriod")
+		
+		# If deadline passed, retry with next period
+		if pick_deadline_passed and current_period > 0:
+			target_period = current_period + 1
+			log.info(f"[swap] Deadline passed for period {current_period}, retrying with period {target_period}")
+			
+			confirm_resp = self.confirm_or_execute_lineup(
+				league_id=self.league_id,
+				fantasy_team_id=team_id,
+				roster_limit_period=target_period,  # Target next period
+				apply_to_future=True,  # Also set this to true
+				do_finalize=False,
+				field_map=field_map
+			)
+		
+		return confirm_resp
 
 	def _execute_swap(self, team_id: str, out_id: str, in_id: str) -> dict:
 		"""Execute a confirmed player swap."""
@@ -481,11 +505,38 @@ class SubsService:
 			raise ValueError("league_id is required")
 		
 		field_map = self._build_swap_field_map(team_id, out_id, in_id)
+		
+		# First try with current period
+		confirm_resp = self.confirm_or_execute_lineup(
+			league_id=self.league_id,
+			fantasy_team_id=team_id,
+			roster_limit_period=0,  # Let server pick period
+			apply_to_future=False,
+			do_finalize=False,  # Confirm mode
+			field_map=field_map
+		)
+		
+		# Check response
+		model = confirm_resp.get("model", {})
+		pick_deadline_passed = bool(model.get("playerPickDeadlinePassed"))
+		current_period = int(model.get("rosterLimitPeriod", 0))
+		first_illegal_period = model.get("firstIllegalRosterPeriod")
+		
+		# Determine target period and flags
+		target_period = current_period
+		apply_to_future = False
+		
+		if pick_deadline_passed and current_period > 0:
+			target_period = current_period + 1
+			apply_to_future = True
+			log.info(f"[swap] Deadline passed for period {current_period}, executing for period {target_period}")
+		
+		# Execute with appropriate period and flags
 		return self.confirm_or_execute_lineup(
 			league_id=self.league_id,
 			fantasy_team_id=team_id,
-			roster_limit_period=0,  # Current period
-			apply_to_future=False,
+			roster_limit_period=target_period,
+			apply_to_future=apply_to_future,
 			do_finalize=True,  # Execute mode
 			field_map=field_map
 		)

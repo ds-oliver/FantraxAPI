@@ -65,9 +65,24 @@ class FantraxAPI:
 		Fetch the current scoring period/week ID from Fantrax.
 		This is required for lineup changes; using an old one causes 'locked' errors.
 		"""
-		resp = self._request("getStandings", view="SCHEDULE")
-		period_id = int(resp.get("currentPeriod", 0))
-		logger.info(f"Resolved current rosterLimitPeriod={period_id}")
+		# Get roster info with GAMES_PER_POS view to get current period
+		resp = self._request("getTeamRosterInfo", teamId=self.teams[0].team_id, view="GAMES_PER_POS")
+		
+		# Extract period from rosterAdjustmentInfo
+		rai = resp.get("rosterAdjustmentInfo") or {}
+		period_id = int(rai.get("rosterLimitPeriod", 0))
+		
+		if period_id == 0:
+			# Fallback: try to get from model
+			model = resp.get("model") or {}
+			period_id = int(model.get("rosterLimitPeriod", 0))
+		
+		if period_id == 0:
+			# Last resort: try getStandings
+			resp2 = self._request("getStandings", view="SCHEDULE")
+			period_id = int(resp2.get("currentPeriod", 0))
+		
+		logger.info(f"Resolved current rosterLimitPeriod={period_id} (from {'rosterAdjustmentInfo' if period_id > 0 else 'fallback'})")
 		return period_id
 
 
@@ -99,7 +114,10 @@ class FantraxAPI:
 		data = {"leagueId": self.league_id}
 		data.update(kwargs)
 		json_data = {"msgs": [{"method": method, "data": data}]}
-		logger.debug("Request JSON:\n%s", json.dumps(json_data, indent=2, ensure_ascii=False))
+
+		# Log exact payload for lineup changes for easier diffing against web UI
+		if method == "confirmOrExecuteTeamRosterChanges":
+			logger.info("Request JSON (confirmOrExecuteTeamRosterChanges):\n%s", json.dumps(json_data, indent=2, ensure_ascii=False))
 
 		try:
 			response = self._session.post(
@@ -111,14 +129,29 @@ class FantraxAPI:
 		except (RequestException, JSONDecodeError) as e:
 			raise FantraxException(f"Failed to Connect to {method}: {e}\nData: {data}")
 
-		# Log just a preview of the response (first 500 chars)
-		preview = json.dumps(response_json, indent=2, ensure_ascii=False)
-		if len(preview) > 500:
-			preview = preview[:250] + "\n...[truncated]...\n" + preview[-250:]
-		logger.debug("Response (%s [%s]):\n%s", 
-					response.status_code, 
-					response.reason, 
-					preview)
+		# Extract and log only relevant parts of the response
+		resp0 = response_json.get("responses", [{}])[0]
+		data = resp0.get("data", {})
+		fr = data.get("fantasyResponse", {}) or {}
+		model = (fr.get("textArray", {}) or {}).get("model", {}) or {}
+		
+		# Only log the most relevant fields
+		if method == "confirmOrExecuteTeamRosterChanges":
+			logger.debug("Response (%s [%s]): msgType=%s mainMsg=%s illegal=%s changeAllowed=%s period=%s deadline=%s", 
+				response.status_code, response.reason,
+				fr.get("msgType"),
+				fr.get("mainMsg"),
+				fr.get("illegalRosterMsgs"),
+				model.get("changeAllowed"),
+				model.get("rosterLimitPeriod"),
+				model.get("playerPickDeadlinePassed")
+			)
+		else:
+			logger.debug("Response (%s [%s]): msgType=%s mainMsg=%s", 
+				response.status_code, response.reason,
+				fr.get("msgType"),
+				fr.get("mainMsg")
+			)
 
 		if response.status_code >= 400:
 			raise FantraxException(f"({response.status_code} [{response.reason}]) {response_json}")
@@ -398,46 +431,26 @@ class FantraxAPI:
 		return players
 
 	# Lineup helpers
-	def make_lineup_changes(self, team_id: str, changes: dict, apply_to_future_periods: bool = True) -> bool:
+	def make_lineup_changes(self, team_id: str, changes: dict) -> bool:
+		"""Make lineup changes using just the provided changes dict.
+		
+		Args:
+			team_id: The team ID
+			changes: Dict mapping player IDs to their new status (stId/posId)
+		"""
 		logger.info(f"Making lineup changes for team {team_id}")
-		logger.info("Requested changes:\n%s", json.dumps(changes, indent=2, ensure_ascii=False))
-
-		# Build current fieldMap from raw roster data
-		roster = self.roster_info(team_id)
-		current_field_map = {}
-
-		logger.info("Building fieldMap from _raw roster data...")
-		for row in roster.rows:
-			if not row.player:
-				continue
-			raw = getattr(row, "_raw", {}) or {}
-			pos_id = str(raw.get("posId", row.pos_id))
-			st_id = str(raw.get("stId", "2" if pos_id == "0" else "1"))
-
-			current_field_map[row.player.id] = {"posId": pos_id, "stId": st_id}
-			logger.info(f"  {row.player.name} ({row.player.id}) -> posId={pos_id}, stId={st_id}")
-
-		# Apply requested changes
-		logger.info("Applying requested changes:")
-		for pid, new_cfg in changes.items():
-			if pid in current_field_map:
-				old_cfg = current_field_map[pid].copy()
-				current_field_map[pid].update(new_cfg)
-				logger.info(f"  {pid}: {old_cfg} -> {current_field_map[pid]}")
-			else:
-				logger.warning(f"  Change requested for unknown player id {pid}")
-
-		# Always fetch the current scoring period dynamically
-		period_id = self._current_roster_limit_period()
+		logger.info("Changes: %s", changes)
 
 		confirm_data = {
-			"rosterLimitPeriod": period_id,
 			"fantasyTeamId": team_id,
+			"teamId": team_id,
 			"daily": False,
 			"adminMode": False,
 			"confirm": True,
-			"applyToFuturePeriods": apply_to_future_periods,
-			"fieldMap": current_field_map,
+			"action": "CONFIRM",
+			"applyToFuturePeriods": False,
+			"rosterLimitPeriod": 0,
+			"fieldMap": changes,
 		}
 
 		logger.info("Sending confirmation request...")
@@ -453,6 +466,17 @@ class FantraxAPI:
 
 		execute_data = dict(confirm_data)
 		execute_data["confirm"] = False
+		execute_data["action"] = "EXECUTE"
+		execute_data["acceptWarnings"] = True
+
+		# If the server presents a confirm window, include a sensible default "type"
+		try:
+			fr = (confirm_resp or {}).get("fantasyResponse", {}) or {}
+			show_confirm = bool(fr.get("showConfirmWindow") or (confirm_resp or {}).get("showConfirmWindow"))
+			if show_confirm:
+				execute_data["type"] = "CURRENT_PERIOD_ONLY"
+		except Exception:
+			pass
 		logger.info("Sending execution request...")
 		try:
 			exec_resp = self._request("confirmOrExecuteTeamRosterChanges", **execute_data)
@@ -481,7 +505,15 @@ class FantraxAPI:
 
 	def swap_players(self, team_id: str, player1_id: str, player2_id: str) -> bool:
 		logger.info(f"Attempting to swap players: {player1_id} <-> {player2_id} for team {team_id}")
+		
+		# Get current roster and log initial state
 		roster = self.roster_info(team_id)
+		logger.info("=== PRE-SWAP STATE ===")
+		for r in roster.rows:
+			if not r.player:
+				continue
+			raw = getattr(r, "_raw", {}) or {}
+			logger.info(f"  {r.player.name} ({r.player.id}): posId={r.pos_id} statusId={r.status_id} raw_posId={raw.get('posId')} pos={getattr(getattr(r, 'pos', None), 'short_name', '')}")
 
 		p1_row = p2_row = None
 		for row in roster.rows:
@@ -496,23 +528,58 @@ class FantraxAPI:
 			logger.error("One or both players not found on roster")
 			raise FantraxException("One or both players not found on roster")
 
-		# Decide swap
+		# Build complete fieldMap with all players' current positions
 		changes = {}
-		if p1_row.pos_id != "0" and p2_row.pos_id == "0":
-			# player1 starter, player2 bench
-			changes[player1_id] = {"stId": "2", "posId": "0"}
-			changes[player2_id] = {"stId": "1", "posId": p1_row.pos_id}
-		elif p1_row.pos_id == "0" and p2_row.pos_id != "0":
-			# player1 bench, player2 starter
-			changes[player2_id] = {"stId": "2", "posId": "0"}
-			changes[player1_id] = {"stId": "1", "posId": p2_row.pos_id}
-		else:
-			# both bench or both starters, just swap stId/posId
-			changes[player1_id] = {"stId": ("1" if p2_row.pos_id != "0" else "2"), "posId": p2_row.pos_id}
-			changes[player2_id] = {"stId": ("1" if p1_row.pos_id != "0" else "2"), "posId": p1_row.pos_id}
+		for row in roster.rows:
+			if not row.player:
+				continue
+			pid = row.player.id
+			is_starter = row.pos_id != "0"
+			# For non-swapped players, keep their current state
+			if pid not in (player1_id, player2_id):
+				# Never use posId=0 for outfield players
+				pos_id = int(row.pos_id) if is_starter else self._get_default_pos_id(row)
+				changes[pid] = {"stId": "1" if is_starter else "2", "posId": pos_id}
+				continue
+			
+			# For the swapped players, maintain proper position IDs
+			if pid == player1_id:
+				# If p1 was starter, it goes to bench but keeps position; if bench, gets p2's position
+				pos_id = int(p1_row.pos_id) if p1_row.pos_id != "0" else int(p2_row.pos_id)
+				changes[pid] = {"stId": "2", "posId": pos_id}  # to bench
+			else:  # pid == player2_id
+				# If p1 was starter, p2 gets that position; if p1 was bench, p2 keeps its position
+				pos_id = int(p1_row.pos_id) if p1_row.pos_id != "0" else int(p2_row.pos_id)
+				changes[pid] = {"stId": "1", "posId": pos_id}  # to starter
 
-		logger.info(f"Swap changes: {json.dumps(changes, indent=2)}")
+		# Log the final fieldMap with position details
+		logger.info("=== SWAP CHANGES ===")
+		for pid, meta in changes.items():
+			row = next((r for r in roster.rows if r.player and r.player.id == pid), None)
+			if row and row.player:
+				logger.info(f"  {row.player.name} ({pid}): {meta} {'[SWAPPED]' if pid in (player1_id, player2_id) else ''}")
+		
 		return self.make_lineup_changes(team_id, changes)
+
+	def _get_default_pos_id(self, row) -> int:
+		"""Get a player's default position ID (never returns 0)."""
+		if row.pos_id != "0":
+			return int(row.pos_id)
+		
+		# Check raw data for position hints
+		raw = getattr(row, "_raw", {}) or {}
+		if "posId" in raw:
+			return int(raw["posId"])
+		
+		# Try to infer from position name
+		pos = getattr(getattr(row, "pos", None), "short_name", "").upper()
+		if pos == "G": return 704
+		if pos == "D": return 703
+		if pos == "M": return 702
+		if pos == "F": return 701
+		
+		# Default to midfielder if we can't determine
+		return 702
 
 	def move_to_starters(self, team_id: str, player_ids: list) -> bool:
 		changes = {pid: {"stId": "1"} for pid in player_ids}

@@ -519,15 +519,52 @@ def _ensure_log_dir(path: str) -> None:
 	Path(path).mkdir(parents=True, exist_ok=True)
 
 def configure_logging(default_path: str = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log") -> None:
-	_ensure_log_dir(str(Path(default_path).parent))
-	logger = logging.getLogger()
-	if any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', '') == str(Path(default_path)) for h in logger.handlers):
-		return
-	logger.setLevel(logging.INFO)
+	"""Configure logging with separate files for different components.
+	
+	Creates:
+	- auth_workflow.log: Main app events
+	- api.log: Fantrax API requests/responses
+	- debug.log: Detailed debug info
+	"""
+	log_dir = Path(default_path).parent
+	_ensure_log_dir(str(log_dir))
+	
+	# Common formatter
 	fmt = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
-	fh = logging.FileHandler(default_path); fh.setFormatter(fmt); logger.addHandler(fh)
-	if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
-		ch = logging.StreamHandler(); ch.setFormatter(fmt); logger.addHandler(ch)
+	
+	# 1. Main logger (auth_workflow.log)
+	root = logging.getLogger()
+	if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', '') == str(Path(default_path)) for h in root.handlers):
+		root.setLevel(logging.INFO)
+		fh = logging.FileHandler(default_path)
+		fh.setFormatter(fmt)
+		root.addHandler(fh)
+	
+	# 2. API logger (api.log)
+	api_logger = logging.getLogger("fantraxapi")
+	api_path = log_dir / "api.log"
+	if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', '') == str(api_path) for h in api_logger.handlers):
+		api_logger.setLevel(logging.DEBUG)
+		api_logger.propagate = False  # Don't send to root logger
+		fh = logging.FileHandler(api_path)
+		fh.setFormatter(fmt)
+		api_logger.addHandler(fh)
+	
+	# 3. Debug logger (debug.log)
+	debug_logger = logging.getLogger("debug")
+	debug_path = log_dir / "debug.log"
+	if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', '') == str(debug_path) for h in debug_logger.handlers):
+		debug_logger.setLevel(logging.DEBUG)
+		debug_logger.propagate = False  # Don't send to root logger
+		fh = logging.FileHandler(debug_path)
+		fh.setFormatter(fmt)
+		debug_logger.addHandler(fh)
+	
+	# Console handler (optional)
+	if not any(isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler) for h in root.handlers):
+		ch = logging.StreamHandler()
+		ch.setFormatter(fmt)
+		root.addHandler(ch)
 
 # B) NEW: one-call helper for Streamlit to run a true headless login
 def headless_login_build_session(

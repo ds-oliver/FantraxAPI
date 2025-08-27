@@ -433,90 +433,9 @@ class LineupService:
 			except Exception:
 				fmap_submit = fmap_preview
 
-			# ---- PRE (roster_limit_period=0 lets server pick if needed) ----
-			pre = self._svc.confirm_or_execute_lineup(
-				league_id=league_id,
-				fantasy_team_id=team_id,
-				roster_limit_period=0,
-				field_map=fmap_submit,
-				apply_to_future=False,
-				do_finalize=False,
-			)
-			fr_pre   = pre.get("fantasyResponse", {})
-			model_pre = pre.get("model", {})
-			log.info("[lineup] Phase PRE: msgType=%s changeAllowed=%s deadlinePassed=%s",
-					fr_pre.get('msgType'), model_pre.get('changeAllowed'), model_pre.get('playerPickDeadlinePassed'))
-
-			# If server reveals a specific period, echo it back on FIN
-			server_period = (((model_pre or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod"))
-			period_for_fin = int(server_period) if server_period is not None else 0
-
-			# ---- FIN ----
-			fin = self._svc.confirm_or_execute_lineup(
-				league_id=league_id,
-				fantasy_team_id=team_id,
-				roster_limit_period=period_for_fin,
-				field_map=fmap_submit,
-				apply_to_future=False,
-				do_finalize=True,
-			)
-			fr_fin   = fin.get("fantasyResponse", {})
-			model_fin = fin.get("model", {})
-			log.info("[lineup] Phase FIN: msgType=%s changeAllowed=%s deadlinePassed=%s",
-					fr_fin.get('msgType'), model_fin.get('changeAllowed'), model_fin.get('playerPickDeadlinePassed'))
-			if not fin.get("ok"):
-				log.error("[lineup] FIN execute failed. illegalMsgs=%s mainMsg=%s",
-						fin.get('illegalMsgs'), fin.get('mainMsg'))
-				return False
-
-			# Final sanity check after this swap - verify against applied period if deadline passed
-			try:
-				verify_ids: List[str] = []
-
-				# Prefer the server-reported target period if present
-				server_period = (((fin.get("model") or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod"))
-				deadline_passed = bool(model_fin.get("playerPickDeadlinePassed"))
-
-				if deadline_passed and server_period is not None:
-					body = {
-						"msgs": [{
-							"method": "getTeamRosterInfo",
-							"data": {
-								"leagueId": league_id,
-								"teamId": team_id,
-								"period": str(server_period),
-							}
-						}],
-						"uiv": 3,
-						"refUrl": f"https://www.fantrax.com/fantasy/league/{league_id}/team/roster;period={server_period}",
-						"dt": 0, "at": 0, "av": "0.0",
-					}
-					j = self._svc._post_fxpa(league_id, body)
-					resp0 = (j.get("responses") or [{}])[0]
-					data = (resp0.get("data") or {})
-					# tables/rows: starters have statusId == "1"
-					for tbl in (data.get("tables") or []):
-						for row in (tbl.get("rows") or []):
-							if str(row.get("statusId")) == "1":
-								scorer = (row.get("scorer") or {})
-								pid = scorer.get("scorerId")
-								if pid:
-									verify_ids.append(pid)
-				else:
-					# No server target disclosed → verify against current period snapshot
-					after = self.get_roster(league_id, team_id)
-					verify_ids = [r.player.id for r in after.get_starters() if getattr(r, "player", None)]
-
-				log.info(f"[lineup] Starters after change (verify set): {verify_ids}")
-				if in_id not in verify_ids or out_id in verify_ids:
-					log.error("[lineup] Post-apply verification failed (starter set mismatch)")
-					return False
-			except Exception as ve:
-				log.warning(f"[lineup] Verification step failed non-fatally: {ve}")
-
-			
-		log.info("[lineup] Successfully applied all requested changes")
-		return True
+			# Use the simplified API that lets the server handle periods
+			api = FantraxAPI(league_id=league_id, session=self.session)
+			return api.make_lineup_changes(team_id, fmap_submit)
 	
 	# utils/roster_ops.py (inside LineupService)
 
