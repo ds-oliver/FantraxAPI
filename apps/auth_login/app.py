@@ -545,11 +545,10 @@ def ui_simple_subs_section():
 
             # DEBUG: peek at confirm only (no execute) to surface messages in logs
             try:
-                roster_info = api._request("getTeamRosterInfo", teamId=team_id)
-                model = (roster_info.get("fantasyResponse") or {}).get("textArray", {}).get("model", {}) or roster_info.get("model", {})
-                rlp = model.get("rosterLimitPeriod", 2)
+                # Get current period for debug probe
+                period_id = api._current_roster_limit_period()
                 confirm_payload = {
-                    "rosterLimitPeriod": rlp,
+                    "rosterLimitPeriod": period_id,
                     "fantasyTeamId": team_id,
                     "daily": False,
                     "adminMode": False,
