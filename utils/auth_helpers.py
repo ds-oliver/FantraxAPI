@@ -470,7 +470,13 @@ def fetch_user_profile(session: requests.Session) -> Dict[str, str]:
 
 	payload = {"msgs": [{"method": "getAllLeagues", "data": {"view": "LEAGUES"}}]}
 	try:
+		# log payload
+		logger.info(f"User profile payload: {payload}")
+		
 		data = _fxpa_post(session, payload).json()
+		# log data
+		logger.info(f"User profile data: {data}")
+		
 		info: Dict[str, str] = {}
 
 		for r in (data.get("responses") or []):
@@ -488,6 +494,8 @@ def fetch_user_profile(session: requests.Session) -> Dict[str, str]:
 				}
 				break
 		logger.info(f"User profile parsed: username={info.get('username','')}")
+		# Log info
+		logger.info(f"User profile: {info}")
 		return info
 	except Exception:
 		logger.exception("Failed fetching user profile")

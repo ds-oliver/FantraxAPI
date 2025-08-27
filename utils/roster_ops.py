@@ -351,16 +351,10 @@ class LineupService:
 	Keeps Session/auth ownership in the app layer.
 	"""
 
-	def __init__(self, session: Session):
+	def __init__(self, session: Session, league_id: str = None):
 		self.session = session
-		self._svc = SubsService(session)
-
-	# Optional: small helper so UI never needs _svc
-	def get_roster(self, league_id: str, team_id: str) -> Roster:
-		return self._svc.get_roster(league_id, team_id)
-	
-	def warm_codes_for_roster(self, league_id: str, roster: Roster) -> None:
-		self._svc.warm_codes_for_roster(league_id, roster)
+		self.league_id = league_id
+		self._svc = SubsService(session, league_id=league_id)
 
 	# ----- simple accessors -----
 	def get_roster(self, league_id: str, team_id: str) -> Roster:
@@ -372,49 +366,234 @@ class LineupService:
 	def list_bench(self, league_id: str, team_id: str) -> List[RosterRow]:
 		return self._svc.list_bench(league_id, team_id)
 
-	# ----- single swap helpers -----
-	def preflight_swap(
-		self, *, league_id: str, team_id: str, starter_player_id: str, bench_player_id: str
-	) -> Dict[str, Any]:
-		return self._svc.preflight_swap(
-			league_id=league_id,
-			team_id=team_id,
-			starter_player_id=starter_player_id,
-			bench_player_id=bench_player_id,
-		)
+	def warm_codes_for_roster(self, league_id: str, roster: Roster) -> None:
+		self._svc.warm_codes_for_roster(league_id, roster)
 
-	def swap_players_by_ids(
-		self, *, league_id: str, team_id: str, starter_player_id: str, bench_player_id: str, verify: bool = True
-	) -> Dict[str, Any]:
-		return self._svc.swap_players_by_ids(
-			league_id=league_id,
-			team_id=team_id,
-			starter_player_id=starter_player_id,
-			bench_player_id=bench_player_id,
-			verify=verify,
-		)
+	def apply_changes(self, league_id: str, team_id: str, changes: list[tuple[str, str]], pos_overrides: dict[str, str] = None) -> bool:
+		"""Apply swaps using full fieldMap, two-step confirm/execute per SUBS SUMMARY.
+		For each (out_id, in_id):
+		- Compute desired starters (replace out with in)
+		- Build full fieldMap preview (numeric posId, stId for all players) for logging
+		- Execute via SubsService.set_lineup_by_ids (two-step with verify)
+		"""
+		log.info(f"[lineup] Starting to apply {len(changes)} changes (full fieldMap, two-step)")
+		pos_overrides = pos_overrides or {}
+		
+		# Snapshot before
+		try:
+			roster0 = self.get_roster(league_id, team_id)
+			starters0 = [r.player.id for r in roster0.get_starters() if getattr(r, "player", None)]
+			log.info(f"[lineup] Initial starters: {starters0}")
+		except Exception as e:
+			log.warning(f"[lineup] Failed to fetch initial roster: {e}")
+			starters0 = []
+		
+		for idx, (out_id, in_id) in enumerate(changes, 1):
+			log.info(f"[lineup] Change {idx}/{len(changes)} plan: OUT={out_id} -> IN={in_id}")
+			
+			# Fresh snapshot
+			roster_now = self.get_roster(league_id, team_id)
+			current_starters = [r.player.id for r in roster_now.get_starters() if getattr(r, "player", None)]
+			cur_set = set(current_starters)
+			if out_id not in cur_set and in_id in cur_set:
+				log.info("[lineup] Desired state already satisfied; skipping.")
+				continue
+			
+			desired_set = set(current_starters)
+			if out_id in desired_set:
+				desired_set.remove(out_id)
+			desired_set.add(in_id)
+			desired_list = list(desired_set)
+			
+			# Build a fieldMap preview (numeric posId, stId for all) for logging
+			try:
+				fmap_preview = self._svc.build_field_map(roster_now, desired_list, pos_overrides)
+				num_total = len(fmap_preview)
+				num_starters = sum(1 for v in fmap_preview.values() if str(v.get("stId")) == "1")
+				num_bench = num_total - num_starters
+				log.info(f"[lineup] fieldMap preview: total={num_total} starters={num_starters} bench={num_bench}")
+				# Log critical rows
+				if out_id in fmap_preview:
+					log.info(f"[lineup] fmap[out]: {out_id} -> {fmap_preview[out_id]}")
+				if in_id in fmap_preview:
+					log.info(f"[lineup] fmap[in]:  {in_id} -> {fmap_preview[in_id]}")
+			except Exception as e:
+				log.warning(f"[lineup] Unable to build fieldMap preview: {e}")
+			
+			# Two-step with final full fieldMap (matches DevTools payload)
+			# ---- build submit map (keep posId as int) ----
+			fmap_submit = {}
+			try:
+				for pid, meta in (fmap_preview or {}).items():
+					pos_id_val = meta.get("posId")		  # already int from builder
+					st_id_val  = meta.get("stId")		   # "1"/"2" is fine as str
+					if pos_id_val is None or st_id_val is None:
+						continue
+					fmap_submit[str(pid)] = {"posId": pos_id_val, "stId": str(st_id_val)}
+			except Exception:
+				fmap_submit = fmap_preview
 
-	def swap_players_by_names(
-		self, *, league_id: str, team_id: str, starter_player_name: str, bench_player_name: str, verify: bool = True
-	) -> Dict[str, Any]:
-		roster = self.get_roster(league_id, team_id)
+			# ---- PRE (roster_limit_period=0 lets server pick if needed) ----
+			pre = self._svc.confirm_or_execute_lineup(
+				league_id=league_id,
+				fantasy_team_id=team_id,
+				roster_limit_period=0,
+				field_map=fmap_submit,
+				apply_to_future=False,
+				do_finalize=False,
+			)
+			fr_pre   = pre.get("fantasyResponse", {})
+			model_pre = pre.get("model", {})
+			log.info("[lineup] Phase PRE: msgType=%s changeAllowed=%s deadlinePassed=%s",
+					fr_pre.get('msgType'), model_pre.get('changeAllowed'), model_pre.get('playerPickDeadlinePassed'))
 
-		def _by_name(name: str) -> str:
-			row = roster.get_player_by_name(name)
-			if not row or not getattr(row, "player", None):
-				raise ValueError(f"Player not found: {name}")
-			return row.player.id
+			# If server reveals a specific period, echo it back on FIN
+			server_period = (((model_pre or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod"))
+			period_for_fin = int(server_period) if server_period is not None else 0
 
-		starter_id = _by_name(starter_player_name)
-		bench_id = _by_name(bench_player_name)
+			# ---- FIN ----
+			fin = self._svc.confirm_or_execute_lineup(
+				league_id=league_id,
+				fantasy_team_id=team_id,
+				roster_limit_period=period_for_fin,
+				field_map=fmap_submit,
+				apply_to_future=False,
+				do_finalize=True,
+			)
+			fr_fin   = fin.get("fantasyResponse", {})
+			model_fin = fin.get("model", {})
+			log.info("[lineup] Phase FIN: msgType=%s changeAllowed=%s deadlinePassed=%s",
+					fr_fin.get('msgType'), model_fin.get('changeAllowed'), model_fin.get('playerPickDeadlinePassed'))
+			if not fin.get("ok"):
+				log.error("[lineup] FIN execute failed. illegalMsgs=%s mainMsg=%s",
+						fin.get('illegalMsgs'), fin.get('mainMsg'))
+				return False
 
-		return self.swap_players_by_ids(
-			league_id=league_id,
-			team_id=team_id,
-			starter_player_id=starter_id,
-			bench_player_id=bench_id,
-			verify=verify,
-		)
+			# Final sanity check after this swap - verify against applied period if deadline passed
+			try:
+				verify_ids: List[str] = []
+
+				# Prefer the server-reported target period if present
+				server_period = (((fin.get("model") or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod"))
+				deadline_passed = bool(model_fin.get("playerPickDeadlinePassed"))
+
+				if deadline_passed and server_period is not None:
+					body = {
+						"msgs": [{
+							"method": "getTeamRosterInfo",
+							"data": {
+								"leagueId": league_id,
+								"teamId": team_id,
+								"period": str(server_period),
+							}
+						}],
+						"uiv": 3,
+						"refUrl": f"https://www.fantrax.com/fantasy/league/{league_id}/team/roster;period={server_period}",
+						"dt": 0, "at": 0, "av": "0.0",
+					}
+					j = self._svc._post_fxpa(league_id, body)
+					resp0 = (j.get("responses") or [{}])[0]
+					data = (resp0.get("data") or {})
+					# tables/rows: starters have statusId == "1"
+					for tbl in (data.get("tables") or []):
+						for row in (tbl.get("rows") or []):
+							if str(row.get("statusId")) == "1":
+								scorer = (row.get("scorer") or {})
+								pid = scorer.get("scorerId")
+								if pid:
+									verify_ids.append(pid)
+				else:
+					# No server target disclosed → verify against current period snapshot
+					after = self.get_roster(league_id, team_id)
+					verify_ids = [r.player.id for r in after.get_starters() if getattr(r, "player", None)]
+
+				log.info(f"[lineup] Starters after change (verify set): {verify_ids}")
+				if in_id not in verify_ids or out_id in verify_ids:
+					log.error("[lineup] Post-apply verification failed (starter set mismatch)")
+					return False
+			except Exception as ve:
+				log.warning(f"[lineup] Verification step failed non-fatally: {ve}")
+
+			
+		log.info("[lineup] Successfully applied all requested changes")
+		return True
+	
+	# utils/roster_ops.py (inside LineupService)
+
+	def _try_direct_swap(
+		self,
+		league_id: str,
+		team_id: str,
+		out_id: str,
+		in_id: str,
+		*,
+		retries: int = 3,
+		sleep_s: float = 0.8,
+		optimistic_on_ok: bool = True,
+	) -> dict:
+		"""
+		Primary path: attempt FantraxAPI.swap_players(out_id, in_id).
+
+		Returns: {"ok": bool, "verified": bool, "reason": str|None}
+		- ok=True   → the swap_players API reported success (or we optimistically treat it as such)
+		- verified → after-reads show in_id promoted & out_id benched (may be False due to eventual consistency)
+		"""
+		from time import sleep
+		api = FantraxAPI(league_id=league_id, session=self.session)
+
+		# quick sanity: both on roster and out_id is a current starter, in_id is bench & eligible
+		roster = api.roster_info(team_id)
+		row_map = {r.player.id: r for r in roster.rows if getattr(r, "player", None)}
+		if out_id not in row_map or in_id not in row_map:
+			log.info("[swap-fast] players not both on roster; skip fast path")
+			return {"ok": False, "verified": False, "reason": "not_on_roster"}
+
+		is_out_starter = getattr(row_map[out_id], "pos_id", None) != "0"
+		is_in_starter  = getattr(row_map[in_id],  "pos_id", None) != "0"
+		if not is_out_starter:
+			log.info("[swap-fast] 'out' is not a starter; skip fast path")
+			return {"ok": False, "verified": False, "reason": "out_not_starter"}
+		if is_in_starter:
+			log.info("[swap-fast] 'in' already a starter; nothing to do")
+			return {"ok": True, "verified": True, "reason": None}
+
+		from fantraxapi.subs import SubsService
+		out_pos = SubsService._pos_of_row(row_map[out_id])
+		in_elig = SubsService.eligible_positions_of_row(row_map[in_id])
+		if out_pos not in in_elig:
+			log.info("[swap-fast] bench player not eligible for %s; skip fast path", out_pos)
+			return {"ok": False, "verified": False, "reason": "not_eligible"}
+
+		# attempt the simple swap
+		try:
+			ok = api.swap_players(team_id, out_id, in_id)
+			log.info("[swap-fast] api.swap_players -> %s", ok)
+		except Exception as e:
+			log.info("[swap-fast] api.swap_players raised %s; falling back", e)
+			return {"ok": False, "verified": False, "reason": "exception"}
+
+		# best-effort verification with small retries
+		verified = False
+		if ok:
+			for i in range(max(1, retries)):
+				try:
+					after = api.roster_info(team_id)
+					starters = {r.player.id for r in after.get_starters() if getattr(r, "player", None)}
+					verified = (in_id in starters) and (out_id not in starters)
+					log.info("[swap-fast] verify attempt %d/%d -> %s", i + 1, retries, verified)
+					if verified:
+						break
+				except Exception as ve:
+					log.info("[swap-fast] verify attempt %d/%d failed: %s", i + 1, retries, ve)
+				sleep(sleep_s)
+
+		# If the API reported success but verification didn't catch up, honor optimistic mode.
+		if ok and not verified and optimistic_on_ok:
+			log.info("[swap-fast] ok=True verify=False (optimistic success)")
+			return {"ok": True, "verified": False, "reason": "optimistic"}
+
+		log.info("[swap-fast] verify=%s", verified)
+		return {"ok": bool(ok and verified), "verified": bool(verified), "reason": None if ok else "api_false"}
 
 	# ----- bulk XI helpers -----
 	def preflight_set_lineup_by_ids(
@@ -442,6 +621,11 @@ class LineupService:
 		best_effort: bool = True,
 		verify_each: bool = False,
 		pos_overrides: dict | None = None,
+		# --- NEW optional server-confirm knobs (forwarded) ---
+		server_confirm: bool = False,
+		apply_to_future: bool = False,
+		roster_limit_period: Optional[int] = None,
+		fantasy_team_id: Optional[str] = None,
 	) -> Dict[str, Any]:
 		return self._svc.set_lineup_by_ids(
 			league_id=league_id,
@@ -450,6 +634,10 @@ class LineupService:
 			best_effort=best_effort,
 			verify_each=verify_each,
 			pos_overrides=pos_overrides,
+			server_confirm=server_confirm,
+			apply_to_future=apply_to_future,
+			roster_limit_period=roster_limit_period,
+			fantasy_team_id=fantasy_team_id,
 		)
 
 	def set_lineup_by_names(self, *, league_id: str, team_id: str, names: List[str], **kwargs) -> Dict[str, Any]:

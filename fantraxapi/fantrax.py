@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Optional, Union, List, Dict
 from requests import Session
@@ -59,6 +60,17 @@ class FantraxAPI:
 				return team
 		raise FantraxException(f"Team ID: {team_id} not found")
 
+	def _current_roster_limit_period(self) -> int:
+		"""
+		Fetch the current scoring period/week ID from Fantrax.
+		This is required for lineup changes; using an old one causes 'locked' errors.
+		"""
+		resp = self._request("getStandings", view="SCHEDULE")
+		period_id = int(resp.get("currentPeriod", 0))
+		logger.info(f"Resolved current rosterLimitPeriod={period_id}")
+		return period_id
+
+
 	# Back-compat alias (objs.Roster calls api.team(...))
 	def team(self, team_id: str) -> Team:
 		return self.get_team_by_id(team_id)
@@ -87,7 +99,7 @@ class FantraxAPI:
 		data = {"leagueId": self.league_id}
 		data.update(kwargs)
 		json_data = {"msgs": [{"method": method, "data": data}]}
-		logger.debug(f"Request JSON: {json_data}")
+		logger.debug("Request JSON:\n%s", json.dumps(json_data, indent=2, ensure_ascii=False))
 
 		try:
 			response = self._session.post(
@@ -99,7 +111,14 @@ class FantraxAPI:
 		except (RequestException, JSONDecodeError) as e:
 			raise FantraxException(f"Failed to Connect to {method}: {e}\nData: {data}")
 
-		logger.debug(f"Response ({response.status_code} [{response.reason}]) {response_json}")
+		# Log just a preview of the response (first 500 chars)
+		preview = json.dumps(response_json, indent=2, ensure_ascii=False)
+		if len(preview) > 500:
+			preview = preview[:250] + "\n...[truncated]...\n" + preview[-250:]
+		logger.debug("Response (%s [%s]):\n%s", 
+					response.status_code, 
+					response.reason, 
+					preview)
 
 		if response.status_code >= 400:
 			raise FantraxException(f"({response.status_code} [{response.reason}]) {response_json}")
@@ -259,13 +278,13 @@ class FantraxAPI:
 								else:
 									cell_keys.append(type(c).__name__)
 							for k in ("columns", "rows", "headers"):
-								if k in th:
+								if k in stats_table:
 									try:
-										print(f"tableHeader.{k} length: {len(th[k])}")
+										print(f"tableHeader.{k} length: {len(stats_table[k])}")
 									except Exception:
 										pass
-				elif isinstance(th, list):
-					print(f"tableHeader length: {len(th)}")
+				elif isinstance(stats_table, list):
+					print(f"tableHeader length: {len(stats_table)}")
 		
 		# Extract player rows robustly from first page
 		rows = self._extract_rows(response.get("statsTable"))
@@ -380,62 +399,126 @@ class FantraxAPI:
 
 	# Lineup helpers
 	def make_lineup_changes(self, team_id: str, changes: dict, apply_to_future_periods: bool = True) -> bool:
+		logger.info(f"Making lineup changes for team {team_id}")
+		logger.info("Requested changes:\n%s", json.dumps(changes, indent=2, ensure_ascii=False))
+
+		# Build current fieldMap from raw roster data
 		roster = self.roster_info(team_id)
 		current_field_map = {}
+
+		logger.info("Building fieldMap from _raw roster data...")
 		for row in roster.rows:
-			if row.player:
-				current_field_map[row.player.id] = {
-					"posId": row.pos_id,
-					"stId": "1" if row.pos_id != "0" else "2"  # 1=starter, 2=bench
-				}
-		for player_id, new_config in changes.items():
-			if player_id in current_field_map:
-				current_field_map[player_id].update(new_config)
+			if not row.player:
+				continue
+			raw = getattr(row, "_raw", {}) or {}
+			pos_id = str(raw.get("posId", row.pos_id))
+			st_id = str(raw.get("stId", "2" if pos_id == "0" else "1"))
+
+			current_field_map[row.player.id] = {"posId": pos_id, "stId": st_id}
+			logger.info(f"  {row.player.name} ({row.player.id}) -> posId={pos_id}, stId={st_id}")
+
+		# Apply requested changes
+		logger.info("Applying requested changes:")
+		for pid, new_cfg in changes.items():
+			if pid in current_field_map:
+				old_cfg = current_field_map[pid].copy()
+				current_field_map[pid].update(new_cfg)
+				logger.info(f"  {pid}: {old_cfg} -> {current_field_map[pid]}")
+			else:
+				logger.warning(f"  Change requested for unknown player id {pid}")
+
+		# Always fetch the current scoring period dynamically
+		period_id = self._current_roster_limit_period()
 
 		confirm_data = {
-			"rosterLimitPeriod": 2,
+			"rosterLimitPeriod": period_id,
 			"fantasyTeamId": team_id,
 			"daily": False,
 			"adminMode": False,
 			"confirm": True,
 			"applyToFuturePeriods": apply_to_future_periods,
-			"fieldMap": current_field_map
+			"fieldMap": current_field_map,
 		}
-		try:
-			self._request("confirmOrExecuteTeamRosterChanges", **confirm_data)
-		except FantraxException as e:
-			raise FantraxException(f"Failed to confirm lineup changes: {e}")
 
-		execute_data = confirm_data.copy()
-		execute_data["confirm"] = False
+		logger.info("Sending confirmation request...")
 		try:
-			self._request("confirmOrExecuteTeamRosterChanges", **execute_data)
+			confirm_resp = self._request("confirmOrExecuteTeamRosterChanges", **confirm_data)
+			preview = json.dumps(confirm_resp, indent=2, ensure_ascii=False)
+			if len(preview) > 500:
+				preview = preview[:250] + "\n...[truncated]...\n" + preview[-250:]
+			logger.debug("Confirmation response:\n%s", preview)
 		except FantraxException as e:
-			raise FantraxException(f"Failed to execute lineup changes: {e}")
-		return True
+			logger.error(f"Confirmation request failed: {e}")
+			raise
+
+		execute_data = dict(confirm_data)
+		execute_data["confirm"] = False
+		logger.info("Sending execution request...")
+		try:
+			exec_resp = self._request("confirmOrExecuteTeamRosterChanges", **execute_data)
+			preview = json.dumps(exec_resp, indent=2, ensure_ascii=False)
+			if len(preview) > 500:
+				preview = preview[:250] + "\n...[truncated]...\n" + preview[-250:]
+			logger.debug("Execution response:\n%s", preview)
+		except FantraxException as e:
+			logger.error(f"Execution request failed: {e}")
+			raise
+
+		# Inspect fantasyResponse
+		fr = (exec_resp or {}).get("fantasyResponse", {}) or {}
+		msg_type = (fr.get("msgType") or "").upper()
+		illegal = fr.get("illegalRosterMsgs") or []
+		change_allowed = ((fr.get("textArray") or {}).get("model") or {}).get("changeAllowed", True)
+
+		logger.info(f"Response details: msgType={msg_type}, changeAllowed={change_allowed}, illegal={illegal}")
+		if fr.get("mainMsg"):
+			logger.info(f"  Main message: {fr['mainMsg']}")
+
+		ok = (msg_type in ("", "SUCCESS", None)) and change_allowed and not illegal
+		logger.info(f"Lineup change result: {'SUCCESS' if ok else 'FAILED'}")
+		return bool(ok)
+
 
 	def swap_players(self, team_id: str, player1_id: str, player2_id: str) -> bool:
+		logger.info(f"Attempting to swap players: {player1_id} <-> {player2_id} for team {team_id}")
 		roster = self.roster_info(team_id)
-		player1_status = None
-		player2_status = None
+
+		p1_row = p2_row = None
 		for row in roster.rows:
-			if row.player:
-				if row.player.id == player1_id:
-					player1_status = "1" if row.pos_id != "0" else "2"
-				elif row.player.id == player2_id:
-					player2_status = "1" if row.pos_id != "0" else "2"
-		if player1_status is None or player2_status is None:
+			if not row.player:
+				continue
+			if row.player.id == player1_id:
+				p1_row = row
+			elif row.player.id == player2_id:
+				p2_row = row
+
+		if not p1_row or not p2_row:
+			logger.error("One or both players not found on roster")
 			raise FantraxException("One or both players not found on roster")
-		changes = {
-			player1_id: {"stId": player2_status},
-			player2_id: {"stId": player1_status}
-		}
+
+		# Decide swap
+		changes = {}
+		if p1_row.pos_id != "0" and p2_row.pos_id == "0":
+			# player1 starter, player2 bench
+			changes[player1_id] = {"stId": "2", "posId": "0"}
+			changes[player2_id] = {"stId": "1", "posId": p1_row.pos_id}
+		elif p1_row.pos_id == "0" and p2_row.pos_id != "0":
+			# player1 bench, player2 starter
+			changes[player2_id] = {"stId": "2", "posId": "0"}
+			changes[player1_id] = {"stId": "1", "posId": p2_row.pos_id}
+		else:
+			# both bench or both starters, just swap stId/posId
+			changes[player1_id] = {"stId": ("1" if p2_row.pos_id != "0" else "2"), "posId": p2_row.pos_id}
+			changes[player2_id] = {"stId": ("1" if p1_row.pos_id != "0" else "2"), "posId": p1_row.pos_id}
+
+		logger.info(f"Swap changes: {json.dumps(changes, indent=2)}")
 		return self.make_lineup_changes(team_id, changes)
 
 	def move_to_starters(self, team_id: str, player_ids: list) -> bool:
-		changes = {player_id: {"stId": "1"} for player_id in player_ids}
+		changes = {pid: {"stId": "1"} for pid in player_ids}
 		return self.make_lineup_changes(team_id, changes)
 
 	def move_to_bench(self, team_id: str, player_ids: list) -> bool:
-		changes = {player_id: {"stId": "2"} for player_id in player_ids}
+		changes = {pid: {"stId": "2", "posId": "0"} for pid in player_ids}
 		return self.make_lineup_changes(team_id, changes)
+

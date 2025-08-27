@@ -153,9 +153,11 @@ def make_substitution_example(league_id: str, team_id: Optional[str] = None, coo
 		print("Substitution cancelled.")
 		return
 	
-	# Make the substitution
+	# Make the substitution using the simple swap approach
 	try:
 		print("\nExecuting substitution...")
+		
+		# First move bench player to active (may temporarily have 12 active)
 		success = api.swap_players(my_team.team_id, starter_row.player.id, bench_row.player.id)
 		
 		if success:
@@ -178,6 +180,7 @@ def make_substitution_example(league_id: str, team_id: Optional[str] = None, coo
 			
 	except Exception as e:
 		print(f"❌ Error making substitution: {e}")
+		print("Make sure both players are eligible for the swap and not locked.")
 
 def show_roster_analysis(league_id: str, team_id: Optional[str] = None, cookie_path: Optional[str] = None):
 	"""Show detailed roster analysis."""
