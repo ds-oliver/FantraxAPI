@@ -1,9 +1,12 @@
 # /Users/hogan/FantraxAPI/fantraxapi/subs.py
 from __future__ import annotations
 
+import json
+import hashlib
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
+from urllib.parse import unquote
 
 from requests import Session
 from fantraxapi import FantraxAPI
@@ -996,11 +999,43 @@ class SubsService:
 
 	def _post_fxpa(self, league_id: str, body: dict) -> dict:
 		url = f"https://www.fantrax.com/fxpa/req?leagueId={league_id}"
+		api_log = logging.getLogger("auth_api")
+		api_log.debug("[fxpa] request: url=%s body=%s", url, json.dumps(body, ensure_ascii=False)[:4000])
 		try:
 			res = self.session.post(url, json=body, timeout=30)
-			return res.json()
+			j = res.json()
+			api_log.debug("[fxpa] response: %s", json.dumps(j, ensure_ascii=False)[:4000])
+			return j
 		except Exception as e:
+			api_log.error("[fxpa] error: %s", str(e))
 			return {"error": str(e)}
+
+	def _current_period_via_fxpa(self, league_id: str) -> int:
+		body = {
+			"msgs": [{"method": "getStandings", "data": {"leagueId": league_id, "view": "SCHEDULE"}}],
+			"uiv": 3,
+			"refUrl": f"https://www.fantrax.com/fantasy/league/{league_id}/standings",
+			"dt": 0, "at": 0, "av": "0.0",
+		}
+		j = self._post_fxpa(league_id, body)
+		resp0 = (j.get("responses") or [{}])[0]
+		data = (resp0.get("data") or {})
+		try:
+			return int(data.get("currentPeriod") or 0)
+		except Exception:
+			return 0
+            
+	def _normalize_field_map(self, field_map: dict) -> dict:
+		submit = {}
+		for pid, meta in (field_map or {}).items():
+			if not meta:
+				continue
+			pos = meta.get("posId")
+			st  = meta.get("stId")
+			if pos is None or st is None:
+				continue
+			submit[str(pid)] = {"posId": str(pos), "stId": "1" if str(st) == "1" else "2"}
+		return submit
 
 	def confirm_or_execute_lineup(
 		self,
@@ -1008,28 +1043,43 @@ class SubsService:
 		league_id: str,
 		fantasy_team_id: str,
 		roster_limit_period: int,
-		field_map: Dict[str, Dict[str, int]],
+		field_map: dict,
 		apply_to_future: bool,
 		do_finalize: bool,
-	) -> Dict[str, Any]:
-		# --- request payload ---
-		data_common = {
-			"rosterLimitPeriod": int(roster_limit_period),
+	) -> dict:
+		# 1) XSRF header (defensive – some pods need it every call)
+		try:
+			xsrf = None
+			for c in self._session.cookies:
+				if c.name.upper().startswith("XSRF-TOKEN"):
+					xsrf = unquote(c.value or "")
+					break
+			if xsrf:
+				self._session.headers["X-XSRF-TOKEN"] = xsrf
+		except Exception:
+			pass
+
+		# 2) Normalize map and period
+		submit_fm = self._normalize_field_map(field_map)
+		period_to_send = int(roster_limit_period)
+		if period_to_send == 0:
+			period_to_send = self._current_period_via_fxpa(league_id) or 0
+
+		# 3) Data payload (include leagueId, and always send confirm=bool)
+		data = {
+			"leagueId": league_id,                       # <-- important
+			"rosterLimitPeriod": period_to_send,
 			"fantasyTeamId": fantasy_team_id,
 			"teamId": fantasy_team_id,
 			"daily": False,
 			"adminMode": False,
 			"applyToFuturePeriods": bool(apply_to_future),
-			"fieldMap": field_map,
+			"fieldMap": submit_fm,
+			"confirm": (not do_finalize),                # <-- always present
+			"action": ("EXECUTE" if do_finalize else "CONFIRM"),
 		}
-		if not do_finalize:
-			data = dict(data_common)
-			data["confirm"] = True
-			data["action"] = "CONFIRM"	   # <-- important
-		else:
-			data = dict(data_common)
+		if do_finalize:
 			data["acceptWarnings"] = True
-			data["action"] = "EXECUTE"	   # <-- important
 
 		body = {
 			"msgs": [{"method": "confirmOrExecuteTeamRosterChanges", "data": data}],
@@ -1040,7 +1090,7 @@ class SubsService:
 
 		j = self._post_fxpa(league_id, body)
 
-		# --- parse both shapes: fantasyResponse + txResponses ---
+		# --- parse (same as you had) ---
 		resp0 = (j.get("responses") or [{}])[0] if isinstance(j, dict) else {}
 		data_blob = resp0.get("data") or {}
 		page_error = resp0.get("pageError") or data_blob.get("pageError")
@@ -1051,46 +1101,58 @@ class SubsService:
 
 		tx = (data_blob.get("txResponses") or [])
 		tx_ok = False
-		tx_code = None
-		tx_msg  = None
 		if tx:
 			t0 = tx[0] or {}
 			tx_code = (t0.get("code") or "").upper()
 			status  = (t0.get("status") or "").upper()
-			tx_msg  = t0.get("message")
-			# e.g. OK_SUCCESS / SUCCEEDED / SUCCESS / OK
 			tx_ok = tx_code.startswith("OK") or status in {"SUCCEEDED", "SUCCESS", "OK"}
 
 		msg_type = fr.get("msgType")
-		show_confirm = bool(fr.get("showConfirmWindow"))
 		illegal = list(fr.get("illegalRosterMsgs") or [])
-		main_msg = fr.get("mainMsg") or tx_msg
+		main_msg = fr.get("mainMsg") or (tx and (tx[0] or {}).get("message"))
 
-		# Success rules:
-		# - PRE: CONFIRM/WARNING/SUCCESS OR tx_ok
-		# - FIN: SUCCESS/CONFIRM/WARNING OR tx_ok
-		if do_finalize:
-			ok_flag = (msg_type in ("SUCCESS", "CONFIRM", "WARNING")) or tx_ok
-		else:
-			ok_flag = (msg_type in ("CONFIRM", "WARNING", "SUCCESS")) or tx_ok
-
-		if page_error:
+		ok_flag = bool(tx_ok) or (msg_type == "SUCCESS")
+		if fr.get("removeSubmitButton") or illegal or page_error:
 			ok_flag = False
 
-		log.info(
-			"[lineup] finalize=%s type=%s confirmWindow=%s illegal=%s",
-			do_finalize, msg_type, show_confirm, illegal or None
+		rai = (model or {}).get("rosterAdjustmentInfo") or {}
+		server_period = rai.get("rosterLimitPeriod")
+		deadline_passed = bool(model.get("playerPickDeadlinePassed"))
+		change_allowed = bool(model.get("changeAllowed", True))
+
+		# Warn if period is 0
+		if not period_to_send:
+			log.warning("[lineup] period_to_send==0 (could be stale). Will rely on server.")
+
+		# Log request/response to API logger
+		api_log = logging.getLogger("auth_api")
+		api_log.debug("[lineup] request: phase=%s period=%s apply_future=%s body=%s",
+			"FIN" if do_finalize else "PRE",
+			period_to_send,
+			bool(apply_to_future),
+			json.dumps(body, ensure_ascii=False)[:4000]
 		)
+		api_log.debug("[lineup] response: %s", json.dumps(j, ensure_ascii=False)[:4000])
+
+		# One-line phase summary
 		log.info(
-			"[lineup] changeAllowed=%s firstIllegalPeriod=%s pickDeadlinePassed=%s",
+			"[lineup] phase=%s period=%s ok=%s msgType=%s tx_code=%s tx_status=%s illegal=%s changeAllowed=%s deadlinePassed=%s serverPeriod=%s main=%s",
+			"FIN" if do_finalize else "PRE",
+			period_to_send,
+			bool(ok_flag),
+			msg_type or "NONE",
+			(t0.get("code") or "").upper(),
+			(t0.get("status") or "").upper(),
+			len(illegal),
 			model.get("changeAllowed"),
-			model.get("firstIllegalRosterPeriod"),
 			model.get("playerPickDeadlinePassed"),
+			(((model or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod")),
+			(str(main_msg)[:120] if main_msg else None)
 		)
 
-		# Helpful dump if FR missing and no txResponses
-		if msg_type is None and not tx:
-			log.info("[lineup] raw response (truncated): %s", str(j)[:800])
+		# Keep page error details at debug level
+		if page_error and log.isEnabledFor(logging.DEBUG):
+			log.debug("[lineup] pageError detail (trunc): %s", str(page_error)[:300])
 
 		return {
 			"ok": bool(ok_flag),
@@ -1098,10 +1160,12 @@ class SubsService:
 			"model": model,
 			"illegalMsgs": illegal,
 			"mainMsg": main_msg,
+			"targetPeriod": server_period,
+			"deadlinePassed": deadline_passed,
+			"changeAllowed": change_allowed,
 			"raw": j,
 		}
 
-	
 # Optional convenience for UI code:
 def eligible_positions_of_row(row) -> set[str]:
 	return SubsService.eligible_positions_of_row(row)

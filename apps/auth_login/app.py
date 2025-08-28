@@ -28,8 +28,16 @@ from typing import Optional, Dict, Union, Any
 import pandas as pd
 import streamlit as st
 from requests import Session
+import importlib
+import fantraxapi
+importlib.reload(fantraxapi)
 from fantraxapi import FantraxAPI
 from fantraxapi.objs import Roster
+from fantraxapi.subs import SubsService
+import importlib
+import utils.log_helpers
+importlib.reload(utils.log_helpers)
+from utils.log_helpers import summarize_diff, fmap_digest, fmap_counts, fmap_delta
 
 # --- auth + cookie helpers (unchanged from your original) ---
 from utils.cookie_import import read_auth_file  # -> {"cookies":[...], "storage": {...}}
@@ -56,23 +64,34 @@ except Exception:
 from utils.roster_ops import DropService  # ONLY using DropService; no LineupService imports
 
 
-# ---- logging bootstrap (same behavior as your original) ----
+# ---- logging bootstrap (rotating + dedicated API logger) ----
 try:
     from utils.auth_helpers import configure_logging  # type: ignore
 except Exception:
-    def configure_logging(default_path: str = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log") -> None:
+    from logging.handlers import RotatingFileHandler
+    def configure_logging(default_path: str = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log",
+                          *, api_log_path: str = "/Users/hogan/FantraxAPI/data/logs/auth_api.log",
+                          max_bytes: int = 2_000_000, backup_count: int = 5) -> None:
         Path(default_path).parent.mkdir(parents=True, exist_ok=True)
         root = logging.getLogger()
-        root.setLevel(logging.INFO)
         fmt = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
-        if not any(getattr(h, "baseFilename", "") == str(Path(default_path)) for h in root.handlers if isinstance(h, logging.FileHandler)):
-            fh = logging.FileHandler(default_path)
+        # rotating root file
+        if not any(isinstance(h, RotatingFileHandler) and getattr(h, 'baseFilename', '') == str(Path(default_path)) for h in root.handlers):
+            fh = RotatingFileHandler(default_path, maxBytes=max_bytes, backupCount=backup_count)
             fh.setFormatter(fmt)
             root.addHandler(fh)
+        # console once
         if not any(isinstance(h, logging.StreamHandler) for h in root.handlers):
-            ch = logging.StreamHandler()
-            ch.setFormatter(fmt)
-            root.addHandler(ch)
+            ch = logging.StreamHandler(); ch.setFormatter(fmt); root.addHandler(ch)
+        root.setLevel(logging.INFO)
+        # dedicated API logger
+        api_logger = logging.getLogger("auth_api")
+        api_logger.propagate = False
+        if not any(isinstance(h, RotatingFileHandler) and getattr(h, 'baseFilename', '') == str(Path(api_log_path)) for h in api_logger.handlers):
+            ah = RotatingFileHandler(api_log_path, maxBytes=max_bytes, backupCount=backup_count)
+            ah.setFormatter(fmt)
+            api_logger.addHandler(ah)
+        api_logger.setLevel(logging.DEBUG)
 
 st.set_page_config(page_title="Fantrax (BYOC) — Simple Subs", page_icon="🔁", layout="wide")
 
@@ -82,9 +101,9 @@ logger = logging.getLogger(__name__)
 logger.info("=" * 100)
 logger.info("Streamlit app started (BYOC SIMPLE SUBS mode)")
 
-# Set debug level for fantraxapi and main app
-logging.getLogger("fantraxapi").setLevel(logging.DEBUG)
-logging.getLogger(__name__).setLevel(logging.DEBUG)
+# Keep third-party logs at INFO unless debugging
+logging.getLogger("fantraxapi").setLevel(logging.INFO)
+logging.getLogger(__name__).setLevel(logging.INFO)
 
 
 # ---------- tiny helpers ----------
@@ -134,148 +153,193 @@ def _refresh_roster(api: FantraxAPI, team_id: str) -> Roster:
     time.sleep(0.6)
     return api.roster_info(team_id)
 
+def _summarize_field_map(for_team: str, fmap: dict, *, highlight_ids: set[str] | None = None) -> dict:
+    """
+    Produce a tiny dict that shows only critical fieldMap rows:
+    - out/in ids (if provided via highlight_ids)
+    - counts by stId and posId buckets to spot formation mistakes
+    """
+    highlight_ids = highlight_ids or set()
+    snips = {}
+    starter_counts = {701:0, 702:0, 703:0, 704:0}
+    bench_count = 0
+    for pid, meta in fmap.items():
+        pos_id = int(meta.get("posId", -1))
+        st_id  = str(meta.get("stId", "2"))
+        if st_id == "1" and pos_id in starter_counts:
+            starter_counts[pos_id] += 1
+        if st_id == "2":
+            bench_count += 1
+        if pid in highlight_ids:
+            snips[pid] = {"posId": pos_id, "stId": st_id}
+    return {
+        "teamId": for_team,
+        "starters_by_posId": starter_counts,  # 704=G,703=D,702=M,701=F
+        "bench_count": bench_count,
+        "focus_rows": snips
+    }
+
+def _log_fxpa_outcome(label: str, outcome: dict) -> None:
+    """
+    Compact, high-signal logging for Fantrax confirm/execute responses.
+    """
+    fr = outcome.get("fantasyResponse") or {}
+    model = outcome.get("model") or {}
+    illegal = outcome.get("illegalMsgs") or []
+    log_parts = {
+        "label": label,
+        "ok": bool(outcome.get("ok")),
+        "msgType": fr.get("msgType"),
+        "mainMsg": fr.get("mainMsg"),
+        "illegalCount": len(illegal),
+        "illegalMsgs": illegal[:3],  # truncate spam
+        "changeAllowed": model.get("changeAllowed"),
+        "rosterLimitPeriod": model.get("rosterLimitPeriod"),
+        "firstIllegalRosterPeriod": model.get("firstIllegalRosterPeriod"),
+        "playerPickDeadlinePassed": model.get("playerPickDeadlinePassed"),
+    }
+    logger.info("[fxpa] %s", log_parts)
+
 def make_substitution_example(
-	league_id: str,
-	team_id: Optional[str] = None,
-	*,
-	starter_select: Optional[Union[int, str]] = None,
-	bench_select: Optional[Union[int, str]] = None,
-	verify_retries: int = 4,
-	verify_sleep_s: float = 0.8,
-	session: Optional[Session] = None,
+    league_id: str,
+    team_id: Optional[str] = None,
+    *,
+    starter_select: Optional[Union[int, str]] = None,
+    bench_select: Optional[Union[int, str]] = None,
+    verify_retries: int = 4,
+    verify_sleep_s: float = 0.8,
+    session=None,
 ) -> Dict[str, Any]:
-	"""
-	Perform a simple substitution using FantraxAPI.swap_players, aligned with substitutions_v2,
-	but authenticated via the existing BYOC auth in app.py (artifacts → session).
+    import time, hashlib
+    from typing import Any, Dict, Optional, Union, Set
 
-	Args:
-		league_id: Fantrax league id.
-		team_id: Optional team id. If None, uses api.teams[0] (same as substitutions_v2).
-		starter_select: Which starter to bench. Either a 1-based index (int or numeric str) or an exact player name (str).
-		bench_select: Which bench player to start. Either a 1-based index (int or numeric str) or an exact player name (str).
-		verify_retries: How many times to poll for verification after swap (eventual consistency).
-		verify_sleep_s: Sleep seconds between verify attempts.
-		session: (Optional) an already-authenticated requests.Session. If None, built from st.session_state["auth_artifacts"].
+    if session is None:
+        raise RuntimeError("make_substitution_example requires an authenticated requests.Session")
 
-	Returns:
-		{
-			"ok": bool,                 # swap_players return value
-			"verified": bool,           # whether post-check shows expected starter/bench state
-			"out_id": str, "in_id": str,
-			"team_id": str,
-			"reason": Optional[str],    # if not verified, best-effort reason
-		}
-	"""
-	# --- Build/obtain authenticated session (BYOC artifacts) ---
-	if session is None:
-		artifacts = st.session_state.get("auth_artifacts")
-		if not artifacts:
-			raise RuntimeError("No auth artifacts in session. Upload/capture cookies first.")
-		try:
-			session = load_requests_session_from_artifacts(artifacts)
-		except Exception as e:
-			logger.exception("Failed to build session from artifacts")
-			raise RuntimeError(f"Could not create an authenticated session from artifacts: {e}") from e
+    api = FantraxAPI(league_id, session=session)
+    subs = SubsService(session, league_id)
 
-	api = FantraxAPI(league_id, session=session)
+    # ---- pick team
+    my_team = api.team(team_id) if team_id else api.teams[0]
+    roster = api.roster_info(my_team.team_id)
+    starters = roster.get_starters()
+    bench = roster.get_bench_players()
 
-	# --- Resolve team ---
-	if team_id:
-		try:
-			my_team = api.team(team_id)
-		except Exception as e:
-			raise RuntimeError(f"Error finding team {team_id}: {e}") from e
-	else:
-		my_team = api.teams[0]  # match substitutions_v2 fallback
-		logger.info("No team_id provided, using first team: %s", my_team.name)
+    def _resolve_row(select, pool, *, bench_expected: bool):
+        if select is None:
+            return None
+        if isinstance(select, int) or (isinstance(select, str) and select.isdigit()):
+            idx = int(select);  assert 1 <= idx <= len(pool), f"Invalid {'bench' if bench_expected else 'starter'} number: {idx}"
+            return pool[idx-1]
+        if isinstance(select, str):
+            cand = roster.get_player_by_name(select.strip())
+            if not cand: raise ValueError(f"Player '{select}' not found on roster.")
+            is_bench = cand.pos_id == "0"
+            if bench_expected and not is_bench: raise ValueError(f"Player '{select}' is not on the bench.")
+            if (not bench_expected) and is_bench: raise ValueError(f"Player '{select}' is not a starter.")
+            return cand
+        return None
 
-	# --- Fetch roster & pools ---
-	roster = api.roster_info(my_team.team_id)
-	starters = roster.get_starters()
-	bench = roster.get_bench_players()
+    starter_row = _resolve_row(starter_select, starters, bench_expected=False)
+    bench_row   = _resolve_row(bench_select,   bench,    bench_expected=True)
+    if not starter_row or not bench_row:
+        raise ValueError("Both a valid starter and a valid bench player must be provided.")
 
-	# --- Helpers to resolve a row from user selection ---
-	def _resolve_row(select: Union[int, str, None], pool, *, bench_expected: bool) -> Optional[Any]:
-		if select is None:
-			return None
-		# numeric index (1-based), e.g., 1, "2"
-		if isinstance(select, int) or (isinstance(select, str) and select.isdigit()):
-			idx = int(select)
-			if 1 <= idx <= len(pool):
-				return pool[idx - 1]
-			raise ValueError(f"Invalid {'bench' if bench_expected else 'starter'} number: {idx}")
-		# exact name
-		if isinstance(select, str):
-			cand = roster.get_player_by_name(select.strip())
-			if not cand:
-				raise ValueError(f"Player '{select}' not found on roster.")
-			if bench_expected and cand.pos_id != "0":
-				raise ValueError(f"Player '{select}' is not on the bench.")
-			if (not bench_expected) and cand.pos_id == "0":
-				raise ValueError(f"Player '{select}' is not a starter.")
-			return cand
-		return None
+    out_id, in_id = starter_row.player.id, bench_row.player.id
 
-	# --- Resolve selected rows ---
-	starter_row = _resolve_row(starter_select, starters, bench_expected=False)
-	bench_row   = _resolve_row(bench_select, bench, bench_expected=True)
+    # ---- current/desired
+    current = api.roster_info(my_team.team_id)
+    curr_starters = {r.player.id for r in current.get_starters() if getattr(r, "player", None)}
 
-	if not starter_row or not bench_row:
-		raise ValueError("Both a valid starter and a valid bench player must be provided.")
+    if out_id not in curr_starters and in_id in curr_starters:
+        logger.info("[swap] already satisfied")
+        return {"ok": True, "verified": True, "reason": "already_satisfied", "out_id": out_id, "in_id": in_id, "team_id": my_team.team_id}
 
-	out_id = starter_row.player.id
-	in_id  = bench_row.player.id
+    desired = set(curr_starters); desired.discard(out_id); desired.add(in_id)
 
-	# --- Log current state (useful for debugging) ---
-	logger.info("\n=== PRE-SUBSTITUTION STATE ===")
-	for r in starters:
-		if getattr(r, "player", None):
-			logger.info("  Starter: %s (%s) - Pos: %s", r.player.name, r.player.id, r.pos.short_name)
-	for r in bench:
-		if getattr(r, "player", None):
-			logger.info("  Bench: %s (%s) - Pos: %s", r.player.name, r.player.id, r.pos.short_name)
+    def _summarize_diff(curr: Set[str], desired: Set[str]) -> Dict[str, list]:
+        return {"to_bench": sorted(list(curr - desired)), "to_start": sorted(list(desired - curr))}
 
-	logger.info("\n=== PLANNED SUBSTITUTION ===")
-	logger.info("Moving OUT: %s — %s (ID: %s) → Bench", starter_row.pos.short_name, starter_row.player.name, out_id)
-	logger.info("Moving IN:  %s — %s (ID: %s) → Starting XI", starter_row.pos.short_name, bench_row.player.name, in_id)
+    # pretty logs
+    out_pos_short = getattr(getattr(starter_row, "pos", None), "short_name", None) or "UNK"
+    in_pos_short  = getattr(getattr(bench_row,   "pos", None), "short_name", None) or "UNK"
+    logger.info("[swap] plan team=%s out=%s in=%s diff=%s", my_team.team_id, out_id, in_id, _summarize_diff(curr_starters, desired))
+    logger.info("[swap] players: %s (%s) → bench, %s (%s) → starters", starter_row.player.name, out_pos_short, bench_row.player.name, in_pos_short)
+    logger.info("[swap] eligibility out_pos=%s bench_elig=%s", subs._pos_of_row(starter_row), sorted(list(subs.eligible_positions_of_row(bench_row))))
 
-	# --- Execute swap (exact substitutions_v2 behavior) ---
-	logger.info("\n=== EXECUTING SUBSTITUTION (swap_players) ===")
-	ok = bool(api.swap_players(my_team.team_id, out_id, in_id))
-	logger.info("[swap] api.swap_players -> %s", ok)
+    # fieldMap
+    fmap = subs.build_field_map(current, list(desired))
+    n = len(fmap); s = sum(1 for v in fmap.values() if str(v.get("stId")) == "1"); b = n - s
+    logger.info("[swap] submit fmap: size=%d starters=%d bench=%d", n, s, b)
 
-	# --- Verify loop (eventual consistency) ---
-	verified = False
-	reason = None
-	for i in range(max(0, verify_retries)):
-		time.sleep(max(0.0, verify_sleep_s))
-		after = api.roster_info(my_team.team_id)
-		starter_ids = {r.player.id for r in after.get_starters() if getattr(r, "player", None)}
-		verified = (in_id in starter_ids) and (out_id not in starter_ids)
-		logger.info("[swap] verify attempt %d/%d -> %s", i + 1, verify_retries, verified)
-		if verified:
-			break
-	if ok and not verified:
-		reason = "optimistic (server accepted swap but roster view not yet updated)"
+    # ---- resolve active period (this was the issue)
+    logger.info("[swap] api methods: %s", [m for m in dir(api) if not m.startswith('_')])
+    try:
+        period = api.resolve_active_period(team_id=my_team.team_id)
+    except AttributeError:
+        # Fallback to current period if resolve_active_period isn't available
+        period = api._current_roster_limit_period()
+    logger.info("[swap] using period=%s (resolved)", period)
 
-	# --- Post-state logging ---
-	logger.info("\n=== POST-SUBSTITUTION STATE ===")
-	new_roster = api.roster_info(my_team.team_id)
-	for r in new_roster.get_starters():
-		if getattr(r, "player", None):
-			logger.info("  Starter: %s (%s) - Pos: %s", r.player.name, r.player.id, r.pos.short_name)
-	for r in new_roster.get_bench_players():
-		if getattr(r, "player", None):
-			logger.info("  Bench: %s (%s) - Pos: %s", r.player.name, r.player.id, r.pos.short_name)
+    # PRE
+    pre = subs.confirm_or_execute_lineup(
+        league_id=league_id,
+        fantasy_team_id=my_team.team_id,
+        roster_limit_period=int(period),
+        field_map=fmap,
+        apply_to_future=False,
+        do_finalize=False,
+    )
 
-	return {
-		"ok": ok,
-		"verified": bool(verified),
-		"reason": reason,
-		"out_id": out_id,
-		"in_id": in_id,
-		"team_id": my_team.team_id,
-	}
+    pre_model = pre.get("model") or {}
+    server_period = (((pre_model.get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod")))
+    if server_period:
+        try:
+            sp = int(str(server_period))
+            if sp > 0 and sp != period:
+                logger.info("[swap] server suggested period=%s; overriding", sp)
+                period = sp
+        except Exception:
+            pass
+
+    # If pick deadline has passed for this period, you may have to apply_to_future=True
+    deadline_passed = bool(pre_model.get("playerPickDeadlinePassed"))
+    apply_to_future = bool(deadline_passed)
+
+    # FIN
+    fin = subs.confirm_or_execute_lineup(
+        league_id=league_id,
+        fantasy_team_id=my_team.team_id,
+        roster_limit_period=int(period),
+        field_map=fmap,
+        apply_to_future=apply_to_future,
+        do_finalize=True,
+    )
+
+    ok = bool(fin.get("ok")); verified = False; reason = None; after = None
+
+    if ok:
+        for _ in range(max(0, verify_retries)):
+            time.sleep(max(0.0, verify_sleep_s))
+            after = api.roster_info(my_team.team_id)
+            starter_ids = {r.player.id for r in after.get_starters() if getattr(r, "player", None)}
+            verified = (in_id in starter_ids) and (out_id not in starter_ids)
+            if verified: break
+
+    if not ok:
+        reason = fin.get("mainMsg") or "; ".join(map(str, (fin.get("illegalMsgs") or []))) or "execute_not_ok"
+        if fin.get("targetPeriod"): reason = f"{reason} (scheduled for period {fin.get('targetPeriod')})"
+    elif ok and not verified:
+        reason = "optimistic (server accepted swap but roster view not yet updated)"
+
+    logger.info("[swap] result ok=%s verified=%s reason=%s", ok, verified, (reason or None))
+
+    if reason and "no changes detected" in reason.lower():
+        if not after: after = api.roster_info(my_team.team_id)
+        after_starters = {r.player.id for r in after.get_starters() if getattr(r, "player", None)}
+        logger.info("[swap] no-op diffs: %s", _summarize_diff(after_starters, desired))
+
+    return {"ok": ok, "verified": bool(verified), "reason": reason, "out_id": out_id, "in_id": in_id, "team_id": my_team.team_id}
 
 # ---------- UI: Auth (kept from your original) ----------
 def ui_login_section():
@@ -395,6 +459,17 @@ def ui_login_section():
         ses = (art.get("storage") or {}).get("session", {}) or {}
         st.caption(f"localStorage keys: {len(loc)}; sessionStorage keys: {len(ses)}")
 
+from urllib.parse import unquote
+
+def _ensure_xsrf_header(session):
+    # propagate cookie -> header for stricter pods
+    token = None
+    for c in session.cookies:
+        if c.name.upper().startswith("XSRF-TOKEN"):
+            token = unquote(c.value or "")
+            break
+    if token:
+        session.headers["X-XSRF-TOKEN"] = token
 
 # ---------- UI: Simple substitutions (exact substitutions_v2 flow in GUI) ----------
 def ui_simple_subs_section():
@@ -409,6 +484,8 @@ def ui_simple_subs_section():
     if not session:
         st.error("Could not create a session from your cookie/artifacts.")
         st.stop()
+
+    _ensure_xsrf_header(session)
 
     # Optional: quick cookie/header sanity check
     with st.expander("Cookie debug", expanded=False):
@@ -488,6 +565,54 @@ def ui_simple_subs_section():
 
     st.divider()
     st.subheader("Actions")
+
+    def probe_confirm_noop(api: FantraxAPI, league_id: str, team_id: str, session) -> dict:
+        # Build current map (bench -> stId "2", posId "0"; starters keep their posId)
+        roster = api.roster_info(team_id)
+        fmap = {}
+        for r in roster.rows:
+            if not getattr(r, "player", None): 
+                continue
+            is_starter = r.pos_id != "0"
+            fmap[r.player.id] = {"posId": (r.pos_id if is_starter else "0"),
+                                "stId":  ("1" if is_starter else "2")}
+        # Force fresh current period
+        resp = api._request("getStandings", view="SCHEDULE")
+        period_id = int(resp.get("currentPeriod", 0) or 0)
+
+        payload = {
+            "msgs": [{
+                "method": "confirmOrExecuteTeamRosterChanges",
+                "data": {
+                    "leagueId": league_id,              # <-- include it
+                    "rosterLimitPeriod": period_id,
+                    "fantasyTeamId": team_id,
+                    "teamId": team_id,
+                    "daily": False,
+                    "adminMode": False,
+                    "applyToFuturePeriods": False,
+                    "fieldMap": fmap,
+                    "confirm": True,
+                    "action": "CONFIRM",
+                }
+            }],
+            "uiv": 3,
+            "refUrl": f"https://www.fantrax.com/fantasy/league/{league_id}/team/roster",
+            "dt": 0, "at": 0, "av": "0.0",
+        }
+        # mirror XSRF header for safety
+        from urllib.parse import unquote
+        for c in session.cookies:
+            if c.name.upper().startswith("XSRF-TOKEN"):
+                session.headers["X-XSRF-TOKEN"] = unquote(c.value or "")
+                break
+
+        r = session.post("https://www.fantrax.com/fxpa/req",
+                        params={"leagueId": league_id},
+                        json=payload, timeout=25).json()
+        return r
+
+    probe_confirm_noop(api, league_id, team_id, session)
                 
     # --- Make a substitution (SIMPLE: just swap_players, like substitutions_v2) ---
     st.markdown("### Make a Substitution (simple swap)")
@@ -546,10 +671,9 @@ def ui_simple_subs_section():
             # DEBUG: peek at confirm only (no execute) to surface messages in logs
             try:
                 # Get current period for debug probe
-                period_id = api._current_roster_limit_period()
+                resp = api._request("getStandings", view="SCHEDULE")
+                period_id = int(resp.get("currentPeriod", 0) or 0)
 
-                logger.info(f"Current period: {period_id}")
-                
                 confirm_payload = {
                     "rosterLimitPeriod": period_id,
                     "fantasyTeamId": team_id,
@@ -558,8 +682,7 @@ def ui_simple_subs_section():
                     "confirm": True,
                     "applyToFuturePeriods": False,
                     "fieldMap": {
-                        # just re-send current state; we only want the messages
-                        **{r.player.id: {"posId": r.pos_id, "stId": ("1" if r.pos_id != "0" else "2")}
+                        **{r.player.id: {"posId": str(r.pos_id), "stId": ("1" if r.pos_id != "0" else "2")}
                         for r in roster.rows if getattr(r, "player", None)}
                     }
                 }

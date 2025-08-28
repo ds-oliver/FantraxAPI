@@ -220,78 +220,25 @@ class DropService:
 		"""
 		Perform a single-team drop. Returns a dict:
 		{
-		ok: bool,
-		scheduled: bool,
-		drop_period: Optional[int],
-		effective_msg: Optional[str],
-		messages: List[str],
-		verified: Optional[bool],	# present for immediate drops
-		raw: Any
+		ok: bool, scheduled: bool, drop_period: Optional[int],
+		effective_msg: Optional[str], messages: List[str],
+		verified: Optional[bool], raw: Any
 		}
 		"""
-		log.info(
-			"Attempting to drop player %s from team %s in league %s",
-			scorer_id, team_id, league_id
-		)
-
-		# Pre-drop logging (best-effort)
-		try:
-			initial_roster = self.get_roster(league_id, team_id)
-			player_row = self._find_row(initial_roster, scorer_id)
-			if player_row and player_row.player:
-				st_inf = self._infer_drop_status_from_row(player_row, league_id)
-				log.info(
-					"Found player to drop: %s (%s) | locked=%s, can_drop_now=%s, curr=%s, eff=%s",
-					player_row.player.name, scorer_id,
-					st_inf["locked"], st_inf["can_drop_now"],
-					st_inf["current_period"], st_inf["effective_period"]
-				)
-			else:
-				log.warning("Player %s not found on initial roster check", scorer_id)
-		except Exception as e:
-			log.warning("Failed to get initial roster state: %s", e)
-
+		# Do the call; keep noisy details at DEBUG only
 		api = self.make_api(league_id)
-
 		try:
 			raw = api.drops.drop_player(
 				team_id=team_id,
 				scorer_id=scorer_id,
 				period=None,				 # let server decide timing
 				skip_validation=skip_validation,
-				return_details=True,		 # get messages/effective GW back
+				return_details=True,
 			)
-			log.info("Drop API response: %s", raw)
-
-			# Normalize/ensure 'ok' is present
-			ok = self._normalize_drop_result(raw)
-			if isinstance(raw, dict):
-				raw.setdefault("ok", bool(ok))
-			else:
-				raw = {"ok": bool(ok), "raw": raw, "messages": []}
-
-			# For immediate drops, attempt a quick verification
-			verified = None
-			if raw.get("ok") and not raw.get("scheduled"):
-				try:
-					verified = self._verify_drop_applied(league_id, team_id, scorer_id)
-					log.info("Drop verification result: %s", verified)
-				except Exception as e:
-					log.warning("Drop verification failed: %s", e)
-				raw["verified"] = verified
-
-			if raw.get("ok") and raw.get("scheduled"):
-				log.info(
-					"Drop scheduled by server (drop_period=%s). Message: %s",
-					raw.get("drop_period"), raw.get("effective_msg")
-				)
-
-			return raw
-
+			log.debug("[drop] raw response (trunc): %s", str(raw)[:600])
 		except Exception as e:
-			log.exception("Drop API call failed: %s", e)
-			# Surface as a structured result so UI can show error text consistently
-			return {
+			log.exception("[drop] API call failed")
+			result = {
 				"ok": False,
 				"scheduled": False,
 				"drop_period": None,
@@ -300,7 +247,51 @@ class DropService:
 				"verified": None,
 				"raw": None,
 			}
+			# Single INFO line even on failure
+			log.info("[drop] team=%s player=%s ok=%s scheduled=%s dropP=%s verified=%s msg=%s",
+					team_id, scorer_id, result["ok"], result["scheduled"], result["drop_period"], result["verified"], (result["effective_msg"] or "")[:120])
+			return result
 
+		# Normalize/ensure 'ok'
+		def _normalize(res) -> bool:
+			if isinstance(res, bool): return res
+			if res is None: return True
+			if isinstance(res, dict):
+				for k in ("success", "ok", "wasSuccessful", "completed", "result", "status"):
+					if k in res:
+						v = res[k]
+						if isinstance(v, bool): return v
+						if isinstance(v, str) and v.lower() in {"ok", "success", "true"}: return True
+				if res.get("pageError"):
+					return False
+				return True
+			if isinstance(res, str): return res.strip().lower() in {"ok", "success", "true", "1"}
+			if isinstance(res, (int, float)): return True
+			return bool(res)
+
+		ok = _normalize(raw)
+		if not isinstance(raw, dict):
+			raw = {"ok": bool(ok), "raw": raw, "messages": []}
+		else:
+			raw.setdefault("ok", bool(ok))
+
+		# Verify only for immediate (non-scheduled) drops; keep quiet per attempt
+		verified = None
+		if raw.get("ok") and not raw.get("scheduled"):
+			try:
+				verified = self._verify_drop_applied(league_id, team_id, scorer_id)
+			except Exception:
+				verified = None
+			raw["verified"] = verified
+
+		# Single compact INFO line
+		log.info(
+			"[drop] team=%s player=%s ok=%s scheduled=%s dropP=%s verified=%s msg=%s",
+			team_id, scorer_id, raw.get("ok"), raw.get("scheduled"),
+			raw.get("drop_period"), raw.get("verified"),
+			(raw.get("effective_msg") or "")[:120]
+		)
+		return raw
 
 	def drop_player_everywhere(
 		self,
@@ -369,155 +360,91 @@ class LineupService:
 	def warm_codes_for_roster(self, league_id: str, roster: Roster) -> None:
 		self._svc.warm_codes_for_roster(league_id, roster)
 
-	def apply_changes(self, league_id: str, team_id: str, changes: list[tuple[str, str]], pos_overrides: dict[str, str] = None) -> bool:
-		"""Apply swaps using full fieldMap, two-step confirm/execute per SUBS SUMMARY.
-		For each (out_id, in_id):
-		- Compute desired starters (replace out with in)
-		- Build full fieldMap preview (numeric posId, stId for all players) for logging
-		- Execute via SubsService.set_lineup_by_ids (two-step with verify)
+	def apply_changes(
+		self,
+		league_id: str,
+		team_id: str,
+		changes: List[Tuple[str, str]],
+		pos_overrides: dict[str, str] | None = None
+	) -> bool:
 		"""
-		log.info(f"[lineup] Starting to apply {len(changes)} changes (full fieldMap, two-step)")
+		Apply swaps using full fieldMap, two-step confirm/execute.
+		Logging: one INFO per change (result only) + final summary.
+		"""
 		pos_overrides = pos_overrides or {}
-		
-		# Snapshot before
-		try:
-			roster0 = self.get_roster(league_id, team_id)
-			starters0 = [r.player.id for r in roster0.get_starters() if getattr(r, "player", None)]
-			log.info(f"[lineup] Initial starters: {starters0}")
-		except Exception as e:
-			log.warning(f"[lineup] Failed to fetch initial roster: {e}")
-			starters0 = []
-		
+
 		for idx, (out_id, in_id) in enumerate(changes, 1):
-			log.info(f"[lineup] Change {idx}/{len(changes)} plan: OUT={out_id} -> IN={in_id}")
-			
 			# Fresh snapshot
 			roster_now = self.get_roster(league_id, team_id)
 			current_starters = [r.player.id for r in roster_now.get_starters() if getattr(r, "player", None)]
 			cur_set = set(current_starters)
 			if out_id not in cur_set and in_id in cur_set:
-				log.info("[lineup] Desired state already satisfied; skipping.")
+				log.info("[lineup] %d/%d already satisfied (out=%s in=%s)", idx, len(changes), out_id, in_id)
 				continue
-			
+
 			desired_set = set(current_starters)
 			if out_id in desired_set:
 				desired_set.remove(out_id)
 			desired_set.add(in_id)
 			desired_list = list(desired_set)
-			
-			# Build a fieldMap preview (numeric posId, stId for all) for logging
-			try:
-				fmap_preview = self._svc.build_field_map(roster_now, desired_list, pos_overrides)
-				num_total = len(fmap_preview)
-				num_starters = sum(1 for v in fmap_preview.values() if str(v.get("stId")) == "1")
-				num_bench = num_total - num_starters
-				log.info(f"[lineup] fieldMap preview: total={num_total} starters={num_starters} bench={num_bench}")
-				# Log critical rows
-				if out_id in fmap_preview:
-					log.info(f"[lineup] fmap[out]: {out_id} -> {fmap_preview[out_id]}")
-				if in_id in fmap_preview:
-					log.info(f"[lineup] fmap[in]:  {in_id} -> {fmap_preview[in_id]}")
-			except Exception as e:
-				log.warning(f"[lineup] Unable to build fieldMap preview: {e}")
-			
-			# Two-step with final full fieldMap (matches DevTools payload)
-			# ---- build submit map (keep posId as int) ----
-			fmap_submit = {}
-			try:
-				for pid, meta in (fmap_preview or {}).items():
-					pos_id_val = meta.get("posId")		  # already int from builder
-					st_id_val  = meta.get("stId")		   # "1"/"2" is fine as str
-					if pos_id_val is None or st_id_val is None:
-						continue
-					fmap_submit[str(pid)] = {"posId": pos_id_val, "stId": str(st_id_val)}
-			except Exception:
-				fmap_submit = fmap_preview
 
-			# ---- PRE (roster_limit_period=0 lets server pick if needed) ----
+			# Build fieldMap (details only at DEBUG)
+			fmap = self._svc.build_field_map(roster_now, desired_list, pos_overrides)
+			if log.isEnabledFor(logging.DEBUG):
+				try:
+					preview = {k: fmap[k] for k in (list(fmap)[:6])}
+					log.debug("[lineup] fmap preview (trunc): %s", str(preview)[:300])
+				except Exception:
+					pass
+
+			# PRE
 			pre = self._svc.confirm_or_execute_lineup(
 				league_id=league_id,
 				fantasy_team_id=team_id,
 				roster_limit_period=0,
-				field_map=fmap_submit,
+				field_map=fmap,
 				apply_to_future=False,
 				do_finalize=False,
 			)
-			fr_pre   = pre.get("fantasyResponse", {})
-			model_pre = pre.get("model", {})
-			log.info("[lineup] Phase PRE: msgType=%s changeAllowed=%s deadlinePassed=%s",
-					fr_pre.get('msgType'), model_pre.get('changeAllowed'), model_pre.get('playerPickDeadlinePassed'))
-
-			# If server reveals a specific period, echo it back on FIN
-			server_period = (((model_pre or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod"))
+			server_period = (((pre.get("model") or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod"))
 			period_for_fin = int(server_period) if server_period is not None else 0
 
-			# ---- FIN ----
+			# FIN
 			fin = self._svc.confirm_or_execute_lineup(
 				league_id=league_id,
 				fantasy_team_id=team_id,
 				roster_limit_period=period_for_fin,
-				field_map=fmap_submit,
+				field_map=fmap,
 				apply_to_future=False,
 				do_finalize=True,
 			)
-			fr_fin   = fin.get("fantasyResponse", {})
-			model_fin = fin.get("model", {})
-			log.info("[lineup] Phase FIN: msgType=%s changeAllowed=%s deadlinePassed=%s",
-					fr_fin.get('msgType'), model_fin.get('changeAllowed'), model_fin.get('playerPickDeadlinePassed'))
+
+			# One-line result per change
+			log.info(
+				"[lineup] %d/%d out=%s in=%s ok=%s tgtP=%s type=%s illegal=%s",
+				idx, len(changes), out_id, in_id,
+				bool(fin.get("ok")),
+				(((fin.get("model") or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod")),
+				((fin.get("fantasyResponse") or {}).get("msgType") or "NONE"),
+				len(fin.get("illegalMsgs") or []),
+			)
+
 			if not fin.get("ok"):
-				log.error("[lineup] FIN execute failed. illegalMsgs=%s mainMsg=%s",
-						fin.get('illegalMsgs'), fin.get('mainMsg'))
 				return False
 
-			# Final sanity check after this swap - verify against applied period if deadline passed
+			# Quick verify (no per-attempt logs)
 			try:
-				verify_ids: List[str] = []
-
-				# Prefer the server-reported target period if present
-				server_period = (((fin.get("model") or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod"))
-				deadline_passed = bool(model_fin.get("playerPickDeadlinePassed"))
-
-				if deadline_passed and server_period is not None:
-					body = {
-						"msgs": [{
-							"method": "getTeamRosterInfo",
-							"data": {
-								"leagueId": league_id,
-								"teamId": team_id,
-								"period": str(server_period),
-							}
-						}],
-						"uiv": 3,
-						"refUrl": f"https://www.fantrax.com/fantasy/league/{league_id}/team/roster;period={server_period}",
-						"dt": 0, "at": 0, "av": "0.0",
-					}
-					j = self._svc._post_fxpa(league_id, body)
-					resp0 = (j.get("responses") or [{}])[0]
-					data = (resp0.get("data") or {})
-					# tables/rows: starters have statusId == "1"
-					for tbl in (data.get("tables") or []):
-						for row in (tbl.get("rows") or []):
-							if str(row.get("statusId")) == "1":
-								scorer = (row.get("scorer") or {})
-								pid = scorer.get("scorerId")
-								if pid:
-									verify_ids.append(pid)
-				else:
-					# No server target disclosed → verify against current period snapshot
-					after = self.get_roster(league_id, team_id)
-					verify_ids = [r.player.id for r in after.get_starters() if getattr(r, "player", None)]
-
-				log.info(f"[lineup] Starters after change (verify set): {verify_ids}")
-				if in_id not in verify_ids or out_id in verify_ids:
-					log.error("[lineup] Post-apply verification failed (starter set mismatch)")
+				after = self.get_roster(league_id, team_id)
+				ids = {r.player.id for r in after.get_starters() if getattr(r, "player", None)}
+				if in_id not in ids or out_id in ids:
+					log.warning("[lineup] verification failed for out=%s in=%s", out_id, in_id)
 					return False
-			except Exception as ve:
-				log.warning(f"[lineup] Verification step failed non-fatally: {ve}")
+			except Exception:
+				# Non-fatal verify issues (keep optimistic if FIN said ok)
+				pass
 
-			
-		log.info("[lineup] Successfully applied all requested changes")
-		return True
-	
+		log.info("[lineup] applied %d/%d changes successfully", len(changes), len(changes))
+		return True	
 	# utils/roster_ops.py (inside LineupService)
 
 	def _try_direct_swap(

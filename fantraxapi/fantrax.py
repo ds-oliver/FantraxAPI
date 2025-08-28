@@ -15,7 +15,7 @@ from fantraxapi.league import LeagueService
 from fantraxapi.waivers import WaiversService
 from fantraxapi.drops import DropsService
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class FantraxAPI:
@@ -60,6 +60,89 @@ class FantraxAPI:
 				return team
 		raise FantraxException(f"Team ID: {team_id} not found")
 
+	def resolve_active_period(self, team_id: Optional[str] = None, *, use_confirm_probe: bool = True) -> int:
+		"""
+		Robustly resolve the active rosterLimitPeriod for lineup changes.
+		Tries 3 strategies (in order):
+		A) getTeamRosterInfo → textArray.model.rosterAdjustmentInfo.rosterLimitPeriod
+		B) getStandings(view='SCHEDULE') → currentPeriod
+		C) confirm probe (confirm=True, rosterLimitPeriod=0) to let server echo the period
+		Returns a positive int; falls back to 1 if all methods fail.
+		"""
+		import logging
+		logger = logging.getLogger(__name__)
+
+		# ---------- A) Try directly from roster ----------
+		try:
+			tid = team_id or self.teams[0].team_id
+			data = self._request("getTeamRosterInfo", teamId=tid)
+			model = ((data.get("textArray") or {}).get("model") or {})
+			rai = (model.get("rosterAdjustmentInfo") or {})
+			p = rai.get("rosterLimitPeriod")
+			if p is None:
+				# Some shapes use other keys; scan a bit
+				for k in ("currentPeriod", "period", "rosterPeriod", "currentScoringPeriod"):
+					if data.get(k) is not None:
+						p = data.get(k); break
+			if p is not None:
+				p_int = int(str(p))
+				if p_int > 0:
+					logger.info("[period] source=roster_info -> %s", p_int)
+					return p_int
+		except Exception as e:
+			logger.debug("[period] roster_info probe failed: %s", e)
+
+		# ---------- B) Try from schedule standings ----------
+		try:
+			sched = self._request("getStandings", view="SCHEDULE")
+			cand = (sched.get("currentPeriod")
+					or (sched.get("scheduleInfo") or {}).get("currentPeriod")
+					or (sched.get("fantasyResponse") or {}).get("currentPeriod"))
+			if cand is not None:
+				p_int = int(str(cand))
+				if p_int > 0:
+					logger.info("[period] source=schedule -> %s", p_int)
+					return p_int
+		except Exception as e:
+			logger.debug("[period] schedule probe failed: %s", e)
+
+		# ---------- C) Last resort: confirm probe (unchanged lineup, server picks) ----------
+		if use_confirm_probe:
+			try:
+				tid = team_id or self.teams[0].team_id
+				roster = self.roster_info(tid)
+				# Build a fieldMap matching current state
+				fmap = {}
+				for r in roster.rows:
+					if not getattr(r, "player", None):
+						continue
+					pos_id = int(getattr(r, "pos_id", 0) or 0)
+					st_id = "1" if pos_id != 0 else "2"
+					fmap[r.player.id] = {"posId": pos_id, "stId": st_id}
+
+				payload = {
+					"rosterLimitPeriod": 0,  # let server pick
+					"fantasyTeamId": tid,
+					"daily": False,
+					"adminMode": False,
+					"confirm": True,
+					"applyToFuturePeriods": False,
+					"fieldMap": fmap,
+				}
+				resp = self._request("confirmOrExecuteTeamRosterChanges", **payload)
+				model = ((resp.get("textArray") or {}).get("model") or {})
+				rai = (model.get("rosterAdjustmentInfo") or {})
+				p = rai.get("rosterLimitPeriod")
+				if p is not None and int(str(p)) > 0:
+					logger.info("[period] source=confirm-probe -> %s", int(str(p)))
+					return int(str(p))
+			except Exception as e:
+				logger.debug("[period] confirm-probe failed: %s", e)
+
+		logger.warning("[period] could not resolve; defaulting to 1")
+		return 1
+
+
 	def _current_roster_limit_period(self) -> int:
 		"""
 		Fetch the current scoring period/week ID from Fantrax.
@@ -67,7 +150,7 @@ class FantraxAPI:
 		"""
 		resp = self._request("getStandings", view="SCHEDULE")
 		period_id = int(resp.get("currentPeriod", 0))
-		logger.info(f"Resolved current rosterLimitPeriod={period_id}")
+		log.info(f"Resolved current rosterLimitPeriod={period_id}")
 		return period_id
 
 
@@ -99,26 +182,27 @@ class FantraxAPI:
 		data = {"leagueId": self.league_id}
 		data.update(kwargs)
 		json_data = {"msgs": [{"method": method, "data": data}]}
-		logger.debug("Request JSON:\n%s", json.dumps(json_data, indent=2, ensure_ascii=False))
+
+		# DEBUG only; large data truncated
+		if log.isEnabledFor(logging.DEBUG):
+			preview = json.dumps(json_data, ensure_ascii=False)
+			log.debug("Request %s JSON (trunc): %s", method, (preview[:300] + ("…(trunc)" if len(preview) > 300 else "")))
 
 		try:
 			response = self._session.post(
 				"https://www.fantrax.com/fxpa/req",
 				params={"leagueId": self.league_id},
-				json=json_data
+				json=json_data,
 			)
 			response_json = response.json()
 		except (RequestException, JSONDecodeError) as e:
 			raise FantraxException(f"Failed to Connect to {method}: {e}\nData: {data}")
 
-		# Log just a preview of the response (first 500 chars)
-		preview = json.dumps(response_json, indent=2, ensure_ascii=False)
-		if len(preview) > 500:
-			preview = preview[:250] + "\n...[truncated]...\n" + preview[-250:]
-		logger.debug("Response (%s [%s]):\n%s", 
-					response.status_code, 
-					response.reason, 
-					preview)
+		if log.isEnabledFor(logging.DEBUG):
+			rprev = json.dumps(response_json, ensure_ascii=False)
+			log.debug("Response %s %s (trunc): %s",
+						response.status_code, response.reason,
+						(rprev[:300] + ("…(trunc)" if len(rprev) > 300 else "")))
 
 		if response.status_code >= 400:
 			raise FantraxException(f"({response.status_code} [{response.reason}]) {response_json}")
@@ -130,7 +214,7 @@ class FantraxAPI:
 			raise FantraxException(f"Error: {response_json}")
 
 		return response_json["responses"][0]["data"]
-
+	
 	# ---------- Higher-level helpers ----------
 	def scoring_periods(self) -> Dict[int, ScoringPeriod]:
 		periods = {}
@@ -311,7 +395,7 @@ class FantraxAPI:
 			total_pages = 1
 
 		if total_pages > 1:
-			logger.info(f"Fetching {total_pages} total pages...")
+			log.info(f"Fetching {total_pages} total pages...")
 			for page_num in range(2, total_pages + 1):
 				page_resp = self._request(
 					"getPlayerStats",
@@ -336,9 +420,9 @@ class FantraxAPI:
 				
 				if page_rows:
 					rows.extend(page_rows)
-					logger.info(f"Page {page_num}: +{len(page_rows)} rows (total: {len(rows)})")
+					log.info(f"Page {page_num}: +{len(page_rows)} rows (total: {len(rows)})")
 				else:
-					logger.warning(f"Page {page_num}: No rows extracted")
+					log.warning(f"Page {page_num}: No rows extracted")
 
 		if debug and rows:
 			print(f"Total extracted rows (all pages): {len(rows)}")
@@ -356,7 +440,7 @@ class FantraxAPI:
 					
 					# Debug: Log the first few players to see what's happening
 					if len(players) < 3:
-						logger.debug(f"Creating player from scorer data: {scorer.get('name')} - {scorer.get('teamShortName')}")
+						log.debug(f"Creating player from scorer data: {scorer.get('name')} - {scorer.get('teamShortName')}")
 					
 					player_dict = {
 						"id": scorer.get("scorerId") or scorer.get("playerId") or scorer.get("id") or scorer.get("pid"),
@@ -372,7 +456,7 @@ class FantraxAPI:
 					
 					# Debug: Log the created player_dict
 					if len(players) < 3:
-						logger.debug(f"Created player_dict: {player_dict}")
+						log.debug(f"Created player_dict: {player_dict}")
 					
 					try:
 						player_obj = Player(self, player_dict)
@@ -380,33 +464,33 @@ class FantraxAPI:
 						
 						# Debug: Verify the Player object was created correctly
 						if len(players) < 3:
-							logger.debug(f"Player object created: {player_obj.name} - {player_obj.team} - {player_obj.position}")
+							log.debug(f"Player object created: {player_obj.name} - {player_obj.team} - {player_obj.position}")
 					except Exception as e:
-						logger.error(f"Failed to create Player object for {scorer.get('name')}: {e}")
-						logger.error(f"player_dict: {player_dict}")
+						log.error(f"Failed to create Player object for {scorer.get('name')}: {e}")
+						log.error(f"player_dict: {player_dict}")
 				else:
 					try:
 						players.append(Player(self, player_data))
 					except Exception as e:
-						logger.error(f"Failed to create Player object from raw data: {e}")
-						logger.error(f"player_data: {player_data}")
+						log.error(f"Failed to create Player object from raw data: {e}")
+						log.error(f"player_data: {player_data}")
 		
 		# Sanity checks
-		logger.info(f"Total players: {len(players)}")
-		logger.info(f"Contains Moises Caicedo (05rb8)? {any(p.id=='05rb8' for p in players)}")
+		log.info(f"Total players: {len(players)}")
+		log.info(f"Contains Moises Caicedo (05rb8)? {any(p.id=='05rb8' for p in players)}")
 		
 		return players
 
 	# Lineup helpers
 	def make_lineup_changes(self, team_id: str, changes: dict, apply_to_future_periods: bool = True) -> bool:
-		logger.info(f"Making lineup changes for team {team_id}")
-		logger.info("Requested changes:\n%s", json.dumps(changes, indent=2, ensure_ascii=False))
+		log.info(f"Making lineup changes for team {team_id}")
+		log.info("Requested changes:\n%s", json.dumps(changes, indent=2, ensure_ascii=False))
 
 		# Build current fieldMap from raw roster data
 		roster = self.roster_info(team_id)
 		current_field_map = {}
 
-		logger.info("Building fieldMap from _raw roster data...")
+		log.info("Building fieldMap from _raw roster data...")
 		for row in roster.rows:
 			if not row.player:
 				continue
@@ -415,17 +499,17 @@ class FantraxAPI:
 			st_id = str(raw.get("stId", "2" if pos_id == "0" else "1"))
 
 			current_field_map[row.player.id] = {"posId": pos_id, "stId": st_id}
-			logger.info(f"  {row.player.name} ({row.player.id}) -> posId={pos_id}, stId={st_id}")
+			log.info(f"  {row.player.name} ({row.player.id}) -> posId={pos_id}, stId={st_id}")
 
 		# Apply requested changes
-		logger.info("Applying requested changes:")
+		log.info("Applying requested changes:")
 		for pid, new_cfg in changes.items():
 			if pid in current_field_map:
 				old_cfg = current_field_map[pid].copy()
 				current_field_map[pid].update(new_cfg)
-				logger.info(f"  {pid}: {old_cfg} -> {current_field_map[pid]}")
+				log.info(f"  {pid}: {old_cfg} -> {current_field_map[pid]}")
 			else:
-				logger.warning(f"  Change requested for unknown player id {pid}")
+				log.warning(f"  Change requested for unknown player id {pid}")
 
 		# Always fetch the current scoring period dynamically
 		period_id = self._current_roster_limit_period()
@@ -440,28 +524,28 @@ class FantraxAPI:
 			"fieldMap": current_field_map,
 		}
 
-		logger.info("Sending confirmation request...")
+		log.info("Sending confirmation request...")
 		try:
 			confirm_resp = self._request("confirmOrExecuteTeamRosterChanges", **confirm_data)
 			preview = json.dumps(confirm_resp, indent=2, ensure_ascii=False)
 			if len(preview) > 500:
 				preview = preview[:250] + "\n...[truncated]...\n" + preview[-250:]
-			logger.debug("Confirmation response:\n%s", preview)
+			log.debug("Confirmation response:\n%s", preview)
 		except FantraxException as e:
-			logger.error(f"Confirmation request failed: {e}")
+			log.error(f"Confirmation request failed: {e}")
 			raise
 
 		execute_data = dict(confirm_data)
 		execute_data["confirm"] = False
-		logger.info("Sending execution request...")
+		log.info("Sending execution request...")
 		try:
 			exec_resp = self._request("confirmOrExecuteTeamRosterChanges", **execute_data)
 			preview = json.dumps(exec_resp, indent=2, ensure_ascii=False)
 			if len(preview) > 500:
 				preview = preview[:250] + "\n...[truncated]...\n" + preview[-250:]
-			logger.debug("Execution response:\n%s", preview)
+			log.debug("Execution response:\n%s", preview)
 		except FantraxException as e:
-			logger.error(f"Execution request failed: {e}")
+			log.error(f"Execution request failed: {e}")
 			raise
 
 		# Inspect fantasyResponse
@@ -470,17 +554,17 @@ class FantraxAPI:
 		illegal = fr.get("illegalRosterMsgs") or []
 		change_allowed = ((fr.get("textArray") or {}).get("model") or {}).get("changeAllowed", True)
 
-		logger.info(f"Response details: msgType={msg_type}, changeAllowed={change_allowed}, illegal={illegal}")
+		log.info(f"Response details: msgType={msg_type}, changeAllowed={change_allowed}, illegal={illegal}")
 		if fr.get("mainMsg"):
-			logger.info(f"  Main message: {fr['mainMsg']}")
+			log.info(f"  Main message: {fr['mainMsg']}")
 
 		ok = (msg_type in ("", "SUCCESS", None)) and change_allowed and not illegal
-		logger.info(f"Lineup change result: {'SUCCESS' if ok else 'FAILED'}")
+		log.info(f"Lineup change result: {'SUCCESS' if ok else 'FAILED'}")
 		return bool(ok)
 
 
 	def swap_players(self, team_id: str, player1_id: str, player2_id: str) -> bool:
-		logger.info(f"Attempting to swap players: {player1_id} <-> {player2_id} for team {team_id}")
+		log.info(f"Attempting to swap players: {player1_id} <-> {player2_id} for team {team_id}")
 		roster = self.roster_info(team_id)
 
 		p1_row = p2_row = None
@@ -493,7 +577,7 @@ class FantraxAPI:
 				p2_row = row
 
 		if not p1_row or not p2_row:
-			logger.error("One or both players not found on roster")
+			log.error("One or both players not found on roster")
 			raise FantraxException("One or both players not found on roster")
 
 		# Decide swap
@@ -511,7 +595,7 @@ class FantraxAPI:
 			changes[player1_id] = {"stId": ("1" if p2_row.pos_id != "0" else "2"), "posId": p2_row.pos_id}
 			changes[player2_id] = {"stId": ("1" if p1_row.pos_id != "0" else "2"), "posId": p1_row.pos_id}
 
-		logger.info(f"Swap changes: {json.dumps(changes, indent=2)}")
+		log.info(f"Swap changes: {json.dumps(changes, indent=2)}")
 		return self.make_lineup_changes(team_id, changes)
 
 	def move_to_starters(self, team_id: str, player_ids: list) -> bool:

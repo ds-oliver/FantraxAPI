@@ -8,6 +8,7 @@ import os
 import json
 import pickle
 import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
@@ -406,10 +407,16 @@ def fetch_user_leagues(session: requests.Session) -> List[Dict[str, str]]:
 		"dt": 0, "at": 0, "av": "0.0", "tz": "America/Los_Angeles", "v": "167.0.1",
 	}
 	logger = logging.getLogger(__name__)
+	api_logger = logging.getLogger('auth_api')
 	logger.info("Fetching user leagues via fxpa getAllLeagues")
 
 	try:
 		data = _fxpa_post(session, payload).json()
+		# Debug to API logger with truncation
+		try:
+			api_logger.debug("getAllLeagues response: %s", json_dumps_safe(data)[:4000])
+		except Exception:
+			pass
 	except Exception:
 		logger.warning("getAllLeagues: non-JSON or request error", exc_info=True)
 		return []
@@ -448,13 +455,14 @@ def fetch_user_leagues(session: requests.Session) -> List[Dict[str, str]]:
 			for lt in lg.get("leaguesTeams", []) or []:
 				_add(lt.get("leagueId"), lt.get("teamId"), lt.get("league", ""), lt.get("team", ""))
 
-	# Write raw JSON (debug)
-	try:
-		_debug_json_path = Path(__file__).resolve().parent.parent / "data" / "logs" / "raw_getAllLeagues.json"
-		_debug_json_path.parent.mkdir(parents=True, exist_ok=True)
-		_debug_json_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-	except Exception:
-		pass
+	# Optional: write raw JSON (guarded by env var)
+	if os.getenv("AUTH_LOG_RAW_JSON") == "1":
+		try:
+			_debug_json_path = Path(__file__).resolve().parent.parent / "data" / "logs" / "raw_getAllLeagues.json"
+			_debug_json_path.parent.mkdir(parents=True, exist_ok=True)
+			_debug_json_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+		except Exception:
+			pass
 
 	active = [lt for lt in leagues if lt.get("teamId") and lt["teamId"] != "NULL"]
 	logger.info(f"Found {len(active)} active leagues")
@@ -466,16 +474,15 @@ def fetch_user_leagues(session: requests.Session) -> List[Dict[str, str]]:
 def fetch_user_profile(session: requests.Session) -> Dict[str, str]:
 	"""Return user profile info from the same getAllLeagues call."""
 	logger = logging.getLogger(__name__)
+	api_logger = logging.getLogger('auth_api')
 	logger.info("Fetching user profile via fxpa getAllLeagues")
 
 	payload = {"msgs": [{"method": "getAllLeagues", "data": {"view": "LEAGUES"}}]}
 	try:
-		# log payload
-		logger.info(f"User profile payload: {payload}")
-		
+		# Debug payload/response to API logger only
+		api_logger.debug("User profile payload: %s", json_dumps_safe(payload))
 		data = _fxpa_post(session, payload).json()
-		# log data
-		logger.info(f"User profile data: {data}")
+		api_logger.debug("User profile data: %s", json_dumps_safe(data)[:4000])
 		
 		info: Dict[str, str] = {}
 
@@ -494,8 +501,8 @@ def fetch_user_profile(session: requests.Session) -> Dict[str, str]:
 				}
 				break
 		logger.info(f"User profile parsed: username={info.get('username','')}")
-		# Log info
-		logger.info(f"User profile: {info}")
+		# Detailed info to API logger only
+		api_logger.debug("User profile parsed details: %s", json_dumps_safe(info))
 		return info
 	except Exception:
 		logger.exception("Failed fetching user profile")
@@ -518,16 +525,45 @@ def json_dumps_safe(obj) -> str:
 def _ensure_log_dir(path: str) -> None:
 	Path(path).mkdir(parents=True, exist_ok=True)
 
-def configure_logging(default_path: str = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log") -> None:
+def configure_logging(
+	default_path: str = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log",
+	*,
+	api_log_path: str = "/Users/hogan/FantraxAPI/data/logs/auth_api.log",
+	max_bytes: int = 2_000_000,
+	backup_count: int = 5,
+) -> None:
+	"""Configure root logging with rotation and a dedicated API responses logger.
+
+	- Root logger: INFO level, rotating file + console
+	- API logger ('auth_api'): DEBUG level to its own rotating file, no propagation
+	"""
 	_ensure_log_dir(str(Path(default_path).parent))
-	logger = logging.getLogger()
-	if any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', '') == str(Path(default_path)) for h in logger.handlers):
-		return
-	logger.setLevel(logging.INFO)
+
+	root_logger = logging.getLogger()
 	fmt = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
-	fh = logging.FileHandler(default_path); fh.setFormatter(fmt); logger.addHandler(fh)
-	if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
-		ch = logging.StreamHandler(); ch.setFormatter(fmt); logger.addHandler(ch)
+
+	# Root rotating file handler
+	if not any(isinstance(h, RotatingFileHandler) and getattr(h, 'baseFilename', '') == str(Path(default_path)) for h in root_logger.handlers):
+		rf = RotatingFileHandler(default_path, maxBytes=max_bytes, backupCount=backup_count)
+		rf.setFormatter(fmt)
+		root_logger.addHandler(rf)
+
+	# Console handler (once)
+	if not any(isinstance(h, logging.StreamHandler) for h in root_logger.handlers):
+		ch = logging.StreamHandler(); ch.setFormatter(fmt); root_logger.addHandler(ch)
+
+	# Lower overall verbosity by default
+	root_logger.setLevel(logging.INFO)
+
+	# Dedicated API responses logger
+	_ensure_log_dir(str(Path(api_log_path).parent))
+	api_logger = logging.getLogger("auth_api")
+	api_logger.propagate = False
+	api_logger.setLevel(logging.DEBUG)
+	if not any(isinstance(h, RotatingFileHandler) and getattr(h, 'baseFilename', '') == str(Path(api_log_path)) for h in api_logger.handlers):
+		afr = RotatingFileHandler(api_log_path, maxBytes=max_bytes, backupCount=backup_count)
+		afr.setFormatter(fmt)
+		api_logger.addHandler(afr)
 
 # B) NEW: one-call helper for Streamlit to run a true headless login
 def headless_login_build_session(
