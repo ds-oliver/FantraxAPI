@@ -1,3 +1,5 @@
+# fantrax.py
+
 import json
 import logging
 from typing import Optional, Union, List, Dict
@@ -24,6 +26,8 @@ class FantraxAPI:
 	def __init__(self, league_id: str, session: Optional[Session] = None):
 		self.league_id = league_id
 		self._session = Session() if session is None else session
+		self.session = self._session           # <-- add this line
+
 		self._teams: Optional[List[Team]] = None
 		self._positions: Optional[Dict[str, Position]] = None
 		# Feature services
@@ -62,97 +66,94 @@ class FantraxAPI:
 
 	def resolve_active_period(self, team_id: Optional[str] = None, *, use_confirm_probe: bool = True) -> int:
 		"""
-		Robustly resolve the active rosterLimitPeriod for lineup changes.
-		Tries 3 strategies (in order):
+		Resolve rosterLimitPeriod robustly:
 		A) getTeamRosterInfo → textArray.model.rosterAdjustmentInfo.rosterLimitPeriod
 		B) getStandings(view='SCHEDULE') → currentPeriod
-		C) confirm probe (confirm=True, rosterLimitPeriod=0) to let server echo the period
-		Returns a positive int; falls back to 1 if all methods fail.
+		C) DIRECT confirm probe via _request(..., confirm=True, rosterLimitPeriod=0) and read textArray.model.rosterAdjustmentInfo.rosterLimitPeriod
+		Returns >0 else 1 (and records a trace for debugging).
 		"""
 		import logging
 		logger = logging.getLogger(__name__)
+		tid = team_id or self.teams[0].team_id
+		trace = {}
 
-		# ---------- A) Try directly from roster ----------
+		# --- A) roster_info ---
 		try:
-			tid = team_id or self.teams[0].team_id
 			data = self._request("getTeamRosterInfo", teamId=tid)
 			model = ((data.get("textArray") or {}).get("model") or {})
-			rai = (model.get("rosterAdjustmentInfo") or {})
+			rai = (model.get("rosterAdjustmentInfo") or data.get("rosterAdjustmentInfo") or {})
 			p = rai.get("rosterLimitPeriod")
 			if p is None:
-				# Some shapes use other keys; scan a bit
 				for k in ("currentPeriod", "period", "rosterPeriod", "currentScoringPeriod"):
 					if data.get(k) is not None:
 						p = data.get(k); break
-			if p is not None:
-				p_int = int(str(p))
-				if p_int > 0:
-					logger.info("[period] source=roster_info -> %s", p_int)
-					return p_int
+			if p is not None and int(str(p)) > 0:
+				p_int = int(str(p)); trace["A"] = p_int
+				logger.info("[period] source=A:roster_info -> %s", p_int)
+				self._last_period_trace = trace
+				return p_int
+			trace["A"] = "missing"
 		except Exception as e:
-			logger.debug("[period] roster_info probe failed: %s", e)
+			trace["A"] = f"err:{e}"
 
-		# ---------- B) Try from schedule standings ----------
+		# --- B) schedule standings ---
 		try:
 			sched = self._request("getStandings", view="SCHEDULE")
 			cand = (sched.get("currentPeriod")
 					or (sched.get("scheduleInfo") or {}).get("currentPeriod")
 					or (sched.get("fantasyResponse") or {}).get("currentPeriod"))
-			if cand is not None:
-				p_int = int(str(cand))
-				if p_int > 0:
-					logger.info("[period] source=schedule -> %s", p_int)
-					return p_int
+			if cand is not None and int(str(cand)) > 0:
+				p_int = int(str(cand)); trace["B"] = p_int
+				logger.info("[period] source=B:schedule -> %s", p_int)
+				self._last_period_trace = trace
+				return p_int
+			trace["B"] = "missing"
 		except Exception as e:
-			logger.debug("[period] schedule probe failed: %s", e)
+			trace["B"] = f"err:{e}"
 
-		# ---------- C) Last resort: confirm probe (unchanged lineup, server picks) ----------
+		# --- C) DIRECT confirm probe (do NOT go through SubsService) ---
 		if use_confirm_probe:
 			try:
-				tid = team_id or self.teams[0].team_id
 				roster = self.roster_info(tid)
-				# Build a fieldMap matching current state
+				# Build fieldMap mirroring current roster
 				fmap = {}
 				for r in roster.rows:
 					if not getattr(r, "player", None):
 						continue
-					pos_id = int(getattr(r, "pos_id", 0) or 0)
-					st_id = "1" if pos_id != 0 else "2"
+					pos_id = str(getattr(r, "pos_id", "0") or "0")
+					st_id  = "1" if pos_id != "0" else "2"
 					fmap[r.player.id] = {"posId": pos_id, "stId": st_id}
 
-				payload = {
-					"rosterLimitPeriod": 0,  # let server pick
-					"fantasyTeamId": tid,
-					"daily": False,
-					"adminMode": False,
-					"confirm": True,
-					"applyToFuturePeriods": False,
-					"fieldMap": fmap,
-				}
-				resp = self._request("confirmOrExecuteTeamRosterChanges", **payload)
-				model = ((resp.get("textArray") or {}).get("model") or {})
+				pre = self._request("confirmOrExecuteTeamRosterChanges",
+									rosterLimitPeriod=0,		  # let server choose (echo)
+									fantasyTeamId=tid,
+									daily=False,
+									adminMode=False,
+									confirm=True,
+									applyToFuturePeriods=False,
+									fieldMap=fmap)
+
+				# Parse like your DevTools payload
+				model = ((pre.get("textArray") or {}).get("model") or {})
 				rai = (model.get("rosterAdjustmentInfo") or {})
 				p = rai.get("rosterLimitPeriod")
 				if p is not None and int(str(p)) > 0:
-					logger.info("[period] source=confirm-probe -> %s", int(str(p)))
-					return int(str(p))
+					p_int = int(str(p)); trace["C"] = p_int
+					logger.info("[period] source=C:confirm-probe -> %s", p_int)
+					self._last_period_trace = trace
+					return p_int
+				trace["C"] = "missing_model"
 			except Exception as e:
-				logger.debug("[period] confirm-probe failed: %s", e)
+				trace["C"] = f"err:{e}"
 
-		logger.warning("[period] could not resolve; defaulting to 1")
+		logger.warning("[period] could not resolve; defaulting to 1 | trace=%s", trace)
+		self._last_period_trace = trace
 		return 1
 
-
 	def _current_roster_limit_period(self) -> int:
-		"""
-		Fetch the current scoring period/week ID from Fantrax.
-		This is required for lineup changes; using an old one causes 'locked' errors.
-		"""
-		resp = self._request("getStandings", view="SCHEDULE")
-		period_id = int(resp.get("currentPeriod", 0))
-		log.info(f"Resolved current rosterLimitPeriod={period_id}")
-		return period_id
-
+		p = self.resolve_active_period()
+		log.info(f"Resolved current rosterLimitPeriod={p}")
+		return p
 
 	# Back-compat alias (objs.Roster calls api.team(...))
 	def team(self, team_id: str) -> Team:
@@ -177,44 +178,58 @@ class FantraxAPI:
 			self._positions = {k: Position(self, v) for k, v in ref["allObjs"].items()}
 		return self._positions
 
-	def _request(self, method, **kwargs):
-		"""Low-level request helper. Returns the inner .responses[0].data."""
-		data = {"leagueId": self.league_id}
-		data.update(kwargs)
-		json_data = {"msgs": [{"method": method, "data": data}]}
-
-		# DEBUG only; large data truncated
-		if log.isEnabledFor(logging.DEBUG):
-			preview = json.dumps(json_data, ensure_ascii=False)
-			log.debug("Request %s JSON (trunc): %s", method, (preview[:300] + ("…(trunc)" if len(preview) > 300 else "")))
-
+	def _request(self, method: str, **data):
+		"""
+		Core FXPA request. Always returns the unwrapped `data` dict from the first response.
+		Tolerant to flaky/non-JSON getStandings replies.
+		"""
+		url = f"https://www.fantrax.com/fxpa/req?leagueId={self.league_id}"
+		body = {
+			"msgs": [{"method": method, "data": data}],
+			"uiv": 3,
+			"refUrl": f"https://www.fantrax.com/fantasy/league/{self.league_id}",
+			"dt": 0, "at": 0, "av": "0.0",
+		}
 		try:
-			response = self._session.post(
-				"https://www.fantrax.com/fxpa/req",
-				params={"leagueId": self.league_id},
-				json=json_data,
+			res = self._session.post(url, json=body, timeout=30, headers={"Accept": "application/json"})
+		except Exception as e:
+			raise FantraxException(f"Network error calling {method}: {e}")
+
+		txt = res.text or ""
+		try:
+			j = res.json()
+		except Exception as e:
+			low = txt[:200].strip().lower()
+			# Auth / HTML?
+			if res.status_code in (401, 403) or "sign in" in low or "log in" in low:
+				raise FantraxException(f"Auth/permission error calling {method}: HTTP {res.status_code}")
+
+			# Special-case: flaky getStandings → return an *unwrapped* soft data dict
+			if method == "getStandings":
+				logging.getLogger("fantraxapi.fantrax").warning(
+					"[_request] %s returned non-JSON (status=%s). Returning soft-null schedule data.",
+					method, res.status_code
+				)
+				return {"currentPeriod": None}
+
+			# Otherwise: rich error
+			raise FantraxException(
+				f"Failed to Connect to {method}: {e} | HTTP {res.status_code} | first200={txt[:200]!r}"
 			)
-			response_json = response.json()
-		except (RequestException, JSONDecodeError) as e:
-			raise FantraxException(f"Failed to Connect to {method}: {e}\nData: {data}")
 
-		if log.isEnabledFor(logging.DEBUG):
-			rprev = json.dumps(response_json, ensure_ascii=False)
-			log.debug("Response %s %s (trunc): %s",
-						response.status_code, response.reason,
-						(rprev[:300] + ("…(trunc)" if len(rprev) > 300 else "")))
+		# ---- UNWRAP to first responses[].data if present ----
+		if isinstance(j, dict) and "responses" in j:
+			r0 = (j.get("responses") or [{}])[0]
+			data_blob = r0.get("data") or {}
+			page_error = r0.get("pageError")
+			if page_error:
+				# Bubble up page errors in a consistent way
+				raise FantraxException(f"PageError calling {method}: {page_error}")
+			return data_blob
 
-		if response.status_code >= 400:
-			raise FantraxException(f"({response.status_code} [{response.reason}]) {response_json}")
+		# Some endpoints already return data directly (rare)
+		return j
 
-		if "pageError" in response_json:
-			pe = response_json["pageError"]
-			if "code" in pe and pe["code"] == "WARNING_NOT_LOGGED_IN":
-				raise Unauthorized("Unauthorized: Not Logged in")
-			raise FantraxException(f"Error: {response_json}")
-
-		return response_json["responses"][0]["data"]
-	
 	# ---------- Higher-level helpers ----------
 	def scoring_periods(self) -> Dict[int, ScoringPeriod]:
 		periods = {}
