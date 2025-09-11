@@ -1,0 +1,390 @@
+{
+  "event_id": 14025013,
+  "confirmed": true,
+  "home": {
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 243609,
+        "name": "Alisson",
+        "position": "G",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 970361,
+        "name": "Jeremie Frimpong",
+        "position": "M",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 826215,
+        "name": "Ibrahima Konaté",
+        "position": "D",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 151545,
+        "name": "Virgil van Dijk",
+        "position": "D",
+        "team_id": 44,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 1097425,
+        "name": "Miloš Kerkez",
+        "position": "D",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 869856,
+        "name": "Dominik Szoboszlai",
+        "position": "M",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 895324,
+        "name": "Alexis Mac Allister",
+        "position": "M",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 159665,
+        "name": "Mohamed Salah",
+        "position": "M",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1019322,
+        "name": "Florian Wirtz",
+        "position": "F",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 862967,
+        "name": "Cody Gakpo",
+        "position": "M",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1048422,
+        "name": "Hugo Ekitiké",
+        "position": "F",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [
+      {
+        "id": 262911,
+        "name": "Andrew Robertson",
+        "position": "D",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 143040,
+        "name": "Wataru Endo",
+        "position": "M",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 318927,
+        "name": "Joe Gomez",
+        "position": "D",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 927353,
+        "name": "Curtis Jones",
+        "position": "M",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 845386,
+        "name": "Federico Chiesa",
+        "position": "F",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 930997,
+        "name": "Giorgi Mamardashvili",
+        "position": "G",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 955245,
+        "name": "Harvey Elliott",
+        "position": "M",
+        "team_id": 40,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1445945,
+        "name": "Trey Nyoni",
+        "position": "M",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1881902,
+        "name": "Rio Ngumoha",
+        "position": "F",
+        "team_id": 36556,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 904897,
+        "name": "Ryan Gravenberch",
+        "position": "M",
+        "reason": 13
+      },
+      {
+        "id": 1142636,
+        "name": "Stefan Bajčetić",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1008402,
+        "name": "Conor Bradley",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "away": {
+    "formation": "4-1-4-1",
+    "starters": [
+      {
+        "id": 882604,
+        "name": "Đorđe Petrović",
+        "position": "G",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 44566,
+        "name": "Adam Smith",
+        "position": "D",
+        "team_id": 60,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 962408,
+        "name": "Bafodé Diakité",
+        "position": "D",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 830659,
+        "name": "Marcos Senesi",
+        "position": "D",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 999028,
+        "name": "Adrien Truffert",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 800419,
+        "name": "Tyler Adams",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 934354,
+        "name": "Antoine Semenyo",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1104986,
+        "name": "Alex Scott",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 895576,
+        "name": "Marcus Tavernier",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 855731,
+        "name": "David Brooks",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 998490,
+        "name": "Evanilson",
+        "position": "F",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [
+      {
+        "id": 892924,
+        "name": "Hamed Junior Traorè",
+        "position": "M",
+        "team_id": 1641,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 2007889,
+        "name": "Ben Winterburn",
+        "position": "M",
+        "team_id": 77,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1156586,
+        "name": "James Hill",
+        "position": "D",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1426228,
+        "name": "Eli Junior Kroupi",
+        "position": "F",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 991001,
+        "name": "Will Dennis",
+        "position": "G",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 978150,
+        "name": "Julián Araujo",
+        "position": "D",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1201520,
+        "name": "Julio Soler",
+        "position": "D",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 548660,
+        "name": "Philip Billing",
+        "position": "M",
+        "team_id": 1289,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 2023409,
+        "name": "Remy Rees-Dottin",
+        "position": "F",
+        "team_id": 322204,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 336655,
+        "name": "Enes Ünal",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 548188,
+        "name": "Lewis Cook",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 322391,
+        "name": "Ryan Christie",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 836070,
+        "name": "Luis Sinisterra",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 851596,
+        "name": "Justin Kluivert",
+        "position": "M",
+        "reason": 1
+      }
+    ]
+  }
+}

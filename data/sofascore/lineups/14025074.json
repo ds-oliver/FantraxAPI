@@ -1,8 +1,8 @@
 {
   "event_id": 14025074,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
-    "formation": "3-4-2-1",
+    "formation": "3-4-3",
     "starters": [
       {
         "id": 788134,
@@ -34,7 +34,7 @@
         "position": "D",
         "team_id": 7,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 870360,
@@ -77,33 +77,118 @@
         "captain": false
       },
       {
-        "id": 1084311,
-        "name": "Justin Devenny",
-        "position": "M",
-        "team_id": 7,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 848276,
         "name": "Jean-Philippe Mateta",
         "position": "F",
         "team_id": 7,
         "substitute": false,
         "captain": false
+      },
+      {
+        "id": 1084311,
+        "name": "Justin Devenny",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1438837,
+        "name": "Romain Esse",
+        "position": "M",
+        "team_id": 7,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 355796,
+        "name": "Jefferson Lerma",
+        "position": "M",
+        "team_id": 7,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 795228,
+        "name": "Odsonne Édouard",
+        "position": "F",
+        "team_id": 1648,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 581610,
+        "name": "Remi Matthews",
+        "position": "G",
+        "team_id": 7,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 249859,
+        "name": "Walter Benítez",
+        "position": "G",
+        "team_id": 7,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 43215,
+        "name": "Nathaniel Clyne",
+        "position": "D",
+        "team_id": 7,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1469007,
+        "name": "Rio Cardines",
+        "position": "D",
+        "team_id": 7,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 357584,
+        "name": "Borna Sosa",
+        "position": "M",
+        "team_id": 7,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1185603,
+        "name": "Kaden Rodney",
+        "position": "M",
+        "team_id": 7,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
-        "id": 794338,
-        "name": "Daichi Kamada",
+        "id": 1064218,
+        "name": "Chadi Riad",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1116593,
+        "name": "Matheus França",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 906047,
+        "name": "Cheick Doucouré",
         "position": "M",
         "reason": 1
       },
       {
-        "id": 1064218,
-        "name": "Chadi Riad",
+        "id": 1465401,
+        "name": "Caleb Kporha",
         "position": "D",
         "reason": 1
       },
@@ -114,20 +199,8 @@
         "reason": 1
       },
       {
-        "id": 1116593,
-        "name": "Matheus França",
-        "position": "F",
-        "reason": 1
-      },
-      {
-        "id": 1465401,
-        "name": "Caleb Kporha",
-        "position": "D",
-        "reason": 1
-      },
-      {
-        "id": 906047,
-        "name": "Cheick Doucouré",
+        "id": 794338,
+        "name": "Daichi Kamada",
         "position": "M",
         "reason": 1
       }
@@ -206,7 +279,7 @@
         "position": "M",
         "team_id": 14,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 867442,
@@ -225,12 +298,91 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 954061,
+        "name": "Arnaud Kalimuendo",
+        "position": "F",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1003334,
+        "name": "James McAtee",
+        "position": "M",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1090963,
+        "name": "Omari Hutchinson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 846252,
+        "name": "Ryan Yates",
+        "position": "M",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 981619,
+        "name": "Igor Jesus",
+        "position": "F",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 227946,
+        "name": "Angus Gunn",
+        "position": "G",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 985086,
+        "name": "Morato",
+        "position": "D",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 139310,
+        "name": "Willy Boly",
+        "position": "D",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 867887,
+        "name": "Douglas Luiz",
+        "position": "M",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 871765,
         "name": "Nicolás Domínguez",
         "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1160554,
+        "name": "Cuiabano",
+        "position": "D",
         "reason": 1
       }
     ]

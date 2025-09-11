@@ -188,6 +188,37 @@ def _summarize_field_map(for_team: str, fmap: dict, *, highlight_ids: set[str] |
         "focus_rows": snips
     }
 
+def _probe_eligible_period(api: FantraxAPI, *, team_id: str, fmap: dict, start_period: int, window: int = 6) -> int | None:
+    """
+    Probe confirm with explicit rosterLimitPeriod over a small window to find the first
+    period where changeAllowed=True and playerPickDeadlinePassed=False. If all probed
+    periods are past deadline, return the earliest candidate+1 to schedule into.
+    """
+    best_schedule: int | None = None
+    for off in range(0, max(1, window)):
+        p = max(1, int(start_period)) + off
+        try:
+            pre = api._request(
+                "confirmOrExecuteTeamRosterChanges",
+                rosterLimitPeriod=int(p),
+                fantasyTeamId=team_id,
+                daily=False,
+                adminMode=False,
+                confirm=True,
+                applyToFuturePeriods=False,
+                fieldMap=fmap,
+            )
+            model = (pre.get("textArray") or {}).get("model") or pre.get("model") or {}
+            change_allowed = bool(model.get("changeAllowed", True))
+            deadline_passed = bool(model.get("playerPickDeadlinePassed"))
+            if change_allowed and not deadline_passed:
+                return p
+            if deadline_passed and best_schedule is None:
+                best_schedule = p + 1
+        except Exception:
+            continue
+    return best_schedule
+
 def _log_fxpa_outcome(label: str, outcome: dict) -> None:
     """
     Compact, high-signal logging for Fantrax confirm/execute responses.
@@ -219,6 +250,12 @@ def make_substitution_example(
     verify_sleep_s: float = 0.8,
     session=None,
 ) -> Dict[str, Any]:
+    """
+    BYOC-auth aware swap:
+      - Preflight CONFIRM binds a *real* period and sets applyToFuturePeriods=True
+      - Execute FINALIZE with browser-like client hints (handled in SubsService)
+      - Surfaces pageError if the platform rejects the request
+    """
     import time
     from typing import Any, Dict, Optional, Union, Set
 
@@ -228,80 +265,16 @@ def make_substitution_example(
     api = FantraxAPI(league_id, session=session)
     subs = SubsService(session, league_id)
 
-    def _tri(val) -> Optional[bool]:
-        # keep None if missing; only coerce to True/False if explicitly provided
-        return (val if isinstance(val, bool) else None)
-
     def _as_int(x, default=None):
         try:
             return int(str(x))
         except Exception:
             return default
 
-    def _extract_model(blob: dict) -> tuple[dict, str]:
-        """
-        Return (model, source_tag) where model is the dict we parsed and
-        source_tag tells us which branch we used for logging.
-        """
-        if blob.get("model"):
-            return blob["model"], "top.model"
-        ta = blob.get("textArray")
-        if isinstance(ta, dict) and isinstance(ta.get("model"), dict):
-            return ta["model"], "textArray.model"
-        fr = blob.get("fantasyResponse")
-        if isinstance(fr, dict) and isinstance(fr.get("model"), dict):
-            return fr["model"], "fantasyResponse.model"
-        return {}, "missing"
+    def _tri(val) -> Optional[bool]:
+        return (val if isinstance(val, bool) else None)
 
-    def _summarize_field_map(for_team: str, fmap: dict, *, highlight_ids: set[str] | None = None) -> dict:
-        highlight_ids = highlight_ids or set()
-        snips = {}
-        starter_counts = {701:0, 702:0, 703:0, 704:0}
-        bench_count = 0
-        for pid, meta in fmap.items():
-            pos_id = _as_int(meta.get("posId"), -1)
-            st_id  = str(meta.get("stId", "2"))
-            if st_id == "1" and pos_id in starter_counts:
-                starter_counts[pos_id] += 1
-            if st_id == "2":
-                bench_count += 1
-            if pid in highlight_ids:
-                snips[pid] = {"posId": pos_id, "stId": st_id}
-        return {
-            "teamId": for_team,
-            "starters_by_posId": starter_counts,  # 704=G,703=D,702=M,701=F
-            "bench_count": bench_count,
-            "focus_rows": snips
-        }
-
-    def _fmap_from_roster(roster) -> dict:
-        # Build the server’s current map shape (strings) so we can diff
-        fm = {}
-        for r in roster.rows:
-            if not getattr(r, "player", None):
-                continue
-            pos_id = str(getattr(r, "pos_id", "0") or "0")
-            fm[r.player.id] = {"posId": pos_id, "stId": ("1" if pos_id != "0" else "2")}
-        return fm
-
-    def _fmap_delta(a: dict, b: dict, focus: set[str] | None = None) -> dict:
-        """
-        Tiny diff between two fieldMaps. Only logs changed rows; can be narrowed to focus ids.
-        """
-        focus = focus or set()
-        out = {}
-        for pid in set(a) | set(b):
-            if focus and pid not in focus:
-                continue
-            av, bv = a.get(pid), b.get(pid)
-            if av != bv:
-                out[pid] = {"from": av, "to": bv}
-        return out
-
-    logger.info("[debug] has resolve_active_period? %s", hasattr(api, "resolve_active_period"))
-    logger.info("[debug] has _resolve_active_period? %s", hasattr(api, "_resolve_active_period"))
-
-    # ---- pick team
+    # ---- pick team + resolve rows
     my_team = api.team(team_id) if team_id else api.teams[0]
     roster = api.roster_info(my_team.team_id)
     starters = roster.get_starters()
@@ -311,8 +284,7 @@ def make_substitution_example(
         if select is None:
             return None
         if isinstance(select, int) or (isinstance(select, str) and select.isdigit()):
-            idx = int(select)
-            assert 1 <= idx <= len(pool), f"Invalid {'bench' if bench_expected else 'starter'} number: {idx}"
+            idx = int(select); assert 1 <= idx <= len(pool), f"Invalid selection number: {idx}"
             return pool[idx - 1]
         if isinstance(select, str):
             cand = roster.get_player_by_name(select.strip())
@@ -333,142 +305,122 @@ def make_substitution_example(
 
     out_id, in_id = starter_row.player.id, bench_row.player.id
 
-    # ---- current/desired
+    # ---- current/desired + fieldMap
     current = api.roster_info(my_team.team_id)
     curr_starters = {r.player.id for r in current.get_starters() if getattr(r, "player", None)}
+    desired = set(curr_starters); desired.discard(out_id); desired.add(in_id)
 
-    if out_id not in curr_starters and in_id in curr_starters:
-        logger.info("[swap] already satisfied")
-        return {"ok": True, "verified": True, "reason": "already_satisfied", "out_id": out_id, "in_id": in_id, "team_id": my_team.team_id}
-
-    desired = set(curr_starters)
-    desired.discard(out_id)
-    desired.add(in_id)
-
-    def _summarize_diff(curr: Set[str], desired: Set[str]) -> Dict[str, list]:
-        return {"to_bench": sorted(list(curr - desired)), "to_start": sorted(list(desired - curr))}
-
-    # pretty logs
-    out_pos_short = getattr(getattr(starter_row, "pos", None), "short_name", None) or "UNK"
-    in_pos_short  = getattr(getattr(bench_row,   "pos", None), "short_name", None) or "UNK"
-    logger.info("[swap] plan team=%s out=%s in=%s diff=%s", my_team.team_id, out_id, in_id, _summarize_diff(curr_starters, desired))
-    logger.info("[swap] players: %s (%s) → bench, %s (%s) → starters", starter_row.player.name, out_pos_short, bench_row.player.name, in_pos_short)
-    logger.info("[swap] eligibility out_pos=%s bench_elig=%s", subs._pos_of_row(starter_row), sorted(list(subs.eligible_positions_of_row(bench_row))))
-
-    # --- Build fmap (normalize to strings for Fantrax)
-    fmap_raw = subs.build_field_map(current, list(desired))
+    fmap_raw = SubsService(session, league_id).build_field_map(current, list(desired))
     fmap = {pid: {"posId": str(v.get("posId", "0")), "stId": str(v.get("stId", "2"))} for pid, v in fmap_raw.items()}
-    n = len(fmap)
-    s = sum(1 for v in fmap.values() if v.get("stId") == "1")
-    b = n - s
-    logger.info("[swap] submit fmap: size=%d starters=%d bench=%d", n, s, b)
 
-    # Log current vs desired map for the focus pair
-    current_map = _fmap_from_roster(current)
-    focus = {out_id, in_id}
-    delta = _fmap_delta(current_map, fmap, focus=focus)
-    logger.info("[swap] fmap delta (focus=%s): %s", list(focus), delta or "<none>")
+    logger.info("[swap] submit fmap: size=%d starters=%d bench=%d",
+                len(fmap),
+                sum(1 for v in fmap.values() if v.get("stId") == "1"),
+                sum(1 for v in fmap.values() if v.get("stId") == "2"))
 
-    # ----------------------------------------------------------------
-    # RAW CONFIRM-ECHO (rosterLimitPeriod=0): server should *echo* the real period/flags
-    # ----------------------------------------------------------------
-    pre_req_snapshot = {
-        "method": "confirmOrExecuteTeamRosterChanges",
-        "fantasyTeamId": my_team.team_id,
-        "rosterLimitPeriod": 0,
-        "applyToFuturePeriods": False,
-        "fieldMapDigest": _summarize_field_map(my_team.team_id, fmap, highlight_ids=focus),
-    }
-    logger.info("[swap][pre][request] %s", pre_req_snapshot)
+    # ---- find current period (soft)
+    # ---- find current period (robust)
+    try:
+        # use your new resolver in fantrax.py (it does A/B/C probing)
+        fxpa_current = api.resolve_active_period(my_team.team_id)
+    except Exception:
+        fxpa_current = 1
 
-    pre_raw = api._request(
-        "confirmOrExecuteTeamRosterChanges",
-        rosterLimitPeriod=0,                # let server pick & echo
-        fantasyTeamId=my_team.team_id,
-        daily=False,
-        adminMode=False,
-        confirm=True,
-        applyToFuturePeriods=False,
-        fieldMap=fmap,
+    # ---- Preflight CONFIRM (bind a real period; future-apply=True)
+    pre = subs.confirm_or_execute_lineup(
+        league_id=league_id,
+        fantasy_team_id=my_team.team_id,
+        roster_limit_period=int(fxpa_current),
+        field_map=fmap,
+        apply_to_future=True,
+        do_finalize=False,
     )
 
-    pre_fr = pre_raw.get("fantasyResponse") or {}
-    pre_model, model_source = _extract_model(pre_raw)
-    rai       = (pre_model.get("rosterAdjustmentInfo") or {})
-    period    = _as_int(rai.get("rosterLimitPeriod"), None)
-    deadline  = _tri(pre_model.get("playerPickDeadlinePassed"))
-    change_ok = pre_model.get("changeAllowed")
+    pre_fr = pre.get("fantasyResponse") or {}
+    pre_model = pre.get("model") or {}
 
-    pre_resp_snapshot = {
-        "model_source": model_source,
-        "echo_period": period,
-        "changeAllowed": change_ok,
-        "playerPickDeadlinePassed": deadline,
-        "firstIllegalRosterPeriod": (pre_model.get("firstIllegalRosterPeriod")),
+    # NEW: if the server shows a confirm dialog, ACK it with a second CONFIRM
+    if pre_fr.get("showConfirmWindow") or pre_fr.get("msgType") == "WARNING":
+        pre = subs.confirm_or_execute_lineup(
+            league_id=league_id,
+            fantasy_team_id=my_team.team_id,
+            roster_limit_period=int(fxpa_current or 1),
+            field_map=fmap,
+            apply_to_future=True,     # mirrors clicking "OK" in the UI
+            do_finalize=False,        # still CONFIRM
+        )
+        pre_fr  = pre.get("fantasyResponse") or {}
+        pre_model = pre.get("model") or {}
+
+    pre_deadline = _tri(pre_model.get("playerPickDeadlinePassed"))
+    pre_change_ok = pre_model.get("changeAllowed")
+    pre_first_illegal = _as_int(pre_model.get("firstIllegalRosterPeriod"))
+
+    logger.info("[swap][pre][response] %s", {
         "msgType": pre_fr.get("msgType"),
         "mainMsg": pre_fr.get("mainMsg"),
-        "illegalRosterMsgs_len": len(pre_fr.get("illegalRosterMsgs") or []),
-        "applyToFuturePeriods_echo": pre_fr.get("applyToFuturePeriods"),
-    }
-    logger.info("[swap][pre][response] %s", pre_resp_snapshot)
+        "changeAllowed": pre_change_ok,
+        "playerPickDeadlinePassed": pre_deadline,
+        "firstIllegalRosterPeriod": pre_first_illegal,
+    })
 
-    # If we didn't get a concrete period, DON'T translate it to 0=False; keep Unknown (None)
-    if period is None:
-        logger.info("[swap][pre] server did not echo a concrete period (period=None).")
+    # ---- choose execute period
+    # ---- choose execute period (don’t auto-schedule on WARNING alone)
+    change_ok     = pre_model.get("changeAllowed")
+    deadline_passed = bool(pre_model.get("playerPickDeadlinePassed"))
+    first_illegal = pre_model.get("firstIllegalRosterPeriod")
+    try:
+        first_illegal = int(first_illegal) if first_illegal is not None else None
+    except Exception:
+        first_illegal = None
 
-    # Decide apply_to_future (only True if we *know* deadline True or server echoed it)
-    apply_to_future = bool(pre_fr.get("applyToFuturePeriods") is True or deadline is True)
-
-    # ---- If no period echoed, try robust resolver; if still none, pass 0 to FIN (let server decide)
-    fin_period = period
-    if fin_period is None:
-        try:
-            fin_period = api.resolve_active_period(team_id=my_team.team_id, use_confirm_probe=True)
-            if not fin_period or int(fin_period) <= 0:
-                fin_period = 0
-        except Exception as e:
-            logger.warning("[swap] resolve_active_period fallback failed: %s", e)
-            fin_period = 0
+    if deadline_passed or change_ok is False:
+        # must schedule
+        seed = (fxpa_current or 1) + 1
+        probed = subs._probe_eligible_period(
+            league_id=league_id, team_id=my_team.team_id, fmap=fmap,
+            start_period=(first_illegal or seed), window=6
+        )
+        fin_period = int(probed or (first_illegal or seed))
+        apply_to_future = True
+    else:
+        # same period is fine — prefer the model echo if present
+        rai = (pre_model.get("rosterAdjustmentInfo") or {})
+        fin_period = int(rai.get("rosterLimitPeriod") or fxpa_current or 1)
+        apply_to_future = False
 
     logger.info("[swap] using period=%s (for FIN), apply_to_future=%s", fin_period, apply_to_future)
 
-    # ---- FIN (execute with the chosen period)
-    fin_req_snapshot = {
-        "method": "confirmOrExecuteTeamRosterChanges",
-        "fantasyTeamId": my_team.team_id,
-        "rosterLimitPeriod": fin_period,
-        "applyToFuturePeriods": apply_to_future,
-        "fieldMapDigest": _summarize_field_map(my_team.team_id, fmap, highlight_ids=focus),
-    }
-    logger.info("[swap][fin][request] %s", fin_req_snapshot)
-
+    # ---- FINALIZE
     fin = subs.confirm_or_execute_lineup(
         league_id=league_id,
         fantasy_team_id=my_team.team_id,
-        roster_limit_period=int(fin_period),
+        roster_limit_period=fin_period,
         field_map=fmap,
         apply_to_future=apply_to_future,
         do_finalize=True,
     )
 
     fin_fr = fin.get("fantasyResponse") or {}
-    fin_model = fin.get("model") or {}
-    fin_snapshot = {
-        "ok": bool(fin.get("ok")),
+    fin_page_error = fin.get("pageError") or {}
+    fin_ok = bool(fin.get("ok"))
+
+    logger.info("[swap][fin][response] %s", {
+        "ok": fin_ok,
         "msgType": fin_fr.get("msgType"),
         "mainMsg": fin_fr.get("mainMsg") or fin.get("mainMsg"),
-        "illegalMsgs_len": len(fin_fr.get("illegalRosterMsgs") or fin.get("illegalMsgs") or []),
-        "targetPeriod": fin.get("targetPeriod") or ((fin_model.get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod")),
-    }
-    logger.info("[swap][fin][response] %s", fin_snapshot)
+        "illegalMsgs_len": len(fin_fr.get("illegalRosterMsgs") or []),
+        "targetPeriod": fin.get("targetPeriod"),
+    })
 
-    ok = bool(fin.get("ok"))
+    # Early exit on server error
+    if fin_page_error.get("code"):
+        reason = f"server_error[{fin_page_error.get('code')}]: {(fin_page_error.get('text') or '')[:180]}"
+        return {"ok": False, "verified": False, "reason": reason, "out_id": out_id, "in_id": in_id, "team_id": my_team.team_id}
+
+    # Optional verify
     verified = False
-    reason = None
-    after = None
-
-    # Verify (eventual consistency)
-    if ok:
+    if fin_ok:
         for _ in range(max(0, verify_retries)):
             time.sleep(max(0.0, verify_sleep_s))
             after = api.roster_info(my_team.team_id)
@@ -477,34 +429,35 @@ def make_substitution_example(
             if verified:
                 break
 
-    if not ok:
-        reason = (
-            fin_fr.get("mainMsg")
-            or fin.get("mainMsg")
-            or "; ".join(map(str, (fin_fr.get("illegalRosterMsgs") or fin.get("illegalMsgs") or [])))
-            or "execute_not_ok"
-        )
-        if fin_snapshot.get("targetPeriod") not in (None, 0):
-            reason = f"{reason} (scheduled for period {fin_snapshot['targetPeriod']})"
-    elif ok and not verified:
+    reason = None
+    if not fin_ok:
+        tper = fin.get("targetPeriod")
+        msg = (fin_fr.get("mainMsg") or fin.get("mainMsg") or "execute_not_ok")
+        reason = (f"{msg} (scheduled for period {tper})" if tper not in (None, 0) else msg)
+    elif fin_ok and not verified:
         reason = "optimistic (server accepted swap but roster view not yet updated)"
 
-    logger.info("[swap] result ok=%s verified=%s reason=%s", ok, verified, (reason or None))
-
-    if reason and "no changes detected" in (reason or "").lower():
-        if not after:
-            after = api.roster_info(my_team.team_id)
-        after_starters = {r.player.id for r in after.get_starters() if getattr(r, "player", None)}
-        logger.info("[swap] no-op diffs: %s", _summarize_diff(after_starters, desired))
+    logger.info("[swap] result ok=%s verified=%s reason=%s", fin_ok, verified, reason or None)
 
     return {
-        "ok": ok,
+        "ok": fin_ok,
         "verified": bool(verified),
         "reason": reason,
         "out_id": out_id,
         "in_id": in_id,
         "team_id": my_team.team_id,
     }
+
+def _handle_swap_result(res: Dict[str, Any]):
+    if res.get("ok"):
+        if res.get("verified"):
+            st.success("Substitution completed and verified.")
+        else:
+            st.info("Substitution submitted (optimistic). Lineup view may take a few seconds to reflect.")
+    else:
+        msg = res.get("reason") or "Substitution failed."
+        st.error(msg)
+
 
 # ---------- UI: Auth (kept from your original) ----------
 def ui_login_section():
@@ -636,6 +589,39 @@ def _ensure_xsrf_header(session):
     if token:
         session.headers["X-XSRF-TOKEN"] = token
 
+def _apply_fxpa_client_hints(session: Session) -> None:
+    """
+    Fetch server UI version and set browser-like client hints on the session:
+      - X-Fantrax-UI-Version (used as 'v' root field by subs service)
+      - X-TZ (IANA timezone string, used as 'tz' root field)
+    Safe to call multiple times; it will no-op if already set.
+    """
+    # If already set, don't re-probe
+    if session.headers.get("X-Fantrax-UI-Version") and session.headers.get("X-TZ"):
+        return
+
+    payload = {"msgs": [{"method": "getAllLeagues", "data": {"view": "LEAGUES"}}], "uiv": 3}
+    headers = {
+        "Accept": "application/json; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+    }
+    try:
+        res = session.post("https://www.fantrax.com/fxpa/req", json=payload, timeout=20, headers=headers)
+        try:
+            j = res.json()
+        except Exception:
+            j = {}
+    except Exception:
+        j = {}
+
+    ui_version = ((j.get("data") or {}).get("up")) or ""
+    if ui_version:
+        session.headers["X-Fantrax-UI-Version"] = ui_version
+
+    # Pick a reasonable default IANA tz if not present
+    session.headers.setdefault("X-TZ", "America/Los_Angeles")
+
+
 # ---------- UI: Simple substitutions (exact substitutions_v2 flow in GUI) ----------
 def ui_simple_subs_section():
     st.header("Your Leagues and Rosters")
@@ -651,6 +637,7 @@ def ui_simple_subs_section():
         st.stop()
 
     _ensure_xsrf_header(session)
+    _apply_fxpa_client_hints(session)
 
     # Optional: quick cookie/header sanity check
     with st.expander("Cookie debug", expanded=False):
@@ -733,116 +720,79 @@ def ui_simple_subs_section():
 
     def probe_confirm_noop(api: FantraxAPI, league_id: str, team_id: str, session) -> dict:
         """
-        Send a CONFIRM (no-op) lineup request to fetch the server's roster model echo.
-        Robust to flaky getStandings and non-JSON responses.
-        Returns the parsed JSON (or a small dict with http_status/text on parse error).
+        CONFIRM (no-op) lineup probe that mirrors the browser:
+        - binds to a *real* rosterLimitPeriod
+        - uses applyToFuturePeriods=True
+        - includes tz/v root fields (pulled from the session)
         """
-        # --- Build a fieldMap that mirrors the CURRENT roster exactly ---
         roster = api.roster_info(team_id)
         fmap: dict[str, dict[str, str]] = {}
         for r in roster.rows:
             if not getattr(r, "player", None):
                 continue
             is_starter = (str(getattr(r, "pos_id", "0")) != "0")
-            fmap[r.player.id] = {
-                "posId": str(r.pos_id if is_starter else "0"),
-                "stId":  "1" if is_starter else "2",
-            }
+            fmap[r.player.id] = {"posId": str(r.pos_id if is_starter else "0"), "stId": ("1" if is_starter else "2")}
 
-        # --- Resolve current period (getStandings; soft fallback on failure) ---
+        # Try to get current period; fall back to 1
+        # Try to get current period; fall back to API resolver
         try:
-            from fantraxapi.exceptions import FantraxException  # type: ignore
+            seed = api.resolve_active_period(team_id)
         except Exception:
-            class FantraxException(Exception):  # graceful local fallback if not present
-                pass
+            seed = 1
 
-        def _parse_current_period(resp: dict) -> int:
-            try:
-                return int((((resp.get("responses") or [{}])[0].get("data") or {}).get("currentPeriod") or 0))
-            except Exception:
-                return 0
 
-        try:
-            gs = api._request("getStandings", view="SCHEDULE")
-        except FantraxException as e:
-            logger.warning("getStandings failed (%s); using soft fallback for period.", e)
-            try:
-                # Prefer our resilient resolver; then FantraxAPI helper; default to 0
-                svc = SubsService(session, league_id=league_id)
-                period = svc._current_period_via_fxpa(league_id) or api.drops.get_current_period() or 0
-            except Exception:
-                period = 0
-            gs = {"responses": [{"data": {"currentPeriod": period}, "pageError": None}]}
-        except Exception as e:
-            logger.warning("getStandings raised (%s); using soft fallback for period.", e)
-            try:
-                svc = SubsService(session, league_id=league_id)
-                period = svc._current_period_via_fxpa(league_id) or api.drops.get_current_period() or 0
-            except Exception:
-                period = 0
-            gs = {"responses": [{"data": {"currentPeriod": period}, "pageError": None}]}
-
-        period_id = _parse_current_period(gs)
-        logger.info("[probe] confirm-noop period=%s", period_id)
-
-        # --- Build the CONFIRM payload (include leagueId, confirm=True) ---
         payload = {
             "msgs": [{
                 "method": "confirmOrExecuteTeamRosterChanges",
                 "data": {
-                    "leagueId": league_id,             # keep explicit
-                    "rosterLimitPeriod": int(period_id),
+                    "leagueId": league_id,
+                    "rosterLimitPeriod": int(seed),
                     "fantasyTeamId": team_id,
                     "teamId": team_id,
                     "daily": False,
                     "adminMode": False,
-                    "applyToFuturePeriods": False,
+                    "applyToFuturePeriods": True,   # <-- browser semantics
+                    "confirm": True,
                     "fieldMap": fmap,
-                    "confirm": True,                   # CONFIRM, not EXECUTE
-                    "action": "CONFIRM",
                 }
             }],
             "uiv": 3,
-            "refUrl": f"https://www.fantrax.com/fantasy/league/{league_id}/team/roster",
+            "refUrl": f"https://www.fantrax.com/fantasy/league/{league_id}/team/roster;period={seed}",
             "dt": 0, "at": 0, "av": "0.0",
         }
 
-        # --- Propagate XSRF header (defensive – some pods require it) ---
-        _ensure_xsrf_header(session)
+        # Add client hints (tz/v) from the session, like the SPA does
+        tz = session.headers.get("X-TZ")
+        ui_ver = session.headers.get("X-Fantrax-UI-Version")
+        if tz:
+            payload["tz"] = tz
+        if ui_ver:
+            payload["v"] = ui_ver
 
-        # --- POST and be tolerant of non-JSON replies ---
         try:
             res = session.post(
                 "https://www.fantrax.com/fxpa/req",
                 params={"leagueId": league_id},
                 json=payload,
                 timeout=25,
-                headers={"Accept": "application/json"},
+                headers={"Accept": "application/json; charset=UTF-8", "X-Requested-With": "XMLHttpRequest"},
             )
             try:
                 j = res.json()
             except Exception:
-                j = {"http_status": res.status_code, "text": (res.text or "")[:800]}
+                j = {"http_status": res.status_code, "text": (res.text or "")[:1000]}
         except Exception as e:
-            logger.warning("confirm-noop POST failed: %s", e)
             j = {"http_error": str(e)}
 
-        # Compact, high-signal log
-        try:
-            fr = (j or {}).get("fantasyResponse") or {}
-            model = (j or {}).get("model") or {}
-            logger.info(
-                "[probe][confirm] type=%s main=%s illegal=%s changeAllowed=%s deadline=%s periodEcho=%s",
-                fr.get("msgType"),
-                fr.get("mainMsg"),
-                len(fr.get("illegalRosterMsgs") or []),
-                (model.get("changeAllowed") if isinstance(model, dict) else None),
-                (model.get("playerPickDeadlinePassed") if isinstance(model, dict) else None),
-                ((((model or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod")) if isinstance(model, dict) else None),
-            )
-        except Exception:
-            pass
-
+        fr = (j or {}).get("fantasyResponse") or {}
+        model = (j or {}).get("model") or {}
+        logger.info("[probe][confirm] type=%s main=%s illegal=%s changeAllowed=%s deadline=%s periodEcho=%s",
+                    fr.get("msgType"),
+                    fr.get("mainMsg"),
+                    len(fr.get("illegalRosterMsgs") or []),
+                    (model.get("changeAllowed") if isinstance(model, dict) else None),
+                    (model.get("playerPickDeadlinePassed") if isinstance(model, dict) else None),
+                    ((((model or {}).get("rosterAdjustmentInfo") or {}).get("rosterLimitPeriod")) if isinstance(model, dict) else None))
         return j
 
     probe_confirm_noop(api, league_id, team_id, session)
@@ -886,60 +836,46 @@ def ui_simple_subs_section():
                 st.error("No valid bench player selected.")
                 st.stop()
 
-            # prefer exact-name text inputs if provided; otherwise use the 1-based index from the dropdown
-            starter_sel = starter_by_name.strip() if starter_by_name.strip() else _label_to_index_str(starter_choice, starter_opts)
-            bench_sel   = bench_by_name.strip()   if bench_by_name.strip()   else _label_to_index_str(bench_choice,   bench_opts)
+            # Resolve the selected rows, honoring exact-name overrides if provided
+            def _resolve_row_by_name_or_choice(name_txt: str, choice_label: str, opts_map: dict, expect_bench: bool):
+                if name_txt.strip():
+                    cand = roster.get_player_by_name(name_txt.strip())
+                    if not cand:
+                        raise ValueError(f"Player '{name_txt}' not found on roster.")
+                    is_bench = str(getattr(cand, "pos_id", "0")) == "0"
+                    if expect_bench and not is_bench:
+                        raise ValueError(f"Player '{name_txt}' is not on the bench.")
+                    if (not expect_bench) and is_bench:
+                        raise ValueError(f"Player '{name_txt}' is not a starter.")
+                    return cand
+                # fallback to dropdown
+                return opts_map[choice_label]
 
-            # call the BYOC-auth aware substitutions_v2 equivalent
-            res = make_substitution_example(
-                league_id=league_id,
-                team_id=team_id,
-                starter_select=starter_sel,   # "2" or "Oscar Bobb"
-                bench_select=bench_sel,       # "1" or "Eberechi Eze"
-                verify_retries=4,
-                verify_sleep_s=0.8,
-                session=session,              # use the already-built BYOC session
+            starter_row = _resolve_row_by_name_or_choice(
+                starter_by_name, starter_choice, starter_opts, expect_bench=False
+            )
+            bench_row = _resolve_row_by_name_or_choice(
+                bench_by_name, bench_choice, bench_opts, expect_bench=True
             )
 
-            # DEBUG: peek at confirm only (no execute) to surface messages in logs
-            try:
-                # Get current period for debug probe
-                resp = api._request("getStandings", view="SCHEDULE")
-                period_id = int(resp.get("currentPeriod", 0) or 0)
+            # Execute using the robust SubsService (handles WARNING/locked → schedules/probes)
+            subs = SubsService(session, league_id)
+            ok = subs.swap_players(
+                team_id=team_id,
+                out_player_id=starter_row.player.id,  # move starter out
+                in_player_id=bench_row.player.id      # bring bench in
+            )
 
-                confirm_payload = {
-                    "rosterLimitPeriod": period_id,
-                    "fantasyTeamId": team_id,
-                    "daily": False,
-                    "adminMode": False,
-                    "confirm": True,
-                    "applyToFuturePeriods": False,
-                    "fieldMap": {
-                        **{r.player.id: {"posId": str(r.pos_id), "stId": ("1" if r.pos_id != "0" else "2")}
-                        for r in roster.rows if getattr(r, "player", None)}
-                    }
-                }
-                dbg = api._request("confirmOrExecuteTeamRosterChanges", **confirm_payload)
-                fr = (dbg or {}).get("fantasyResponse", {}) or {}
-                logger.info("fantasyResponse (confirm-only) mainMsg=%s illegal=%s",
-                            fr.get("mainMsg"), fr.get("illegalRosterMsgs"))
-            except Exception as _e:
-                logger.warning("Confirm-only probe failed: %s", _e)
-
-
-            # update UI
+            # Update UI (mirror your existing result handling)
+            res = {"ok": bool(ok), "verified": None, "reason": None}
             if res["ok"]:
-                if res.get("verified"):
-                    st.success("Substitution completed and verified.")
-                else:
-                    st.info("Substitution submitted (optimistic). Lineup view may take a few seconds to reflect.")
-                # refresh the roster view
+                st.info("Substitution submitted. Verifying roster view…")
                 new_roster = _refresh_roster(api, team_id)
                 st.markdown("### Updated Lineup")
                 _render_roster_tables(new_roster, starters_only=False)
                 st.rerun()
             else:
-                st.error("Substitution failed (swap_players returned False).")
+                _handle_swap_result(res)
 
         except ValueError as ve:
             # validation errors from name/index resolution
@@ -948,6 +884,7 @@ def ui_simple_subs_section():
             logger.exception("Error during substitution")
             st.error(f"Error making substitution: {e}")
             st.info("Make sure both players are eligible for the swap and not locked.")
+    
     # --- Roster analysis (same spirit as substitutions_v2) ---
     st.markdown("### Roster Analysis")
     if st.button("Compute Position Breakdown & Top-5 Starters by FPPG"):
@@ -1029,6 +966,117 @@ def ui_simple_subs_section():
     except Exception as e:
         logger.exception("Drop UI error")
         st.error(f"Could not load drop UI: {e}")
+
+    # --- League FAAB & Claims ---
+    st.divider()
+    st.subheader("League FAAB & Claims")
+    if st.button("Load FAAB & Claims for selected league"):
+        from datetime import datetime as _dt
+        try:
+            with st.spinner("Loading FAAB budgets and claims…"):
+                budgets = api.league.faab_budgets()
+
+                # Collect per-team info
+                summary_rows = []
+                team_claims: Dict[str, dict] = {}
+                for t_id, budget in budgets.items():
+                    try:
+                        team = api.team(t_id)
+                    except Exception:
+                        # Fallback minimal team object
+                        class _T:
+                            name = f"Team {t_id}"
+                        team = _T()
+
+                    try:
+                        claim_info = api.league.get_claim_info(t_id) or {}
+                    except Exception as _e:
+                        logger.warning("get_claim_info failed for %s: %s", t_id, _e)
+                        claim_info = {}
+                    team_claims[t_id] = claim_info
+
+                    pending = (claim_info.get("pendingClaims") or [])
+                    next_process = pending[0].get("process_date") if pending else ""
+                    summary_rows.append({
+                        "Team Name": getattr(team, "name", str(t_id))[:30],
+                        "FAAB": budget.get("display"),
+                        "FAAB_value": budget.get("value", 0),
+                        "Tradeable": str(budget.get("tradeable")),
+                        "Claims": len(pending),
+                        "Next Process": next_process or "",
+                    })
+
+                # Summary table (sorted by FAAB value desc)
+                if summary_rows:
+                    df = pd.DataFrame(summary_rows).sort_values("FAAB_value", ascending=False)
+                    st.caption(f"As of {_dt.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                    st.table(df[["Team Name", "FAAB", "Tradeable", "Claims", "Next Process"]])
+                else:
+                    st.info("No FAAB data available.")
+
+                # League-wide settings (from first team's claim info)
+                first_claims = next(iter(team_claims.values()), {})
+                if first_claims:
+                    st.markdown("**League Claim Settings**")
+                    claim_types = (first_claims.get("claimTypes") or {})
+                    if claim_types:
+                        st.write({"Claim Types": list(claim_types.values())})
+                    st.write({
+                        "Claim Groups Enabled": first_claims.get("claimGroupsEnabled"),
+                        "FAAB Bidding Enabled": first_claims.get("showBidColumn"),
+                    })
+                    misc = first_claims.get("miscData") or {}
+                    if misc:
+                        st.write({k: misc[k] for k in ("allowGroupChanges", "showAllTeamsChoice") if k in misc})
+
+                # Pending claims details per team
+                for t_id, claim_info in team_claims.items():
+                    pending = (claim_info.get("pendingClaims") or [])
+                    if not pending:
+                        continue
+                    try:
+                        t = api.team(t_id)
+                        team_name = getattr(t, "name", str(t_id))
+                    except Exception:
+                        team_name = str(t_id)
+                    with st.expander(f"Pending Claims — {team_name}"):
+                        rows = []
+                        for c in pending:
+                            parts = []
+                            if c.get("process_date"):
+                                parts.append(f"Process: {c['process_date']}")
+                            cp = c.get("claim_player") or {}
+                            if cp:
+                                parts.append(
+                                    f"Add: {cp.get('name')} ({cp.get('position')}, {cp.get('team')}) -> "
+                                    f"{cp.get('to_position')}/{cp.get('to_status')}"
+                                )
+                            dp = c.get("drop_player") or {}
+                            if dp:
+                                parts.append(
+                                    f"Drop: {dp.get('name')} ({dp.get('position')}, {dp.get('team')}) from "
+                                    f"{dp.get('from_position')}/{dp.get('from_status')}"
+                                )
+                            if c.get("bid_amount") is not None:
+                                try:
+                                    parts.append(f"Bid: ${float(c['bid_amount']):.2f}")
+                                except Exception:
+                                    parts.append(f"Bid: {c['bid_amount']}")
+                            if c.get("priority") is not None:
+                                parts.append(f"Priority: {c['priority']}")
+                            if c.get("group"):
+                                parts.append(f"Group: {c['group']}")
+                            if c.get("submitted_date"):
+                                parts.append(f"Submitted: {c['submitted_date']}")
+                            rows.append(" | ".join(parts))
+                        if rows:
+                            for r in rows:
+                                st.write(r)
+                        else:
+                            st.write("No details available.")
+        except Exception as e:
+            logger.exception("FAAB & Claims section failed")
+            st.error(f"Failed to load FAAB & Claims: {e}")
 
 
 def main():

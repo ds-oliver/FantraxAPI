@@ -1,0 +1,372 @@
+{
+  "event_id": 14025059,
+  "confirmed": true,
+  "home": {
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 871290,
+        "name": "Lucas Perri",
+        "position": "G",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 929132,
+        "name": "Jayden Bogle",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 828640,
+        "name": "Joe Rodon",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836675,
+        "name": "Pascal Struijk",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 834308,
+        "name": "Gabriel Gudmundsson",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 871886,
+        "name": "Ao Tanaka",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 847097,
+        "name": "Ethan Ampadu",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 889861,
+        "name": "Anton Stach",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 828639,
+        "name": "Daniel James",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 850823,
+        "name": "Joël Piroe",
+        "position": "F",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 998951,
+        "name": "Wilfried Gnonto",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [
+      {
+        "id": 973431,
+        "name": "Brenden Aaronson",
+        "position": "M",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 911679,
+        "name": "Ilia Gruev",
+        "position": "M",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 829570,
+        "name": "Jack Harrison",
+        "position": "M",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 803185,
+        "name": "Lukas Nmecha",
+        "position": "F",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 866191,
+        "name": "Sean Longstaff",
+        "position": "M",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 123689,
+        "name": "Karl Darlow",
+        "position": "G",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 254713,
+        "name": "Sam Byram",
+        "position": "D",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 826167,
+        "name": "Sebastiaan Bornauw",
+        "position": "D",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 909966,
+        "name": "Largie Ramazani",
+        "position": "M",
+        "team_id": 2828,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 886930,
+        "name": "Jaka Bijol",
+        "position": "D",
+        "reason": 13
+      },
+      {
+        "id": 827681,
+        "name": "James Justin",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "away": {
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 138530,
+        "name": "Jordan Pickford",
+        "position": "G",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 998253,
+        "name": "Jake O'Brien",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 145188,
+        "name": "James Tarkowski",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 110846,
+        "name": "Michael Keane",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927361,
+        "name": "James Garner",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1085950,
+        "name": "Tim Iroegbunam",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 106337,
+        "name": "Idrissa Gueye",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1017392,
+        "name": "Carlos Alcaraz",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 861970,
+        "name": "Kiernan Dewsbury-Hall",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 914309,
+        "name": "Iliman Ndiaye",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 987489,
+        "name": "Beto",
+        "position": "F",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [
+      {
+        "id": 189061,
+        "name": "Jack Grealish",
+        "position": "M",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1395746,
+        "name": "Thierno Barry",
+        "position": "F",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 856720,
+        "name": "Mark Travers",
+        "position": "G",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 993438,
+        "name": "Harry Tyrer",
+        "position": "G",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 76632,
+        "name": "Séamus Coleman",
+        "position": "D",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 935543,
+        "name": "Dwight McNeil",
+        "position": "M",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1627560,
+        "name": "Harrison Armstrong",
+        "position": "M",
+        "team_id": 21,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1004342,
+        "name": "Tyler Onyango",
+        "position": "M",
+        "team_id": 10,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1145627,
+        "name": "Youssef Chermiti",
+        "position": "F",
+        "team_id": 2351,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 979563,
+        "name": "Jarrad Branthwaite",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 876643,
+        "name": "Vitaliy Mykolenko",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1020141,
+        "name": "Nathan Patterson",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  }
+}

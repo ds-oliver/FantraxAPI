@@ -26,7 +26,7 @@ class FantraxAPI:
 	def __init__(self, league_id: str, session: Optional[Session] = None):
 		self.league_id = league_id
 		self._session = Session() if session is None else session
-		self.session = self._session           # <-- add this line
+		self.session = self._session  # keep your alias
 
 		self._teams: Optional[List[Team]] = None
 		self._positions: Optional[Dict[str, Position]] = None
@@ -35,6 +35,40 @@ class FantraxAPI:
 		self.league = LeagueService(self._request, self)
 		self.waivers = WaiversService(self._request, self)
 		self.drops = DropsService(self)
+
+		# NEW: make our session look like the SPA (tz + UI version)
+		self._apply_client_hints()
+
+	def _apply_client_hints(self) -> None:
+		"""
+		Give the session the same hints the web app uses.
+		- X-TZ tells Fantrax our timezone
+		- X-Fantrax-UI-Version populates payload["v"]
+		"""
+		# Default TZ if caller didn't set a header already
+		if not self._session.headers.get("X-TZ"):
+			self._session.headers["X-TZ"] = "America/Los_Angeles"
+
+		# One-time probe to fetch UI version (shown as "up" on responses)
+		if not self._session.headers.get("X-Fantrax-UI-Version"):
+			payload = {"msgs": [{"method": "getAllLeagues", "data": {"view": "LEAGUES"}}], "uiv": 3}
+			try:
+				r = self._session.post(
+					"https://www.fantrax.com/fxpa/req",
+					json=payload,
+					timeout=20,
+					headers={
+						"Accept": "application/json; charset=UTF-8",
+						"X-Requested-With": "XMLHttpRequest",
+					},
+				)
+				j = r.json()
+				up = (j.get("data") or {}).get("up")
+				if up:
+					self._session.headers["X-Fantrax-UI-Version"] = str(up)
+			except Exception:
+				# If this fails, it's okay — calls will still work without "v"
+				pass
 
 	@property
 	def teams(self) -> List[Team]:
@@ -180,31 +214,59 @@ class FantraxAPI:
 
 	def _request(self, method: str, **data):
 		"""
-		Core FXPA request. Always returns the unwrapped `data` dict from the first response.
-		Tolerant to flaky/non-JSON getStandings replies.
+		Core FXPA request with browser-shaped payload:
+		- root fields: uiv, refUrl, tz, v, dt/at/av
+		- Accept + X-Requested-With headers
+		- checks top-level and per-response pageError
+		Always returns the first responses[0].data dict.
 		"""
-		url = f"https://www.fantrax.com/fxpa/req?leagueId={self.league_id}"
-		body = {
-			"msgs": [{"method": method, "data": data}],
+		url = f"https://www.fantrax.com/fxpa/req"
+		# Build a realistic refUrl (the SPA sends a page URL). For lineup changes,
+		# include the ;period anchor so the backend knows what you're viewing.
+		ref_url = f"https://www.fantrax.com/fantasy/league/{self.league_id}"
+		if method == "confirmOrExecuteTeamRosterChanges":
+			period_hint = data.get("rosterLimitPeriod")
+			ref_url = f"{ref_url}/team/roster" + (f";period={int(period_hint)}" if period_hint else "")
+
+		payload = {
+			"msgs": [{"method": method, "data": {**data, "leagueId": self.league_id}}],
 			"uiv": 3,
-			"refUrl": f"https://www.fantrax.com/fantasy/league/{self.league_id}",
+			"refUrl": ref_url,
 			"dt": 0, "at": 0, "av": "0.0",
 		}
+
+		# Inject client hints the SPA includes
+		tz = self._session.headers.get("X-TZ")
+		ui_ver = self._session.headers.get("X-Fantrax-UI-Version")
+		if tz:
+			payload["tz"] = tz
+		if ui_ver:
+			payload["v"] = ui_ver
+
+		headers = {
+			"Accept": "application/json; charset=UTF-8",
+			"X-Requested-With": "XMLHttpRequest",
+		}
+
 		try:
-			res = self._session.post(url, json=body, timeout=30, headers={"Accept": "application/json"})
+			res = self._session.post(
+				url,
+				params={"leagueId": self.league_id},
+				json=payload,
+				timeout=30,
+				headers=headers,
+			)
 		except Exception as e:
 			raise FantraxException(f"Network error calling {method}: {e}")
 
-		txt = res.text or ""
+		text = res.text or ""
 		try:
 			j = res.json()
 		except Exception as e:
-			low = txt[:200].strip().lower()
-			# Auth / HTML?
+			low = text[:200].lower()
 			if res.status_code in (401, 403) or "sign in" in low or "log in" in low:
 				raise FantraxException(f"Auth/permission error calling {method}: HTTP {res.status_code}")
 
-			# Special-case: flaky getStandings → return an *unwrapped* soft data dict
 			if method == "getStandings":
 				logging.getLogger("fantraxapi.fantrax").warning(
 					"[_request] %s returned non-JSON (status=%s). Returning soft-null schedule data.",
@@ -212,23 +274,24 @@ class FantraxAPI:
 				)
 				return {"currentPeriod": None}
 
-			# Otherwise: rich error
 			raise FantraxException(
-				f"Failed to Connect to {method}: {e} | HTTP {res.status_code} | first200={txt[:200]!r}"
+				f"Failed to parse JSON for {method}: {e} | HTTP {res.status_code} | first200={text[:200]!r}"
 			)
 
-		# ---- UNWRAP to first responses[].data if present ----
-		if isinstance(j, dict) and "responses" in j:
-			r0 = (j.get("responses") or [{}])[0]
-			data_blob = r0.get("data") or {}
-			page_error = r0.get("pageError")
-			if page_error:
-				# Bubble up page errors in a consistent way
-				raise FantraxException(f"PageError calling {method}: {page_error}")
-			return data_blob
+		if res.status_code >= 400:
+			raise FantraxException(f"({res.status_code} [{res.reason}]) {j}")
 
-		# Some endpoints already return data directly (rare)
-		return j
+		# Top-level pageError (your logs show UNEXPECTED_ERROR here)
+		pe_top = j.get("pageError")
+		if pe_top:
+			raise FantraxException(f"PageError(top) calling {method}: {pe_top}")
+
+		# Per-response pageError
+		r0 = (j.get("responses") or [{}])[0]
+		if r0.get("pageError"):
+			raise FantraxException(f"PageError calling {method}: {r0['pageError']}")
+
+		return r0.get("data") or {}
 
 	# ---------- Higher-level helpers ----------
 	def scoring_periods(self) -> Dict[int, ScoringPeriod]:
@@ -501,117 +564,126 @@ class FantraxAPI:
 		log.info(f"Making lineup changes for team {team_id}")
 		log.info("Requested changes:\n%s", json.dumps(changes, indent=2, ensure_ascii=False))
 
-		# Build current fieldMap from raw roster data
+		# Build complete fieldMap from current roster (strings for posId/stId)
 		roster = self.roster_info(team_id)
-		current_field_map = {}
-
-		log.info("Building fieldMap from _raw roster data...")
+		field_map: Dict[str, Dict[str, str]] = {}
 		for row in roster.rows:
 			if not row.player:
 				continue
-			raw = getattr(row, "_raw", {}) or {}
-			pos_id = str(raw.get("posId", row.pos_id))
-			st_id = str(raw.get("stId", "2" if pos_id == "0" else "1"))
+			is_starter = str(row.pos_id) != "0"
+			field_map[row.player.id] = {
+				"posId": str(row.pos_id if is_starter else "0"),
+				"stId": "1" if is_starter else "2",
+			}
 
-			current_field_map[row.player.id] = {"posId": pos_id, "stId": st_id}
-			log.info(f"  {row.player.name} ({row.player.id}) -> posId={pos_id}, stId={st_id}")
+		# Apply requested changes (force to string)
+		for pid, cfg in (changes or {}).items():
+			if pid not in field_map:
+				log.warning("Change requested for unknown player id %s", pid)
+				continue
+			if "posId" in cfg:
+				field_map[pid]["posId"] = str(cfg["posId"])
+			if "stId" in cfg:
+				field_map[pid]["stId"] = str(cfg["stId"])
 
-		# Apply requested changes
-		log.info("Applying requested changes:")
-		for pid, new_cfg in changes.items():
-			if pid in current_field_map:
-				old_cfg = current_field_map[pid].copy()
-				current_field_map[pid].update(new_cfg)
-				log.info(f"  {pid}: {old_cfg} -> {current_field_map[pid]}")
-			else:
-				log.warning(f"  Change requested for unknown player id {pid}")
+		# Choose seed period from schedule
+		try:
+			sched = self._request("getStandings", view="SCHEDULE")
+			current_period = int(sched.get("currentPeriod") or 1)
+		except Exception:
+			current_period = 1
+		log.info("Using seed rosterLimitPeriod=%s", current_period)
 
-		# Always fetch the current scoring period dynamically
-		period_id = self._current_roster_limit_period()
-
-		confirm_data = {
-			"rosterLimitPeriod": period_id,
+		# ---- CONFIRM (browser sends confirm=True) ----
+		confirm_req = {
+			"rosterLimitPeriod": current_period,
 			"fantasyTeamId": team_id,
+			"teamId": team_id,                # critical: send both ids
 			"daily": False,
 			"adminMode": False,
-			"confirm": True,
-			"applyToFuturePeriods": apply_to_future_periods,
-			"fieldMap": current_field_map,
+			"confirm": True,                  # confirm only on this step
+			"applyToFuturePeriods": bool(apply_to_future_periods),
+			"fieldMap": field_map,
 		}
+		confirm_resp = self._request("confirmOrExecuteTeamRosterChanges", **confirm_req)
 
-		log.info("Sending confirmation request...")
-		try:
-			confirm_resp = self._request("confirmOrExecuteTeamRosterChanges", **confirm_data)
-			preview = json.dumps(confirm_resp, indent=2, ensure_ascii=False)
-			if len(preview) > 500:
-				preview = preview[:250] + "\n...[truncated]...\n" + preview[-250:]
-			log.debug("Confirmation response:\n%s", preview)
-		except FantraxException as e:
-			log.error(f"Confirmation request failed: {e}")
-			raise
+		# Inspect model to pick execution period/applyToFuture
+		model = ((confirm_resp.get("textArray") or {}).get("model") or {})
+		log.debug("CONFIRM model: %s", model)
 
-		execute_data = dict(confirm_data)
-		execute_data["confirm"] = False
-		log.info("Sending execution request...")
-		try:
-			exec_resp = self._request("confirmOrExecuteTeamRosterChanges", **execute_data)
-			preview = json.dumps(exec_resp, indent=2, ensure_ascii=False)
-			if len(preview) > 500:
-				preview = preview[:250] + "\n...[truncated]...\n" + preview[-250:]
-			log.debug("Execution response:\n%s", preview)
-		except FantraxException as e:
-			log.error(f"Execution request failed: {e}")
-			raise
+		change_allowed = bool(model.get("changeAllowed", True))
+		deadline_passed = bool(model.get("playerPickDeadlinePassed"))
+		rai = (model.get("rosterAdjustmentInfo") or {})
+		first_illegal = model.get("firstIllegalRosterPeriod")
+		if isinstance(first_illegal, str) and first_illegal.isdigit():
+			first_illegal = int(first_illegal)
 
-		# Inspect fantasyResponse
-		fr = (exec_resp or {}).get("fantasyResponse", {}) or {}
-		msg_type = (fr.get("msgType") or "").upper()
-		illegal = fr.get("illegalRosterMsgs") or []
-		change_allowed = ((fr.get("textArray") or {}).get("model") or {}).get("changeAllowed", True)
+		if change_allowed and not deadline_passed:
+			exec_period = int(rai.get("rosterLimitPeriod") or current_period)
+			exec_apply_future = bool(apply_to_future_periods)
+		elif first_illegal and int(first_illegal) > 0:
+			exec_period = int(first_illegal)
+			exec_apply_future = True
+		else:
+			exec_period = int(current_period + 1)  # schedule forward if deadline passed/unknown
+			exec_apply_future = True
 
-		log.info(f"Response details: msgType={msg_type}, changeAllowed={change_allowed}, illegal={illegal}")
+		log.info("Finalize using period=%s, applyToFuturePeriods=%s", exec_period, exec_apply_future)
+
+		# ---- FINALIZE (browser does NOT send confirm=False; it omits 'confirm') ----
+		finalize_req = {
+			"rosterLimitPeriod": exec_period,
+			"fantasyTeamId": team_id,
+			"teamId": team_id,
+			"daily": False,
+			"adminMode": False,
+			"applyToFuturePeriods": exec_apply_future,
+			"fieldMap": field_map,
+		}
+		exec_resp = self._request("confirmOrExecuteTeamRosterChanges", **finalize_req)
+
+		# Some successful finalizations are quiet; log what we can
+		fr = (exec_resp or {}).get("fantasyResponse") or {}
 		if fr.get("mainMsg"):
-			log.info(f"  Main message: {fr['mainMsg']}")
+			log.info("Fantrax says: %s", fr["mainMsg"])
+		illegal = ((fr.get("illegalRosterMsgs") or []))
+		msg_type = (fr.get("msgType") or "").upper()
+		ok = (not illegal) and (msg_type in ("", "SUCCESS", "CONFIRM", None))
 
-		ok = (msg_type in ("", "SUCCESS", None)) and change_allowed and not illegal
-		log.info(f"Lineup change result: {'SUCCESS' if ok else 'FAILED'}")
+		log.info("Lineup change result: %s", "SUCCESS" if ok else "FAILED")
 		return bool(ok)
 
 
 	def swap_players(self, team_id: str, player1_id: str, player2_id: str) -> bool:
-		log.info(f"Attempting to swap players: {player1_id} <-> {player2_id} for team {team_id}")
+		"""
+		Swap starter/bench (or two like-position starters).
+		We flip stId only and let the server place the player legally.
+		"""
 		roster = self.roster_info(team_id)
+		p1_st = p2_st = None
+		p1_pos = p2_pos = None
 
-		p1_row = p2_row = None
 		for row in roster.rows:
 			if not row.player:
 				continue
 			if row.player.id == player1_id:
-				p1_row = row
+				p1_st = "1" if str(row.pos_id) != "0" else "2"
+				p1_pos = str(row.pos_id)
 			elif row.player.id == player2_id:
-				p2_row = row
+				p2_st = "1" if str(row.pos_id) != "0" else "2"
+				p2_pos = str(row.pos_id)
 
-		if not p1_row or not p2_row:
-			log.error("One or both players not found on roster")
+		if p1_st is None or p2_st is None:
 			raise FantraxException("One or both players not found on roster")
 
-		# Decide swap
-		changes = {}
-		if p1_row.pos_id != "0" and p2_row.pos_id == "0":
-			# player1 starter, player2 bench
-			changes[player1_id] = {"stId": "2", "posId": "0"}
-			changes[player2_id] = {"stId": "1", "posId": p1_row.pos_id}
-		elif p1_row.pos_id == "0" and p2_row.pos_id != "0":
-			# player1 bench, player2 starter
-			changes[player2_id] = {"stId": "2", "posId": "0"}
-			changes[player1_id] = {"stId": "1", "posId": p2_row.pos_id}
-		else:
-			# both bench or both starters, just swap stId/posId
-			changes[player1_id] = {"stId": ("1" if p2_row.pos_id != "0" else "2"), "posId": p2_row.pos_id}
-			changes[player2_id] = {"stId": ("1" if p1_row.pos_id != "0" else "2"), "posId": p1_row.pos_id}
+		# Minimal, browser-like change set
+		changes = {
+			player1_id: {"stId": p2_st},
+			player2_id: {"stId": p1_st},
+		}
 
-		log.info(f"Swap changes: {json.dumps(changes, indent=2)}")
-		return self.make_lineup_changes(team_id, changes)
+		log.info("Swap changes: %s", json.dumps(changes, indent=2))
+		return self.make_lineup_changes(team_id, changes, apply_to_future_periods=True)
 
 	def move_to_starters(self, team_id: str, player_ids: list) -> bool:
 		changes = {pid: {"stId": "1"} for pid in player_ids}

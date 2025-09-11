@@ -1,6 +1,6 @@
 {
   "event_id": 14147154,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
     "formation": "4-3-3",
     "starters": [
@@ -50,7 +50,7 @@
         "position": "M",
         "team_id": 39,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 892673,
@@ -93,19 +93,86 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1400650,
+        "name": "Lewis Miley",
+        "position": "M",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1136730,
+        "name": "Lewis Hall",
+        "position": "D",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 975937,
+        "name": "Jacob Ramsey",
+        "position": "M",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1122603,
+        "name": "William Osula",
+        "position": "F",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1014286,
+        "name": "Malick Thiaw",
+        "position": "D",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 839410,
+        "name": "Aaron Ramsdale",
+        "position": "G",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 910046,
+        "name": "Sven Botman",
+        "position": "D",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 888550,
+        "name": "Joe Willock",
+        "position": "M",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 372336,
+        "name": "Jacob Murphy",
+        "position": "F",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 823941,
         "name": "Alexander Isak",
         "position": "F",
         "reason": 0
-      },
-      {
-        "id": 888550,
-        "name": "Joe Willock",
-        "position": "M",
-        "reason": 1
       }
     ]
   },
@@ -121,9 +188,9 @@
         "captain": false
       },
       {
-        "id": 1008402,
-        "name": "Conor Bradley",
-        "position": "D",
+        "id": 869856,
+        "name": "Dominik Szoboszlai",
+        "position": "M",
         "team_id": 44,
         "substitute": false,
         "captain": false
@@ -142,7 +209,7 @@
         "position": "D",
         "team_id": 44,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 1097425,
@@ -161,8 +228,8 @@
         "captain": false
       },
       {
-        "id": 895324,
-        "name": "Alexis Mac Allister",
+        "id": 927353,
+        "name": "Curtis Jones",
         "position": "M",
         "team_id": 44,
         "substitute": false,
@@ -201,7 +268,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1008402,
+        "name": "Conor Bradley",
+        "position": "D",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 845386,
+        "name": "Federico Chiesa",
+        "position": "F",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 143040,
+        "name": "Wataru Endo",
+        "position": "M",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 955245,
+        "name": "Harvey Elliott",
+        "position": "M",
+        "team_id": 40,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1881902,
+        "name": "Rio Ngumoha",
+        "position": "F",
+        "team_id": 36556,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 930997,
+        "name": "Giorgi Mamardashvili",
+        "position": "G",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 262911,
+        "name": "Andrew Robertson",
+        "position": "D",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 318927,
+        "name": "Joe Gomez",
+        "position": "D",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1473137,
+        "name": "Giovanni Leoni",
+        "position": "D",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 1142636,
@@ -210,9 +350,15 @@
         "reason": 1
       },
       {
-        "id": 1008402,
-        "name": "Conor Bradley",
+        "id": 902091,
+        "name": "Rhys Williams",
         "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 895324,
+        "name": "Alexis Mac Allister",
+        "position": "M",
         "reason": 1
       },
       {

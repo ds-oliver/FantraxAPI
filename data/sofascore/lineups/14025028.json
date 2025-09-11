@@ -1,0 +1,378 @@
+{
+  "event_id": 14025028,
+  "confirmed": true,
+  "home": {
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 78152,
+        "name": "Matz Sels",
+        "position": "G",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 800417,
+        "name": "Ola Aina",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836168,
+        "name": "Nikola Milenković",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1199282,
+        "name": "Murillo",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927356,
+        "name": "Neco Williams",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 843754,
+        "name": "Ibrahim Sangaré",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 994546,
+        "name": "Elliot Anderson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 944327,
+        "name": "Dan Ndoye",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 865912,
+        "name": "Morgan Gibbs-White",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 867442,
+        "name": "Callum Hudson-Odoi",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 50480,
+        "name": "Chris Wood",
+        "position": "F",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [
+      {
+        "id": 981619,
+        "name": "Igor Jesus",
+        "position": "F",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1011895,
+        "name": "Jota Silva",
+        "position": "F",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 846252,
+        "name": "Ryan Yates",
+        "position": "M",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 227946,
+        "name": "Angus Gunn",
+        "position": "G",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 985086,
+        "name": "Morato",
+        "position": "D",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1390490,
+        "name": "Zach Abbott",
+        "position": "D",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1170722,
+        "name": "Jair",
+        "position": "D",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 139310,
+        "name": "Willy Boly",
+        "position": "D",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 359664,
+        "name": "Taiwo Awoniyi",
+        "position": "F",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 871765,
+        "name": "Nicolás Domínguez",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1160554,
+        "name": "Cuiabano",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "away": {
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 827362,
+        "name": "Caoimhin Kelleher",
+        "position": "G",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1137431,
+        "name": "Michael Kayode",
+        "position": "D",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 958916,
+        "name": "Nathan Collins",
+        "position": "D",
+        "team_id": 50,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 924378,
+        "name": "Sepp van den Berg",
+        "position": "D",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 599128,
+        "name": "Rico Henry",
+        "position": "D",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1031258,
+        "name": "Yehor Yarmolyuk",
+        "position": "M",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 799251,
+        "name": "Mathias Jensen",
+        "position": "M",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 972421,
+        "name": "Keane Lewis-Potter",
+        "position": "D",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1126692,
+        "name": "Antoni Milambo",
+        "position": "M",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 991604,
+        "name": "Fabio Carvalho",
+        "position": "F",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1016907,
+        "name": "Igor Thiago",
+        "position": "F",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [
+      {
+        "id": 1006387,
+        "name": "Kevin Schade",
+        "position": "M",
+        "team_id": 50,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 42694,
+        "name": "Jordan Henderson",
+        "position": "M",
+        "team_id": 50,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 885864,
+        "name": "Frank Onyeka",
+        "position": "M",
+        "team_id": 50,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 966869,
+        "name": "Aaron Hickey",
+        "position": "D",
+        "team_id": 50,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1005959,
+        "name": "Hákon Rafn Valdimarsson",
+        "position": "G",
+        "team_id": 50,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1500529,
+        "name": "Benjamin Arthur",
+        "position": "D",
+        "team_id": 50,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 826057,
+        "name": "Mads Roerslev",
+        "position": "D",
+        "team_id": 45,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 576384,
+        "name": "Kristoffer Ajer",
+        "position": "D",
+        "team_id": 50,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 980649,
+        "name": "Myles Peart-Harris",
+        "position": "M",
+        "team_id": 50,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 814873,
+        "name": "Vitaly Janelt",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 907500,
+        "name": "Edmond-Paris Maghoma",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 855864,
+        "name": "Ethan Pinnock",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1514747,
+        "name": "Gustavo Nunes",
+        "position": "M",
+        "reason": 1
+      }
+    ]
+  }
+}

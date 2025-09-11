@@ -733,7 +733,8 @@ def load_esd_players(
 				df_cached = pd.read_parquet(cache_path)
 				logging.info(f"Loaded ESD roster cache: {cache_path.name} ({len(df_cached)} players)")
 				return df_cached
-			except Exception:
+			except Exception as e:
+				logging.warning(f"Failed to load cache: {e}")
 				pass
 
 	if esd is None:
@@ -743,6 +744,7 @@ def load_esd_players(
 	try:
 		client = esd.SofascoreClient(browser_path=browser_path) if browser_path else esd.SofascoreClient()
 		season_id_resolved = _pick_season_id(client, tournament_id, season_text, season_id)
+		logging.info(f"Using season_id: {season_id_resolved}")
 
 		# Build team_id -> team_name map by scanning events (covers all teams in the season)
 		team_names: dict[int, str] = {}
@@ -763,45 +765,99 @@ def load_esd_players(
 			logging.warning("No teams discovered from events; cannot fetch ESD rosters.")
 			return pd.DataFrame()
 
+		logging.info(f"Found {len(team_names)} teams to process")
+
 		# Fetch full roster per team via ESD
 		rows = []
+		failed_teams = []
 		for tid, tname in team_names.items():
 			try:
 				players = client.get_team_players(int(tid))	 # <-- ESD call
-				for p in players or []:
-					info = getattr(p, "info", None)
-					pid = getattr(info, "id", None) if info else None
-					pname = getattr(info, "name", None) if info else None
-					if pid and pname:
+				if not players:
+					logging.warning(f"No players returned for team {tname} ({tid})")
+					continue
+
+				logging.debug(f"Raw player data for {tname}: {len(players)} players")
+				player_count = 0
+				for p in players:
+					# Debug the raw player object
+					logging.debug(f"Raw player object for {tname}: {p}")
+					
+					# ESD returns player objects directly, not nested under 'info'
+					pid = getattr(p, "id", None)
+					pname = getattr(p, "name", None) or getattr(p, "short_name", None)
+					if not (pid and pname):
+						logging.debug(f"Player missing id or name in {tname}: {p}")
+						continue
+					
+					try:
 						rows.append({
 							"player_id": int(pid),
 							"player_name": str(pname),
 							"team_id": int(tid),
 							"team_name": str(tname),
 						})
-				logging.info(f"ESD roster fetched: {tname} ({tid}) -> {len(players or [])} players")
+						player_count += 1
+					except (ValueError, TypeError) as e:
+						logging.warning(f"Error converting player data for {pname} in {tname}: {e}")
+						continue
+
+				logging.info(f"ESD roster fetched: {tname} ({tid}) -> {player_count} valid players from {len(players)} total")
 				time.sleep(0.2)	 # be gentle
 			except Exception as e:
-				logging.warning(f"ESD get_team_players failed for team {tid} ({tname}): {e}")
+				logging.error(f"Error processing team {tname} ({tid}): {e}")
+				failed_teams.append((tid, tname, str(e)))
+				continue  # Continue with next team instead of failing completely
+
+		if failed_teams:
+			logging.warning(f"Failed to process {len(failed_teams)} teams:")
+			for tid, tname, error in failed_teams:
+				logging.warning(f"  - {tname} ({tid}): {error}")
 
 		if not rows:
 			logging.warning("ESD returned no roster rows.")
+			if team_names:  # If we found teams but no players, that's unexpected
+				logging.error(f"Found {len(team_names)} teams but no players. This is unexpected.")
+				# Log some sample team data for debugging
+				sample_teams = list(team_names.items())[:3]
+				logging.error(f"Sample teams: {sample_teams}")
 			return pd.DataFrame()
 
 		df = pd.DataFrame(rows)
+		if df.empty:
+			logging.error("DataFrame is empty after creating from rows. This shouldn't happen if we had valid rows.")
+			return pd.DataFrame()
+
 		# Standardize team code
 		df["team_code"] = df["team_name"].apply(lambda x: standardize_team(x, code_mappings, club_mappings))
+		
+		# Log before deduplication
+		logging.info(f"Pre-deduplication: {len(df)} total player entries")
+		dupes = df[df.duplicated(subset=["player_id"], keep=False)]
+		if not dupes.empty:
+			logging.info(f"Found {len(dupes)} duplicate player entries:")
+			for _, dupe in dupes.iterrows():
+				logging.info(f"  - {dupe['player_name']} (ID: {dupe['player_id']}) appears in multiple teams")
+		
 		# Deduplicate
 		df = df.drop_duplicates(subset=["player_id"]).reset_index(drop=True)
+		logging.info(f"Post-deduplication: {len(df)} unique players")
 
 		# Cache
-		df.to_parquet(cache_path)
-		csv_path = cache_path.with_suffix(".csv")
-		df.to_csv(csv_path, index=False)
-		logging.info(f"Saved ESD roster cache: {cache_path.name} ({len(df)} players)")
+		try:
+			df.to_parquet(cache_path)
+			csv_path = cache_path.with_suffix(".csv")
+			df.to_csv(csv_path, index=False)
+			logging.info(f"Saved ESD roster cache: {cache_path.name} ({len(df)} players)")
+		except Exception as e:
+			logging.error(f"Failed to save cache files: {e}")
+			# Continue even if caching fails - we still want to return the data
+
 		return df
 	except Exception as e:
 		logging.error(f"ESD roster load failed: {e}")
+		import traceback
+		logging.error(f"Traceback: {traceback.format_exc()}")
 		return pd.DataFrame()
 
 # --------------------------------------------------------------------------------------

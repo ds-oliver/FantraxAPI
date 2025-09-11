@@ -1,6 +1,6 @@
 {
   "event_id": 14025065,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
     "formation": "4-3-3",
     "starters": [
@@ -13,8 +13,8 @@
         "captain": false
       },
       {
-        "id": 846036,
-        "name": "Ben White",
+        "id": 958959,
+        "name": "Jurriën Timber",
         "position": "D",
         "team_id": 42,
         "substitute": false,
@@ -50,7 +50,7 @@
         "position": "M",
         "team_id": 42,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 966837,
@@ -85,20 +85,105 @@
         "captain": false
       },
       {
-        "id": 922573,
-        "name": "Gabriel Martinelli",
-        "position": "F",
+        "id": 966547,
+        "name": "Noni Madueke",
+        "position": "M",
         "team_id": 42,
         "substitute": false,
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1401702,
+        "name": "Ethan Nwaneri",
+        "position": "M",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 135666,
+        "name": "Leandro Trossard",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1144630,
+        "name": "Cristhian Mosquera",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1423711,
+        "name": "Myles Lewis-Skelly",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1917626,
+        "name": "Max Dowman",
+        "position": "M",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 232422,
+        "name": "Kepa Arrizabalaga",
+        "position": "G",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 976037,
+        "name": "Jakub Kiwior",
+        "position": "D",
+        "team_id": 3002,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 592010,
+        "name": "Mikel Merino",
+        "position": "M",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 922573,
+        "name": "Gabriel Martinelli",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 794839,
         "name": "Gabriel Jesus",
         "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 846036,
+        "name": "Ben White",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 135256,
+        "name": "Christian Nørgaard",
+        "position": "M",
         "reason": 1
       },
       {
@@ -137,12 +222,12 @@
         "captain": false
       },
       {
-        "id": 886930,
-        "name": "Jaka Bijol",
+        "id": 836675,
+        "name": "Pascal Struijk",
         "position": "D",
         "team_id": 34,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 834308,
@@ -153,17 +238,17 @@
         "captain": false
       },
       {
-        "id": 866191,
-        "name": "Sean Longstaff",
+        "id": 871886,
+        "name": "Ao Tanaka",
         "position": "M",
         "team_id": 34,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 847097,
-        "name": "Ethan Ampadu",
-        "position": "D",
+        "id": 911679,
+        "name": "Ilia Gruev",
+        "position": "M",
         "team_id": 34,
         "substitute": false,
         "captain": false
@@ -201,7 +286,99 @@
         "captain": false
       }
     ],
-    "subs": [],
-    "missing": []
+    "subs": [
+      {
+        "id": 866191,
+        "name": "Sean Longstaff",
+        "position": "M",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 803185,
+        "name": "Lukas Nmecha",
+        "position": "F",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 973431,
+        "name": "Brenden Aaronson",
+        "position": "M",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 865523,
+        "name": "Noah Okafor",
+        "position": "F",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 254713,
+        "name": "Sam Byram",
+        "position": "D",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 123689,
+        "name": "Karl Darlow",
+        "position": "G",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 886930,
+        "name": "Jaka Bijol",
+        "position": "D",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 826167,
+        "name": "Sebastiaan Bornauw",
+        "position": "D",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 829570,
+        "name": "Jack Harrison",
+        "position": "M",
+        "team_id": 34,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 372344,
+        "name": "Dominic Calvert-Lewin",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 827681,
+        "name": "James Justin",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 847097,
+        "name": "Ethan Ampadu",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   }
 }
