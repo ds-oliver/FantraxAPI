@@ -38,6 +38,7 @@ reload(fx)              # reload submodule that actually defines the class
 from fantraxapi.fantrax import FantraxAPI
 from fantraxapi.objs import Roster
 from fantraxapi.subs import SubsService
+from list_rosters import _detect_divisions
 
 logger = logging.getLogger(__name__)
 logger.info("fantraxapi.__file__=%s", getattr(fantraxapi, "__file__", "?"))
@@ -970,113 +971,209 @@ def ui_simple_subs_section():
     # --- League FAAB & Claims ---
     st.divider()
     st.subheader("League FAAB & Claims")
-    if st.button("Load FAAB & Claims for selected league"):
+    
+    # Initialize session state for FAAB data if not exists
+    if "faab_data" not in st.session_state:
+        st.session_state.faab_data = None
+        st.session_state.faab_divisions = None
+        st.session_state.faab_df = None
+        st.session_state.faab_team_claims = None
+        
+    if st.button("Load FAAB & Claims for selected league") or st.session_state.faab_data is None:
         from datetime import datetime as _dt
         try:
             with st.spinner("Loading FAAB budgets and claims…"):
+                logger.info("[FAAB] Starting FAAB data collection for league %s", league_id)
                 budgets = api.league.faab_budgets()
+                logger.info("[FAAB] Retrieved budgets for %d teams", len(budgets))
 
                 # Collect per-team info
                 summary_rows = []
                 team_claims: Dict[str, dict] = {}
-                for t_id, budget in budgets.items():
-                    try:
-                        team = api.team(t_id)
-                    except Exception:
-                        # Fallback minimal team object
-                        class _T:
-                            name = f"Team {t_id}"
-                        team = _T()
-
-                    try:
-                        claim_info = api.league.get_claim_info(t_id) or {}
-                    except Exception as _e:
-                        logger.warning("get_claim_info failed for %s: %s", t_id, _e)
-                        claim_info = {}
-                    team_claims[t_id] = claim_info
-
-                    pending = (claim_info.get("pendingClaims") or [])
-                    next_process = pending[0].get("process_date") if pending else ""
-                    summary_rows.append({
-                        "Team Name": getattr(team, "name", str(t_id))[:30],
-                        "FAAB": budget.get("display"),
-                        "FAAB_value": budget.get("value", 0),
-                        "Tradeable": str(budget.get("tradeable")),
-                        "Claims": len(pending),
-                        "Next Process": next_process or "",
-                    })
-
-                # Summary table (sorted by FAAB value desc)
-                if summary_rows:
-                    df = pd.DataFrame(summary_rows).sort_values("FAAB_value", ascending=False)
-                    st.caption(f"As of {_dt.now().strftime('%Y-%m-%d %H:%M:%S')}")
-                    st.table(df[["Team Name", "FAAB", "Tradeable", "Claims", "Next Process"]])
-                else:
-                    st.info("No FAAB data available.")
-
-                # League-wide settings (from first team's claim info)
-                first_claims = next(iter(team_claims.values()), {})
-                if first_claims:
-                    st.markdown("**League Claim Settings**")
-                    claim_types = (first_claims.get("claimTypes") or {})
-                    if claim_types:
-                        st.write({"Claim Types": list(claim_types.values())})
-                    st.write({
-                        "Claim Groups Enabled": first_claims.get("claimGroupsEnabled"),
-                        "FAAB Bidding Enabled": first_claims.get("showBidColumn"),
-                    })
-                    misc = first_claims.get("miscData") or {}
-                    if misc:
-                        st.write({k: misc[k] for k in ("allowGroupChanges", "showAllTeamsChoice") if k in misc})
-
-                # Pending claims details per team
-                for t_id, claim_info in team_claims.items():
-                    pending = (claim_info.get("pendingClaims") or [])
-                    if not pending:
-                        continue
-                    try:
-                        t = api.team(t_id)
-                        team_name = getattr(t, "name", str(t_id))
-                    except Exception:
-                        team_name = str(t_id)
-                    with st.expander(f"Pending Claims — {team_name}"):
-                        rows = []
-                        for c in pending:
-                            parts = []
-                            if c.get("process_date"):
-                                parts.append(f"Process: {c['process_date']}")
-                            cp = c.get("claim_player") or {}
-                            if cp:
-                                parts.append(
-                                    f"Add: {cp.get('name')} ({cp.get('position')}, {cp.get('team')}) -> "
-                                    f"{cp.get('to_position')}/{cp.get('to_status')}"
-                                )
-                            dp = c.get("drop_player") or {}
-                            if dp:
-                                parts.append(
-                                    f"Drop: {dp.get('name')} ({dp.get('position')}, {dp.get('team')}) from "
-                                    f"{dp.get('from_position')}/{dp.get('from_status')}"
-                                )
-                            if c.get("bid_amount") is not None:
-                                try:
-                                    parts.append(f"Bid: ${float(c['bid_amount']):.2f}")
-                                except Exception:
-                                    parts.append(f"Bid: {c['bid_amount']}")
-                            if c.get("priority") is not None:
-                                parts.append(f"Priority: {c['priority']}")
-                            if c.get("group"):
-                                parts.append(f"Group: {c['group']}")
-                            if c.get("submitted_date"):
-                                parts.append(f"Submitted: {c['submitted_date']}")
-                            rows.append(" | ".join(parts))
-                        if rows:
-                            for r in rows:
-                                st.write(r)
-                        else:
-                            st.write("No details available.")
         except Exception as e:
-            logger.exception("FAAB & Claims section failed")
-            st.error(f"Failed to load FAAB & Claims: {e}")
+            logger.exception("[FAAB] Failed to start FAAB data collection")
+            st.error(f"Failed to load FAAB data: {e}")
+            return
+            
+        try:
+            # Process each team's budget and claims
+            for t_id, budget in budgets.items():
+                logger.info("[FAAB] Processing team %s", t_id)
+                logger.debug("[FAAB] Team %s budget: %s", t_id, budget)
+                    
+                try:
+                    team = api.team(t_id)
+                    team_name = team.name
+                    logger.info("[FAAB] Got team info for %s: %s", t_id, team_name)
+                except Exception as e:
+                    logger.warning("[FAAB] Failed to get team info for %s: %s", t_id, e)
+                    # Fallback minimal team object
+                    class _T:
+                        name = f"Team {t_id}"
+                    team = _T()
+                    team_name = team.name
+
+                try:
+                    claim_info = api.league.get_claim_info(t_id) or {}
+                    pending = (claim_info.get("pendingClaims") or [])
+                    logger.info("[FAAB] Team %s (%s) has %d pending claims", 
+                              t_id, team_name, len(pending))
+                    if pending:
+                        logger.debug("[FAAB] Team %s pending claims: %s", 
+                                   t_id, [{"process_date": c.get("process_date"), 
+                                          "claim_player": c.get("claim_player", {}).get("name"),
+                                          "drop_player": c.get("drop_player", {}).get("name")} 
+                                         for c in pending])
+                except Exception as _e:
+                    logger.warning("[FAAB] Failed to get claim info for %s: %s", t_id, _e)
+                    claim_info = {}
+                team_claims[t_id] = claim_info
+
+                pending = (claim_info.get("pendingClaims") or [])
+                next_process = pending[0].get("process_date") if pending else ""
+                summary_rows.append({
+                    "Team Name": getattr(team, "name", str(t_id))[:30],
+                    "FAAB": budget.get("display"),
+                    "FAAB_value": budget.get("value", 0),
+                    "Tradeable": str(budget.get("tradeable")),
+                    "Claims": len(pending),
+                    "Next Process": next_process or "",
+                })
+
+            # Group teams by division
+            from fantraxapi.utils import group_teams_by_division
+            
+            # Get existing divisions from API if available
+            logger.info("[FAAB] Attempting to detect divisions")
+            try:
+                api_divisions = _detect_divisions(api)
+                logger.info("[FAAB] API divisions detected: %s", 
+                          {div: len(teams) for div, teams in api_divisions.items()})
+            except Exception as e:
+                logger.warning("[FAAB] Failed to detect divisions from API: %s", e)
+                api_divisions = None
+            
+            # Create DataFrame and get team names
+            df = pd.DataFrame(summary_rows).sort_values("FAAB_value", ascending=False)
+            team_names = df["Team Name"].tolist()
+            logger.debug("[FAAB] Team names for division detection: %s", team_names)
+            
+            # Group teams by division
+            divisions = group_teams_by_division(team_names, api_divisions)
+            logger.info("[FAAB] Final division grouping: %s", 
+                      {div: len(teams) for div, teams in divisions.items()})
+            logger.debug("[FAAB] Detailed division assignments: %s", divisions)
+            
+            # Store data in session state
+            st.session_state.faab_data = budgets
+            st.session_state.faab_divisions = divisions
+            st.session_state.faab_df = df
+            st.session_state.faab_team_claims = team_claims
+            st.session_state.faab_timestamp = _dt.now().strftime('%Y-%m-%d %H:%M:%S')
+        except Exception as e:
+            logger.exception("[FAAB] Failed to process FAAB data")
+            st.error(f"Failed to process FAAB data: {e}")
+            return
+                
+    # If we have data loaded, show the division selector and data
+    if st.session_state.faab_data is not None:
+        divisions = st.session_state.faab_divisions
+        df = st.session_state.faab_df
+        
+        # Show division selector if we found multiple divisions
+        if len(divisions) > 1:
+            logger.info("[FAAB] Multiple divisions found (%d), showing selector", 
+                      len(divisions))
+            selected_division = st.selectbox(
+                "Select Division",
+                options=["All"] + sorted(divisions.keys()),
+                index=0,
+                key="faab_division_selector"  # Unique key for the selectbox
+            )
+        else:
+            logger.info("[FAAB] Single or no division found, defaulting to 'All'")
+            selected_division = "All"
+        
+        st.caption(f"As of {st.session_state.faab_timestamp}")
+        logger.info("[FAAB] Displaying data as of %s", st.session_state.faab_timestamp)
+        
+        if selected_division == "All":
+            logger.info("[FAAB] Displaying all teams (%d total)", len(df))
+            st.table(df[["Team Name", "FAAB", "Tradeable", "Claims", "Next Process"]])
+        else:
+            # Filter for selected division
+            div_teams = divisions[selected_division]
+            div_df = df[df["Team Name"].isin(div_teams)]
+            logger.info("[FAAB] Displaying division '%s' (%d teams)", 
+                      selected_division, len(div_df))
+            logger.debug("[FAAB] Teams in division '%s': %s", 
+                       selected_division, div_df["Team Name"].tolist())
+            st.table(div_df[["Team Name", "FAAB", "Tradeable", "Claims", "Next Process"]])
+                
+        # League-wide settings (from first team's claim info)
+        first_claims = next(iter(st.session_state.faab_team_claims.values()), {})
+        if first_claims:
+            st.markdown("**League Claim Settings**")
+            claim_types = (first_claims.get("claimTypes") or {})
+            if claim_types:
+                st.write({"Claim Types": list(claim_types.values())})
+            st.write({
+                "Claim Groups Enabled": first_claims.get("claimGroupsEnabled"),
+                "FAAB Bidding Enabled": first_claims.get("showBidColumn"),
+            })
+            misc = first_claims.get("miscData") or {}
+            if misc:
+                st.write({k: misc[k] for k in ("allowGroupChanges", "showAllTeamsChoice") if k in misc})
+
+        try:
+            # Pending claims details per team
+            for t_id, claim_info in st.session_state.faab_team_claims.items():
+                pending = (claim_info.get("pendingClaims") or [])
+                if not pending:
+                    continue
+                try:
+                    t = api.team(t_id)
+                    team_name = getattr(t, "name", str(t_id))
+                except Exception:
+                    team_name = str(t_id)
+                with st.expander(f"Pending Claims — {team_name}"):
+                    rows = []
+                    for c in pending:
+                        parts = []
+                        if c.get("process_date"):
+                            parts.append(f"Process: {c['process_date']}")
+                        cp = c.get("claim_player") or {}
+                        if cp:
+                            parts.append(
+                                f"Add: {cp.get('name')} ({cp.get('position')}, {cp.get('team')}) -> "
+                                f"{cp.get('to_position')}/{cp.get('to_status')}"
+                            )
+                        dp = c.get("drop_player") or {}
+                        if dp:
+                            parts.append(
+                                f"Drop: {dp.get('name')} ({dp.get('position')}, {dp.get('team')}) from "
+                                f"{dp.get('from_position')}/{dp.get('from_status')}"
+                            )
+                        if c.get("bid_amount") is not None:
+                            try:
+                                parts.append(f"Bid: ${float(c['bid_amount']):.2f}")
+                            except Exception:
+                                parts.append(f"Bid: {c['bid_amount']}")
+                        if c.get("priority") is not None:
+                            parts.append(f"Priority: {c['priority']}")
+                        if c.get("group"):
+                            parts.append(f"Group: {c['group']}")
+                        if c.get("submitted_date"):
+                            parts.append(f"Submitted: {c['submitted_date']}")
+                        rows.append(" | ".join(parts))
+                    if rows:
+                        for r in rows:
+                            st.write(r)
+                    else:
+                        st.write("No details available.")
+        except Exception as e:
+            logger.exception("[FAAB] Failed to display pending claims")
+            st.error(f"Failed to display pending claims: {e}")
 
 
 def main():
