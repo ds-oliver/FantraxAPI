@@ -38,6 +38,11 @@ reload(fx)              # reload submodule that actually defines the class
 from fantraxapi.fantrax import FantraxAPI
 from fantraxapi.objs import Roster
 from fantraxapi.subs import SubsService
+
+# Import _detect_divisions from scripts
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "examples"))
 from list_rosters import _detect_divisions
 
 logger = logging.getLogger(__name__)
@@ -462,121 +467,226 @@ def _handle_swap_result(res: Dict[str, Any]):
 
 # ---------- UI: Auth (kept from your original) ----------
 def ui_login_section():
-    st.header("Authenticate")
-    tabs = st.tabs(["Upload cookie/artifacts (recommended)", "Capture via Selenium (one-time)", "Headless login (background)"])
-
-    # --- Tab 1: Upload artifacts/cookies ---
-    with tabs[0]:
-        st.caption(
-            "Upload a Selenium cookie pickle (e.g., `fantraxloggedin.cookie`) or a Cookie-Editor JSON export. "
-            "We keep everything **in memory**; nothing is written to disk."
-        )
-        up = st.file_uploader("Upload your Fantrax cookie or artifacts", type=["cookie", "pkl", "pickle", "bin", "json"])
-        col_a, col_b = st.columns([1, 1])
-        with col_a:
-            use_btn = st.button("Use uploaded file", type="primary", disabled=up is None)
-        with col_b:
-            clear_btn = st.button("Forget my cookie")
-
-        if clear_btn:
-            for k in ("auth_artifacts", "artifacts_pickle_bytes", "cookies_pickle_bytes"):
-                st.session_state.pop(k, None)
-            st.success("Cookie cleared from this session.")
-
-        if use_btn and up:
-            try:
-                artifacts = read_auth_file(up)  # -> {"cookies":[...], "storage": {"local":{...},"session":{...}}}
-                st.session_state["auth_artifacts"] = artifacts
-
-                # Prepare convenience downloads (kept in-memory)
-                buf_art = io.BytesIO(); pickle.dump(artifacts, buf_art)
-                st.session_state["artifacts_pickle_bytes"] = buf_art.getvalue()
-                buf_ck = io.BytesIO(); pickle.dump(artifacts.get("cookies", []), buf_ck)
-                st.session_state["cookies_pickle_bytes"] = buf_ck.getvalue()
-
-                st.success("Cookie/artifacts loaded.")
-                logger.info("User uploaded cookie/artifacts successfully")
-            except Exception as e:
-                logger.exception("Cookie import failed")
-                st.error(f"Could not read cookie/artifacts: {e}")
-
-        # Optional: give users their normalized downloads back
-        dl_cols = st.columns(2)
-        with dl_cols[0]:
-            if st.session_state.get("artifacts_pickle_bytes"):
-                st.download_button(
-                    "Download artifacts (cookies + storage)",
-                    data=st.session_state["artifacts_pickle_bytes"],
-                    file_name="fantrax_artifacts.pkl",
-                    mime="application/octet-stream",
-                )
-        with dl_cols[1]:
-            if st.session_state.get("cookies_pickle_bytes"):
-                st.download_button(
-                    "Download cookies-only (legacy)",
-                    data=st.session_state["cookies_pickle_bytes"],
-                    file_name="fantraxloggedin.cookie",
-                    mime="application/octet-stream",
-                )
-
-    # --- Tab 2: Selenium capture (visible window) ---
-    with tabs[1]:
-        with st.form("login_form"):
-            user = st.text_input("Fantrax username or email")
-            pw = st.text_input("Fantrax password", type="password")
-            non_headless = st.checkbox("Open a visible browser window (recommended for first time)", value=True)
-            submit = st.form_submit_button("Log in and capture")
-
-        if submit:
-            try:
-                logger.info("Submitting login via FantraxAuth")
-                auth = FantraxAuth()
-                artifacts = auth.login_and_get_cookies(user, pw, headless=not non_headless)
-                # Persist in memory
-                st.session_state["auth_artifacts"] = artifacts
-
-                # Prepare downloads (optional)
-                buf_art = io.BytesIO(); pickle.dump(artifacts, buf_art)
-                st.session_state["artifacts_pickle_bytes"] = buf_art.getvalue()
-                buf_ck = io.BytesIO(); pickle.dump(artifacts.get("cookies", []), buf_ck)
-                st.session_state["cookies_pickle_bytes"] = buf_ck.getvalue()
-
-                st.success("Logged in. Cookies captured.")
-                logger.info("Login successful; artifacts stored in session")
-            except Exception as e:
-                logger.exception("Login failed")
-                st.error(f"Login failed: {e}")
-
-    # --- Tab 3: Headless background login ---
-    with tabs[2]:
-        st.caption("Runs a full login in a background headless browser, then hydrates a session.")
-        with st.form("login_form_headless"):
-            hu = st.text_input("Fantrax username or email", key="h_user")
-            hp = st.text_input("Fantrax password", type="password", key="h_pw")
-            submit_h = st.form_submit_button("Log in (headless)")
-
-        if submit_h:
-            if not hu or not hp:
-                st.warning("Enter username and password.")
+    """Main authentication section - cookie upload with multi-user support."""
+    from utils.user_manager import UserManager
+    from utils.auth_helpers import validate_cookies
+    
+    st.header("🔗 Connect Your Fantrax Account")
+    
+    user_mgr = UserManager()
+    
+    # User identification
+    user_email = st.text_input(
+        "Your email (to identify your session)",
+        help="We use this to save your cookies for future sessions"
+    )
+    
+    if not user_email:
+        st.info("👆 Enter your email to get started")
+        return
+    
+    # Get or create user
+    user = user_mgr.get_or_create_user(user_email)
+    user_id = user['user_id']
+    
+    # Check for existing valid cookies
+    existing = user_mgr.load_user_cookies(user_id)
+    if existing:
+        session = load_requests_session_from_artifacts(existing)
+        validation = validate_cookies(existing, session)
+        
+        if validation['valid']:
+            # Save to session state
+            st.session_state["auth_artifacts"] = existing
+            st.session_state["user_id"] = user_id
+            st.session_state["user_email"] = user_email
+            
+            if validation['expires_soon']:
+                st.warning("⚠️ **Cookies expire in < 24 hours.** Consider re-uploading fresh cookies below.")
             else:
-                with st.spinner("Signing in headlessly…"):
+                st.success("✅ **Connected!** Your automations are running.")
+            
+            # Show disconnect button
+            if st.button("Disconnect", type="secondary"):
+                user_mgr.delete_user_cookies(user_id)
+                for k in ["auth_artifacts", "user_id", "user_email"]:
+                    st.session_state.pop(k, None)
+                st.rerun()
+            
+            return
+        else:
+            st.error(f"❌ **Saved cookies expired.** Please reconnect below.\n\nError: {validation.get('error', 'Unknown')}")
+    
+    # 3-step cookie upload guide
+    st.markdown("""
+    ### How to Connect
+    
+    **Step 1: Install Cookie-Editor extension**
+    - [Chrome Extension](https://chrome.google.com/webstore/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm)
+    - [Firefox Add-on](https://addons.mozilla.org/en-US/firefox/addon/cookie-editor/)
+    
+    **Step 2: Log into Fantrax**
+    - Go to [fantrax.com](https://www.fantrax.com) and log in with your credentials
+    - Navigate to: **https://www.fantrax.com/fantasy/league** (your leagues page)
+    
+    **Step 3: Export cookies**
+    - Click the Cookie-Editor extension icon in your browser toolbar
+    - Click **"Export"** → **"JSON"**
+    - The cookies will be copied to your clipboard
+    - **Either:** Paste them in the box below **OR** save to a file and upload
+    """)
+    
+    # Two options: paste or upload
+    input_method = st.radio(
+        "Choose input method:",
+        ["Paste cookies", "Upload file"],
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    
+    cookies_json = None
+    
+    if input_method == "Paste cookies":
+        pasted = st.text_area(
+            "📋 Paste your cookies JSON here",
+            height=200,
+            placeholder='[{"domain": ".fantrax.com", "name": "FX_RM", ...}]',
+            help="Paste the JSON that Cookie-Editor copied to your clipboard"
+        )
+        
+        if pasted and st.button("Validate Pasted Cookies", type="primary"):
+            try:
+                cookies_json = pasted
+            except Exception as e:
+                st.error(f"Invalid JSON format: {e}")
+    
+    else:  # Upload file
+        uploaded = st.file_uploader(
+            "📁 Drop your cookies.json file here",
+            type=["json"],
+            help="Upload a JSON file exported from Cookie-Editor"
+        )
+        
+        if uploaded:
+            cookies_json = uploaded.read().decode('utf-8')
+    
+    if cookies_json:
+        with st.spinner("Validating cookies..."):
+            try:
+                # Read and parse the cookies
+                artifacts = read_auth_file(io.BytesIO(cookies_json.encode('utf-8')))
+                
+                # Build session and validate
+                session = load_requests_session_from_artifacts(artifacts)
+                validation = validate_cookies(artifacts, session)
+                
+                if validation['valid']:
+                    # Save for this user
+                    user_mgr.save_user_cookies(user_id, artifacts)
+                    
+                    # Save to session state
+                    st.session_state["auth_artifacts"] = artifacts
+                    st.session_state["user_id"] = user_id
+                    st.session_state["user_email"] = user_email
+                    
+                    st.success("✅ **Connected successfully!** Starting your background jobs...")
+                    logger.info(f"User {user_email} connected successfully")
+                    
+                    # TODO: Start background jobs here
+                    # from services.job_manager import start_user_jobs
+                    # start_user_jobs(user_id, session)
+                    
+                    st.rerun()
+                else:
+                    st.error(f"❌ **Cookie validation failed**\n\n{validation.get('error', 'Unknown error')}")
+                    st.info("**Troubleshooting:**\n- Make sure you're logged into Fantrax in your browser\n- Try exporting cookies again from a page where you can see your leagues\n- Clear your browser cache and log in again")
+                    
+            except Exception as e:
+                logger.exception("Cookie upload failed")
+                st.error(f"❌ **Could not process cookies:** {str(e)}")
+    
+    # Advanced/Experimental login options (collapsed by default)
+    with st.expander("⚙️ Advanced / Experimental Login Methods", expanded=False):
+        st.warning("""
+        **⚠️ Experimental methods - may break at any time**
+        
+        These options use Selenium browser automation. They're less reliable than 
+        cookie upload and may fail due to anti-bot detection. Use at your own risk.
+        """)
+        
+        tabs = st.tabs(["Selenium (Visible Browser)", "Selenium (Headless)"])
+        
+        # Selenium visible browser
+        with tabs[0]:
+            with st.form("login_form_visible"):
+                user = st.text_input("Fantrax username or email")
+                pw = st.text_input("Fantrax password", type="password")
+                submit = st.form_submit_button("Log in with visible browser")
+            
+            if submit:
+                if not user or not pw:
+                    st.warning("Enter username and password.")
+                else:
                     try:
-                        from utils.auth_helpers import headless_login_build_session
-                        sess, artifacts = headless_login_build_session(hu, hp, headless=True, validate=True)
+                        logger.info("Attempting Selenium login (visible)")
+                        auth = FantraxAuth()
+                        artifacts = auth.login_and_get_cookies(user, pw, headless=False)
+                        
+                        # Save for this user
+                        user_mgr.save_user_cookies(user_id, artifacts)
                         st.session_state["auth_artifacts"] = artifacts
-                        # Optional: keep a ready-to-use session in cache
-                        st.session_state["__fantrax_cached_session__"] = sess
-                        st.success("Headless login successful.")
+                        st.session_state["user_id"] = user_id
+                        st.session_state["user_email"] = user_email
+                        
+                        st.success("✅ Logged in successfully!")
+                        logger.info("Selenium (visible) login successful")
+                        st.rerun()
                     except Exception as e:
-                        logger.exception("Headless login failed")
-                        st.error(str(e))
-
-    # Debug pane (unchanged)
-    with st.expander("Auth debug", expanded=False):
+                        logger.exception("Selenium login failed")
+                        st.error(f"❌ Login failed: {e}")
+        
+        # Selenium headless
+        with tabs[1]:
+            with st.form("login_form_headless"):
+                hu = st.text_input("Fantrax username or email", key="h_user")
+                hp = st.text_input("Fantrax password", type="password", key="h_pw")
+                submit_h = st.form_submit_button("Log in (headless)")
+            
+            if submit_h:
+                if not hu or not hp:
+                    st.warning("Enter username and password.")
+                else:
+                    with st.spinner("Signing in headlessly..."):
+                        try:
+                            from utils.auth_helpers import headless_login_build_session
+                            sess, artifacts = headless_login_build_session(hu, hp, headless=True, validate=True)
+                            
+                            # Save for this user
+                            user_mgr.save_user_cookies(user_id, artifacts)
+                            st.session_state["auth_artifacts"] = artifacts
+                            st.session_state["user_id"] = user_id
+                            st.session_state["user_email"] = user_email
+                            
+                            st.success("✅ Headless login successful.")
+                            logger.info("Selenium (headless) login successful")
+                            st.rerun()
+                        except Exception as e:
+                            logger.exception("Headless login failed")
+                            st.error(f"❌ {str(e)}")
+    
+    # Debug pane
+    with st.expander("🔍 Auth Debug", expanded=False):
         art = st.session_state.get("auth_artifacts") or {}
         loc = (art.get("storage") or {}).get("local", {}) or {}
         ses = (art.get("storage") or {}).get("session", {}) or {}
         st.caption(f"localStorage keys: {len(loc)}; sessionStorage keys: {len(ses)}")
+        
+        if art.get("cookies"):
+            st.caption(f"Cookies loaded: {len(art['cookies'])}")
+        
+        if "user_id" in st.session_state:
+            st.caption(f"User ID: {st.session_state['user_id']}")
+            st.caption(f"Email: {st.session_state.get('user_email', 'N/A')}")
 
 from urllib.parse import unquote
 
@@ -824,6 +934,25 @@ def ui_simple_subs_section():
         with coln2:
             bench_by_name = st.text_input("Bench name (exact)")
 
+        # Period selector - let user explicitly set the period
+        st.divider()
+        st.write("**Period (Gameweek) to apply swap:**")
+        
+        # Try to detect current period as default
+        try:
+            detected_period = api.resolve_active_period(team_id)
+        except Exception:
+            detected_period = 1
+        
+        period_choice = st.number_input(
+            "Enter period number",
+            min_value=1,
+            max_value=50,
+            value=max(1, detected_period),
+            step=1,
+            help="Set the period/gameweek for this swap. Check your roster page dropdown to confirm the current period."
+        )
+
         go_swap = st.form_submit_button("Execute Swap", type="primary")
 
     # --- Use make_substitution_example()
@@ -859,23 +988,31 @@ def ui_simple_subs_section():
                 bench_by_name, bench_choice, bench_opts, expect_bench=True
             )
 
+            # Log the swap attempt
+            logger.info(f"[SWAP] Attempting swap: OUT={starter_row.player.name} (ID={starter_row.player.id}), IN={bench_row.player.name} (ID={bench_row.player.id}), team={team_id}, league={league_id}, period={period_choice}")
+            
             # Execute using the robust SubsService (handles WARNING/locked → schedules/probes)
             subs = SubsService(session, league_id)
             ok = subs.swap_players(
                 team_id=team_id,
                 out_player_id=starter_row.player.id,  # move starter out
-                in_player_id=bench_row.player.id      # bring bench in
+                in_player_id=bench_row.player.id,     # bring bench in
+                period=int(period_choice)             # user-specified period
             )
 
             # Update UI (mirror your existing result handling)
             res = {"ok": bool(ok), "verified": None, "reason": None}
+            
             if res["ok"]:
+                logger.info(f"[SWAP] SUCCESS: Swap completed - {starter_row.player.name} → bench, {bench_row.player.name} → lineup")
                 st.info("Substitution submitted. Verifying roster view…")
                 new_roster = _refresh_roster(api, team_id)
                 st.markdown("### Updated Lineup")
                 _render_roster_tables(new_roster, starters_only=False)
                 st.rerun()
             else:
+                logger.error(f"[SWAP] FAILED: Swap returned False - {starter_row.player.name} ↔ {bench_row.player.name}. No detailed error from SubsService.")
+                st.error("❌ Swap failed. Check logs for details.")
                 _handle_swap_result(res)
 
         except ValueError as ve:
@@ -1176,7 +1313,60 @@ def ui_simple_subs_section():
             st.error(f"Failed to display pending claims: {e}")
 
 
+def check_auth_on_startup():
+    """Run validation check when app loads - check if saved cookies are still valid."""
+    from utils.user_manager import UserManager
+    from utils.auth_helpers import validate_cookies
+    
+    # Only check if user was previously logged in
+    if "user_id" not in st.session_state:
+        return
+    
+    user_id = st.session_state.get("user_id")
+    if not user_id:
+        return
+    
+    user_mgr = UserManager()
+    artifacts = user_mgr.load_user_cookies(user_id)
+    
+    if not artifacts:
+        st.error("""
+        🔴 **No saved cookies found**
+        
+        Your session has expired. Please reconnect below.
+        """)
+        st.session_state.pop("auth_artifacts", None)
+        st.session_state.pop("user_id", None)
+        return
+    
+    try:
+        session = load_requests_session_from_artifacts(artifacts)
+        validation = validate_cookies(artifacts, session)
+        
+        if not validation['valid']:
+            st.error("""
+            🔴 **Your Fantrax session has expired**
+            
+            Your background automations have been paused. 
+            Please reconnect below to resume.
+            """)
+            st.session_state.pop("auth_artifacts", None)
+            st.session_state.pop("user_id", None)
+        elif validation['expires_soon']:
+            st.warning("""
+            ⚠️ **Cookies expire soon (< 24 hours)**
+            
+            Re-upload fresh cookies to avoid interruption.
+            """)
+    except Exception as e:
+        logger.error(f"Error checking auth on startup: {e}")
+        st.warning(f"⚠️ Could not validate session: {str(e)}")
+
+
 def main():
+    # Check authentication status on startup
+    check_auth_on_startup()
+    
     st.title("Fantrax (BYOC) — Simple Substitutions GUI")
     ui_login_section()
     st.divider()

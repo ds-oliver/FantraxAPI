@@ -1,0 +1,29 @@
+{
+  "user_id": "test_user_123",
+  "started_at": "2025-11-16T21:50:49.289465",
+  "last_updated": "2025-11-16T21:50:49.309111",
+  "jobs": {
+    "league_sync": {
+      "enabled": true,
+      "status": "stopped",
+      "last_run": null,
+      "next_run": null,
+      "description": "Sync league rosters and schedules"
+    },
+    "lineup_watcher": {
+      "enabled": false,
+      "status": "stopped",
+      "last_run": null,
+      "next_run": null,
+      "description": "Monitor SofaScore for confirmed lineups"
+    },
+    "waiver_automation": {
+      "enabled": false,
+      "status": "stopped",
+      "last_run": null,
+      "next_run": null,
+      "description": "Automated waiver claims and drops"
+    }
+  },
+  "stopped_at": "2025-11-16T21:50:49.309119"
+}

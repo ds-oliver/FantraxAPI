@@ -1,0 +1,34 @@
+{
+  "cookies": [
+    {
+      "name": "_cfuvid",
+      "value": "2YdZshCrob1iOGtdmT2imNtasZcCkhIMcMwtZxW3ohI-1759196318322-0.0.1.1-604800000",
+      "domain": ".fantrax.com",
+      "path": "/",
+      "secure": true,
+      "httpOnly": true
+    },
+    {
+      "name": "FX_RM",
+      "value": "_qpxzCB4SVBMWUxIOERFXQEdLUxVXBg0BDQQVBxIURgpVBQc=",
+      "domain": ".fantrax.com",
+      "path": "/",
+      "secure": true,
+      "httpOnly": true
+    },
+    {
+      "name": "__cf_bm",
+      "value": "CCLpMK1bkBaT95icwLEdDRZxILb95fJrhY2_tjb8EG8-1763330292-1.0.1.1-44yuY1GMG5GG2SVmXUsHrpsOToSeVHvHeItoGfQuHHeZcaz7E3d1u950TJWeB7qsJ7WnRGmS3dTJwXykJQlQi_RDfAPjVogjnEVDGW69ht4",
+      "domain": ".fantrax.com",
+      "path": "/",
+      "secure": true,
+      "httpOnly": true
+    }
+  ],
+  "storage": {
+    "local": {},
+    "session": {}
+  },
+  "saved_at": "2025-11-16T22:07:20.653310",
+  "user_id": "20155a91f501b6af"
+}

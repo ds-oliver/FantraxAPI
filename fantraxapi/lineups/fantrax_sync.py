@@ -142,12 +142,13 @@ class LineupSynchronizer:
 		# TODO: Implement lineup validation rules
 		return True
 
-	def execute_changes(self, changes: List[LineupChange]) -> bool:
+	def execute_changes(self, changes: List[LineupChange], team_id: str) -> bool:
 		"""
 		Execute the proposed changes.
 		
 		Args:
 			changes: List of changes to make
+			team_id: Fantrax team ID to make changes for
 			
 		Returns:
 			True if all changes were successful
@@ -162,19 +163,21 @@ class LineupSynchronizer:
 					continue
 					
 				if change.is_swap:
-					# Execute swap
+					# Execute swap using FantraxAPI.swap_players
+					# Parameters: team_id, starter_id (to bench), bench_id (to lineup)
 					self.fantrax.swap_players(
-						player_in_id=change.player_in.fantrax_id,
-						player_out_id=change.player_out.fantrax_id
+						team_id=team_id,
+						starter_id=change.player_out.fantrax_id,
+						bench_id=change.player_in.fantrax_id
 					)
+					change.executed = True
+					self.logger.info(f"Executed: {change}")
 				else:
-					# Just move to starting lineup
-					self.fantrax.move_to_lineup(
-						player_id=change.player_in.fantrax_id
-					)
-					
-				change.executed = True
-				self.logger.info(f"Executed: {change}")
+					# For non-swap changes, we still need a swap partner
+					# This shouldn't happen in normal flow, but log it
+					self.logger.warning(f"Cannot execute non-swap change: {change}")
+					change.error = "Non-swap changes require a swap partner"
+					success = False
 				
 			except Exception as e:
 				change.error = str(e)
@@ -183,12 +186,13 @@ class LineupSynchronizer:
 				
 		return success
 
-	def sync_lineup(self, lineup: LineupRecord) -> bool:
+	def sync_lineup(self, lineup: LineupRecord, team_id: str) -> bool:
 		"""
 		Synchronize Fantrax lineups with given lineup record.
 		
 		Args:
 			lineup: Lineup to sync with
+			team_id: Fantrax team ID to make changes for
 			
 		Returns:
 			True if sync was successful
@@ -210,7 +214,7 @@ class LineupSynchronizer:
 			return False
 			
 		# Execute changes
-		success = self.execute_changes(changes)
+		success = self.execute_changes(changes, team_id)
 		
 		# Store changes for reference
 		self.changes.extend(changes)

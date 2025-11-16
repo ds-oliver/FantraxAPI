@@ -51,6 +51,28 @@ Overview
 Unofficial Python bindings for the Fantrax API. The goal is to make interaction with the API as easy as possible while emulating the endpoints as much as possible
 
 
+Quick Start
+----------------------------------------------------------
+
+**For End Users (GUI Application):**
+
+.. code-block:: bash
+
+    streamlit run apps/auth_login/app.py
+
+This launches the main web interface with authentication, roster management, substitutions, drops, and FAAB monitoring.
+
+**For Developers (CLI Reference):**
+
+.. code-block:: bash
+
+    python substitutions_v2.py --league-id YOUR_LEAGUE_ID --team-id YOUR_TEAM_ID
+
+See `ARCHITECTURE.md`_ for detailed architecture documentation, core file descriptions, and maintenance guides.
+
+.. _ARCHITECTURE.md: ARCHITECTURE.md
+
+
 Installation & Documentation
 ----------------------------------------------------------
 
@@ -162,6 +184,19 @@ Third use the saved cookie file with the wrapper:
     api = FantraxAPI(league_id, session=session)
 
     print(api.trade_block()) # The Trade Block Page is always private
+
+
+Additional Documentation
+----------------------------------------------------------
+
+* `ARCHITECTURE.md`_ - Detailed architecture, core files, and maintenance priorities
+* `AUTH.md`_ - Authentication guide (cookie management and Selenium)
+* `FILE_INDEX.md`_ - Complete file listing with descriptions
+* `REORGANIZATION_LOG.md`_ - History of file moves and archiving
+
+.. _AUTH.md: AUTH.md
+.. _FILE_INDEX.md: FILE_INDEX.md
+.. _REORGANIZATION_LOG.md: REORGANIZATION_LOG.md
 
 
 Usage & Contributions

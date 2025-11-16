@@ -535,14 +535,14 @@ class SubsService:
         return best_schedule
 
     # -------- action (swap) --------
-    def swap_players(self, team_id: str, out_player_id: str, in_player_id: str) -> bool:
+    def swap_players(self, team_id: str, out_player_id: str, in_player_id: str, period: int = None) -> bool:
         try:
-            log.info(f"[swap] Starting swap: out={out_player_id}, in={in_player_id}")
-            confirm_resp = self._confirm_swap(team_id, out_player_id, in_player_id)
+            log.info(f"[swap] Starting swap: out={out_player_id}, in={in_player_id}, explicit_period={period}")
+            confirm_resp = self._confirm_swap(team_id, out_player_id, in_player_id, explicit_period=period)
             log.info(f"[swap] Confirm response: {confirm_resp}")
 
             # Even if confirm says WARNING/CONFIRM, proceed to execute with robust period selection.
-            execute_resp = self._execute_swap(team_id, out_player_id, in_player_id)
+            execute_resp = self._execute_swap(team_id, out_player_id, in_player_id, explicit_period=period)
             log.info(f"[swap] Execute response: {execute_resp}")
 
             success = execute_resp.get("ok", False)
@@ -554,23 +554,70 @@ class SubsService:
             return False
 
     def _build_swap_field_map(self, team_id: str, out_id: str, in_id: str) -> dict:
+        """
+        Build FULL fieldMap for roster with two players swapped.
+        
+        Fantrax requires:
+        1. ALL roster players in the map (not just the two being swapped)
+        2. Keys are player IDs (strings like "04tm0")
+        3. Values are {"posId": "703", "stId": "1"} with STRING values
+        4. stId: "1" = starter, "2" = bench/reserve
+        """
         roster = self.get_roster(self.league_id, team_id)
+        
+        # Build full map first (current state)
+        field_map = {}
         out_row = None
         in_row = None
+        
         for row in roster.rows:
-            if getattr(row, "player", None):
-                if row.player.id == out_id:
-                    out_row = row
-                elif row.player.id == in_id:
-                    in_row = row
+            if not getattr(row, "player", None) or not row.player.id:
+                continue
+                
+            player_id = row.player.id
+            pos_id = str(row.pos_id) if row.pos_id else "0"
+            
+            # Determine stId: "1" for starters (pos_id != 0), "2" for bench
+            if pos_id == "0":
+                st_id = "2"
+            else:
+                st_id = "1"
+            
+            field_map[player_id] = {
+                "posId": pos_id,
+                "stId": st_id
+            }
+            
+            # Track the two players we're swapping
+            if player_id == out_id:
+                out_row = row
+            elif player_id == in_id:
+                in_row = row
+        
         if not out_row or not in_row:
-            raise ValueError("Could not find both players on roster")
-        return {
-            out_id: {"posId": 0, "stId": "2"},
-            in_id: {"posId": int(out_row.pos_id), "stId": "1"},
+            raise ValueError(f"Could not find both players on roster: out_id={out_id}, in_id={in_id}")
+        
+        # Now perform the swap: exchange stId values
+        out_pos_id = field_map[out_id]["posId"]
+        in_pos_id = field_map[in_id]["posId"]
+        
+        # Swap: OUT player goes to bench (stId="2"), IN player takes OUT's position (stId="1")
+        field_map[out_id] = {
+            "posId": out_pos_id,  # Keep original position (for when they come back)
+            "stId": "2"           # Move to bench
         }
+        field_map[in_id] = {
+            "posId": out_pos_id,  # Take OUT player's position slot
+            "stId": "1"           # Move to starting lineup
+        }
+        
+        log.info(f"[swap] Built full fieldMap with {len(field_map)} players")
+        log.info(f"[swap] Swap: OUT={out_row.player.name} (ID={out_id}, pos_id={out_pos_id}) → bench, IN={in_row.player.name} (ID={in_id}, pos_id={in_pos_id}) → lineup(pos_id={out_pos_id})")
+        log.debug(f"[swap] Full fieldMap sample (first 3): {dict(list(field_map.items())[:3])}")
+        
+        return field_map
 
-    def _confirm_swap(self, team_id: str, out_id: str, in_id: str) -> dict:
+    def _confirm_swap(self, team_id: str, out_id: str, in_id: str, explicit_period: int = None) -> dict:
         if not self.league_id:
             raise ValueError("league_id is required")
         field_map = self._build_swap_field_map(team_id, out_id, in_id)
@@ -579,21 +626,26 @@ class SubsService:
         in_row = self._find_row_by_id(roster, in_id)
         locked_any = self._row_locked(out_row) or self._row_locked(in_row)
 
+        # Use explicit period if provided, otherwise let server echo
+        period_to_use = int(explicit_period) if explicit_period else 0
+        log.info(f"[swap] Confirm call using period={period_to_use}, locked={locked_any}")
+
         return self.confirm_or_execute_lineup(
             league_id=self.league_id,
             fantasy_team_id=team_id,
-            roster_limit_period=0,          # let server echo if possible
+            roster_limit_period=period_to_use,
             field_map=field_map,
             apply_to_future=bool(locked_any),
             do_finalize=False,
         )
 
-    def _execute_swap(self, team_id: str, out_id: str, in_id: str) -> dict:
+    def _execute_swap(self, team_id: str, out_id: str, in_id: str, explicit_period: int = None) -> dict:
         """
         Enhanced execute:
         - Preflight with period=0 to read model flags.
         - Choose a concrete period (server echo, or currentPeriod, or probed).
-        - If FIN says locked/no-change and we weren’t scheduling, retry as scheduled and advance periods.
+        - If FIN says locked/no-change and we weren't scheduling, retry as scheduled and advance periods.
+        - If explicit_period is provided, use it directly instead of auto-detection.
         """
         if not self.league_id:
             raise ValueError("league_id is required")
@@ -673,8 +725,12 @@ class SubsService:
         # Decide if we must schedule
         apply_to_future = bool(deadline_passed or (change_allowed is False) or pre_says_locked)
 
+        # If user explicitly set period, use it directly
+        if explicit_period is not None and explicit_period > 0:
+            fin_period = int(explicit_period)
+            log.info("[lineup] Using explicit user-provided period: %s", fin_period)
         # Choose period: prefer server echo; then resolved current; then roster; then +1
-        if apply_to_future:
+        elif apply_to_future:
             if isinstance(first_illegal, int) and first_illegal > 0:
                 fin_period = first_illegal
             else:

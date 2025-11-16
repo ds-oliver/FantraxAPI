@@ -399,6 +399,89 @@ def validate_logged_in(sess: requests.Session, league_id: Optional[str] = None) 
 		logging.getLogger(__name__).exception("validate_logged_in exception")
 		return False
 
+
+def validate_cookies(artifacts: Dict, session: requests.Session) -> Dict[str, any]:
+	"""
+	Validate cookie artifacts and check expiration.
+	
+	Args:
+		artifacts: Cookie/storage artifacts dict
+		session: Authenticated requests session
+		
+	Returns:
+		Dict with:
+			- valid (bool): Whether cookies are valid (logged in)
+			- expires_soon (bool): Whether any cookie expires in < 24 hours
+			- expires_at (str): ISO timestamp of earliest expiration, or None
+			- error (str): Error message if validation failed, or None
+	"""
+	from datetime import datetime, timezone, timedelta
+	
+	logger = logging.getLogger(__name__)
+	result = {
+		"valid": False,
+		"expires_soon": False,
+		"expires_at": None,
+		"error": None
+	}
+	
+	# First check if session is logged in
+	try:
+		if not validate_logged_in(session):
+			result["error"] = "Session not logged in - Fantrax returned WARNING_NOT_LOGGED_IN"
+			return result
+		
+		result["valid"] = True
+		
+	except Exception as e:
+		logger.error(f"Error validating session: {e}")
+		result["error"] = f"Validation error: {str(e)}"
+		return result
+	
+	# Check cookie expiration times
+	cookies = artifacts.get("cookies", [])
+	if not cookies:
+		logger.warning("No cookies found in artifacts")
+		result["error"] = "No cookies in artifacts"
+		result["valid"] = False
+		return result
+	
+	now = datetime.now(timezone.utc)
+	expiry_times = []
+	
+	for cookie in cookies:
+		# Check various expiration fields
+		expiry = cookie.get("expirationDate") or cookie.get("expiry") or cookie.get("expires")
+		
+		if expiry:
+			try:
+				# Handle both Unix timestamp (int/float) and ISO string formats
+				if isinstance(expiry, (int, float)):
+					expiry_dt = datetime.fromtimestamp(expiry, tz=timezone.utc)
+				else:
+					# Try parsing as ISO string
+					expiry_dt = datetime.fromisoformat(str(expiry).replace("Z", "+00:00"))
+				
+				expiry_times.append(expiry_dt)
+			except Exception as e:
+				logger.debug(f"Could not parse expiry for cookie {cookie.get('name')}: {e}")
+	
+	if expiry_times:
+		earliest_expiry = min(expiry_times)
+		result["expires_at"] = earliest_expiry.isoformat()
+		
+		# Check if any cookie expires within 24 hours
+		time_until_expiry = earliest_expiry - now
+		if time_until_expiry < timedelta(hours=24):
+			result["expires_soon"] = True
+			logger.info(f"Cookies expire soon: {earliest_expiry.isoformat()}")
+	else:
+		# No expiration info found - assume session cookies (expire on browser close)
+		# These are generally good for a while, so don't flag as expires_soon
+		logger.debug("No expiration info found in cookies (may be session cookies)")
+	
+	return result
+
 def fetch_user_leagues(session: requests.Session) -> List[Dict[str, str]]:
 	"""Return active leagues with the user's team in each league."""
 	payload = {

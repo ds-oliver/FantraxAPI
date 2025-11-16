@@ -11,6 +11,93 @@ from fantraxapi.providers.sofascore.poll import poll_events
 from fantraxapi.providers.sofascore.normalize import normalize_lineup_data
 from fantraxapi.providers.sofascore.upsert import save_lineups
 
+
+async def sync_lineups_to_fantrax(records):
+	"""
+	Sync confirmed lineups to Fantrax for all users with lineup automation enabled.
+	
+	Args:
+		records: List of LineupRecord objects from SofaScore
+	"""
+	import logging
+	from utils.user_manager import UserManager
+	from utils.auth_helpers import load_requests_session_from_artifacts
+	from fantraxapi import FantraxAPI
+	from fantraxapi.lineups.fantrax_sync import LineupSynchronizer
+	from fantraxapi.lineups.status import determine_lineup_status, LineupStatus
+	
+	logger = logging.getLogger(__name__)
+	
+	# Get all users with lineup automation enabled
+	user_mgr = UserManager()
+	all_users = user_mgr.list_all_users()
+	
+	# Filter to users with active automation
+	# For now, this is a placeholder - in future, check user preferences
+	users_with_automation = [
+		u for u in all_users 
+		if u.get("auth_status") == "connected"
+	]
+	
+	if not users_with_automation:
+		logger.debug("No users with active lineup automation")
+		return
+	
+	logger.info(f"Processing lineups for {len(users_with_automation)} user(s)")
+	
+	for user in users_with_automation:
+		user_id = user['user_id']
+		
+		try:
+			# Load user's session
+			artifacts = user_mgr.load_user_cookies(user_id)
+			if not artifacts:
+				logger.warning(f"No cookies found for user {user_id}")
+				continue
+			
+			session = load_requests_session_from_artifacts(artifacts)
+			
+			# Process each lineup record
+			for record in records:
+				# Check if lineup is confirmed and ready to sync
+				status = determine_lineup_status(record)
+				
+				if status not in [LineupStatus.CONFIRMED, LineupStatus.FINAL]:
+					logger.debug(f"Skipping lineup {record.match_id} (status: {status})")
+					continue
+				
+				# TODO: Get user's league_id and team_id from config
+				# For now, this is a placeholder
+				league_id = user.get("league_id")
+				team_id = user.get("team_id")
+				
+				if not league_id or not team_id:
+					logger.warning(f"No league_id or team_id configured for user {user_id}")
+					continue
+				
+				# Initialize Fantrax API
+				api = FantraxAPI(league_id, session=session)
+				
+				# Create synchronizer
+				syncer = LineupSynchronizer(
+					fantrax=api,
+					dry_run=False,  # Set to True for testing
+					logger=logger
+				)
+				
+				# Sync the lineup
+				success = syncer.sync_lineup(record, team_id)
+				
+				if success:
+					logger.info(f"Successfully synced lineup for user {user_id}")
+				else:
+					logger.error(f"Failed to sync lineup for user {user_id}")
+		
+		except Exception as e:
+			logger.exception(f"Error syncing lineups for user {user_id}: {e}")
+			continue
+
+
 def parse_args():
 	parser = argparse.ArgumentParser(description="Watch SofaScore lineups")
 	parser.add_argument(
@@ -62,9 +149,8 @@ async def main():
 						# Save to parquet
 						save_lineups(records, output_dir)
 						
-						# TODO: Add Fantrax integration
-						# from fantraxapi.lineup_rules.fantrax_actions import update_lineups
-						# await update_lineups(records)
+						# Fantrax integration - sync confirmed lineups
+						await sync_lineups_to_fantrax(records)
 			
 			# Wait before next check
 			await asyncio.sleep(args.interval)

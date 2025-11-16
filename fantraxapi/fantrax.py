@@ -109,6 +109,7 @@ class FantraxAPI:
 		import logging
 		logger = logging.getLogger(__name__)
 		tid = team_id or self.teams[0].team_id
+		logger.info(f"[period] resolve_active_period called for league={self.league_id}, team={tid}")
 		trace = {}
 
 		# --- A) roster_info ---
@@ -132,10 +133,23 @@ class FantraxAPI:
 
 		# --- B) schedule standings ---
 		try:
-			sched = self._request("getStandings", view="SCHEDULE")
+			sched = self._request("getStandings", leagueId=self.league_id, view="SCHEDULE")
 			cand = (sched.get("currentPeriod")
 					or (sched.get("scheduleInfo") or {}).get("currentPeriod")
 					or (sched.get("fantasyResponse") or {}).get("currentPeriod"))
+			
+			# Also try parsing from caption (e.g., "Week 12")
+			if cand is None:
+				try:
+					caption = ((sched.get("tableList") or [{}])[0] or {}).get("caption", "")
+					logger.info(f"[period] Raw caption from standings: '{caption}'")
+					parts = caption.strip().split()
+					if parts and parts[-1].isdigit():
+						cand = int(parts[-1])
+						logger.info("[period] source=B:caption -> %s", cand)
+				except Exception:
+					pass
+			
 			if cand is not None and int(str(cand)) > 0:
 				p_int = int(str(cand)); trace["B"] = p_int
 				logger.info("[period] source=B:schedule -> %s", p_int)
