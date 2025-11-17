@@ -993,27 +993,52 @@ def ui_simple_subs_section():
             
             # Execute using the robust SubsService (handles WARNING/locked → schedules/probes)
             subs = SubsService(session, league_id)
-            ok = subs.swap_players(
+            result = subs.swap_players(
                 team_id=team_id,
                 out_player_id=starter_row.player.id,  # move starter out
                 in_player_id=bench_row.player.id,     # bring bench in
                 period=int(period_choice)             # user-specified period
             )
 
-            # Update UI (mirror your existing result handling)
-            res = {"ok": bool(ok), "verified": None, "reason": None}
-            
-            if res["ok"]:
-                logger.info(f"[SWAP] SUCCESS: Swap completed - {starter_row.player.name} → bench, {bench_row.player.name} → lineup")
-                st.info("Substitution submitted. Verifying roster view…")
+            # Handle the dictionary result
+            if result.get("success"):
+                logger.info(f"[SWAP] SUCCESS: {result.get('message', 'Swap completed')}")
+                
+                # Check if this was a cross-position swap (message contains formation info)
+                message = result.get("message", "")
+                if "formation" in message.lower():
+                    st.success(f"✅ {message}")
+                    
+                    # If scheduled for future period, add explanatory note
+                    if "scheduled" in message.lower():
+                        st.info("ℹ️ This swap has been scheduled for a future period. "
+                               "The changes may not be visible in your current roster view yet, "
+                               "but have been confirmed by Fantrax. Check your roster for the specified period in Fantrax to verify.")
+                else:
+                    st.success(f"✅ Swap completed successfully! {starter_row.player.name} → bench, {bench_row.player.name} → lineup")
+                
+                st.info("Refreshing roster view…")
                 new_roster = _refresh_roster(api, team_id)
                 st.markdown("### Updated Lineup")
                 _render_roster_tables(new_roster, starters_only=False)
                 st.rerun()
             else:
-                logger.error(f"[SWAP] FAILED: Swap returned False - {starter_row.player.name} ↔ {bench_row.player.name}. No detailed error from SubsService.")
-                st.error("❌ Swap failed. Check logs for details.")
-                _handle_swap_result(res)
+                error_msg = result.get("error", "Unknown error")
+                logger.error(f"[SWAP] FAILED: {error_msg}")
+                
+                # Display user-friendly error with details
+                st.error(f"❌ Swap failed: {error_msg}")
+                
+                # Additional context for formation errors
+                if "formation" in error_msg.lower() or "illegal" in error_msg.lower():
+                    st.info("💡 This swap would result in an illegal formation. Make sure you have:\n"
+                           "- Exactly 1 goalkeeper\n"
+                           "- 3-5 defenders\n"
+                           "- 2-5 midfielders\n"
+                           "- 1-3 forwards")
+                
+                if "cannot determine" in error_msg.lower() or "eligible position" in error_msg.lower():
+                    st.info("💡 Could not determine player positions. Try refreshing your roster page in Fantrax and try again.")
 
         except ValueError as ve:
             # validation errors from name/index resolution

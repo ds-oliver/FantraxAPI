@@ -535,23 +535,336 @@ class SubsService:
         return best_schedule
 
     # -------- action (swap) --------
-    def swap_players(self, team_id: str, out_player_id: str, in_player_id: str, period: int = None) -> bool:
+    def swap_cross_position(
+        self,
+        team_id: str,
+        out_player_id: str,
+        in_player_id: str,
+        period: int | None = None,
+    ) -> dict:
+        """
+        Cross-position swap: build target XI and execute via fieldMap.
+        Uses preflight validation but executes in a single operation (not sequential swaps).
+
+        Returns:
+            dict with keys: success (bool), message (str), error (str)
+        """
+        if not self.league_id:
+            raise ValueError("league_id is required")
+
+        api = self._api(self.league_id)
+        roster = api.roster_info(team_id)
+        current_starters = self._current_starter_ids(roster)
+
+        # Basic sanity checks
+        if out_player_id not in current_starters:
+            return {
+                "success": False,
+                "message": "",
+                "error": "OUT player must be an active starter for a cross-position swap.",
+            }
+        if in_player_id in current_starters:
+            return {
+                "success": False,
+                "message": "",
+                "error": "IN player is already a starter.",
+            }
+
+        # Build target XI: current starters, minus OUT, plus IN
+        desired = [pid for pid in current_starters if pid != out_player_id]
+        desired.append(in_player_id)
+
+        # De-dupe while preserving order
+        seen: set[str] = set()
+        desired_starter_ids = [
+            x for x in desired if not (x in seen or seen.add(x))
+        ]
+
+        log.info(f"[swap:cross-pos] Building target XI: current={len(current_starters)}, desired={len(desired_starter_ids)}")
+
+        # Preflight validation: check formation legality
+        pre = self.preflight_set_lineup_by_ids(
+            league_id=self.league_id,
+            team_id=team_id,
+            desired_starter_ids=desired_starter_ids,
+            ensure_unlocked=True,
+            pos_overrides=None,
+        )
+
+        if not pre.get("ok"):
+            # Collapse planner errors into a single message
+            errs = pre.get("errors") or []
+            msg = "; ".join(str(e) for e in errs if e) or "Formation or eligibility invalid for cross-position swap."
+            log.error(f"[swap:cross-pos] Preflight failed: {msg}")
+            return {
+                "success": False,
+                "message": "",
+                "error": msg,
+            }
+
+        formation_str = pre.get("desired_formation", "?-?-?-?")
+        log.info(f"[swap:cross-pos] Preflight OK. Desired formation: {formation_str}")
+
+        # Build fieldMap for the target XI (not sequential swaps, just final state)
+        field_map = self.build_field_map(roster, desired_starter_ids, pos_overrides=None)
+        
+        # Determine period and check for deadline
+        if period is not None and period > 0:
+            roster_period = int(period)
+            log.info(f"[swap:cross-pos] Using explicit period: {roster_period}")
+        else:
+            roster_period, _ = self._sniff_period_and_deadline_from_roster(roster)
+            log.info(f"[swap:cross-pos] Using detected period: {roster_period}")
+
+        # Execute with CONFIRM → ACK → FINALIZE flow (like simple swap does)
+        log.info(f"[swap:cross-pos] Executing fieldMap with {len(field_map)} players, starters={len(desired_starter_ids)}")
+        
+        # Step 1: Initial CONFIRM to check for warnings/deadline
+        confirm_result = self.confirm_or_execute_lineup(
+            league_id=self.league_id,
+            fantasy_team_id=team_id,
+            roster_limit_period=roster_period,
+            field_map=field_map,
+            apply_to_future=False,
+            do_finalize=False,  # CONFIRM phase
+        )
+        
+        # Check model flags from CONFIRM
+        model = confirm_result.get("model", {})
+        fantasy_resp = confirm_result.get("fantasyResponse", {})
+        msg_type = fantasy_resp.get("msgType") or confirm_result.get("msgType", "")
+        show_confirm = fantasy_resp.get("showConfirmWindow", False)
+        pick_deadline_passed = model.get("playerPickDeadlinePassed", False)
+        first_illegal = model.get("firstIllegalRosterPeriod")
+        
+        log.info(f"[swap:cross-pos] Confirm phase: msgType={msg_type}, showConfirm={show_confirm}, deadlinePassed={pick_deadline_passed}, firstIllegal={first_illegal}")
+        
+        # If deadline passed or needs future period, adjust
+        apply_to_future = bool(pick_deadline_passed)
         try:
+            if first_illegal and int(first_illegal) > 0:
+                roster_period = int(first_illegal)
+                apply_to_future = True
+                log.info(f"[swap:cross-pos] Adjusted to firstIllegalRosterPeriod={roster_period}, apply_to_future=True")
+        except (ValueError, TypeError):
+            pass
+        
+        # Step 2: If WARNING or CONFIRM needed, acknowledge it
+        if msg_type in ("WARNING", "CONFIRM") or show_confirm:
+            log.info(f"[swap:cross-pos] Acknowledging {msg_type} with second CONFIRM")
+            confirm_result = self.confirm_or_execute_lineup(
+                league_id=self.league_id,
+                fantasy_team_id=team_id,
+                roster_limit_period=roster_period,
+                field_map=field_map,
+                apply_to_future=apply_to_future,
+                do_finalize=False,  # Still CONFIRM
+            )
+        
+        # Step 3: Final EXECUTE/FINALIZE
+        log.info(f"[swap:cross-pos] Finalizing with period={roster_period}, apply_to_future={apply_to_future}")
+        result = self.confirm_or_execute_lineup(
+            league_id=self.league_id,
+            fantasy_team_id=team_id,
+            roster_limit_period=roster_period,
+            field_map=field_map,
+            apply_to_future=apply_to_future,
+            do_finalize=True,  # FINALIZE
+        )
+
+        # Check final result
+        fantasy_resp = result.get("fantasyResponse", {})
+        final_model = result.get("model", {})
+        main_msg = fantasy_resp.get("mainMsg") or result.get("mainMsg", "")
+        msg_type = fantasy_resp.get("msgType") or result.get("msgType", "")
+        lineup_changes = fantasy_resp.get("lineupChanges", [])
+        errors = fantasy_resp.get("illegalRosterMsgs") or []
+        page_error = result.get("pageError")
+        change_allowed = final_model.get("changeAllowed")
+        
+        log.info(f"[swap:cross-pos] Final result: msgType={msg_type}, mainMsg={main_msg}, lineupChanges={len(lineup_changes)}, errors={len(errors)}, changeAllowed={change_allowed}")
+        
+        # Success detection:
+        # When scheduling for future period (apply_to_future=True), Fantrax returns:
+        # - msgType=CONFIRM (not SUCCESS)
+        # - lineupChanges=0 (because it's scheduled, not immediately visible)
+        # - changeAllowed=True
+        # - No errors or error messages
+        has_immediate_changes = len(lineup_changes) > 0
+        no_errors = page_error is None and not errors
+        has_error_msg = main_msg and ("sorry" in main_msg.lower() or "not eligible" in main_msg.lower() or "cannot" in main_msg.lower() or "illegal" in main_msg.lower())
+        
+        # Success if either:
+        # 1. Has immediate lineupChanges (current period change)
+        # 2. No errors AND (changeAllowed=True or msgType=CONFIRM) when apply_to_future=True (scheduled change)
+        is_scheduled_success = apply_to_future and no_errors and not has_error_msg and (change_allowed or msg_type == "CONFIRM")
+        
+        if not no_errors or has_error_msg:
+            # Definite failure - has errors or error messages
+            if errors:
+                msg = "; ".join(str(e) for e in errors)
+            elif main_msg:
+                msg = main_msg
+            elif page_error:
+                msg = str(page_error)
+            else:
+                msg = "Fantrax rejected the cross-position swap"
+            
+            log.error(f"[swap:cross-pos] Execute failed: {msg}")
+            return {
+                "success": False,
+                "message": "",
+                "error": msg,
+            }
+        
+        if not has_immediate_changes and not is_scheduled_success:
+            # No changes and not a valid scheduled change
+            msg = f"No lineup changes detected (msgType={msg_type}, changeAllowed={change_allowed})"
+            log.error(f"[swap:cross-pos] Execute failed: {msg}")
+            return {
+                "success": False,
+                "message": "",
+                "error": msg,
+            }
+
+        # Build success message based on whether it's scheduled or immediate
+        if apply_to_future:
+            success_msg = f"Cross-position swap scheduled successfully for period {roster_period}. New formation: {formation_str}."
+            log.info(f"[swap:cross-pos] Execute succeeded (scheduled). Formation: {formation_str}, period: {roster_period}")
+        else:
+            success_msg = f"Cross-position swap completed successfully. New formation: {formation_str}."
+            log.info(f"[swap:cross-pos] Execute succeeded (immediate). Formation: {formation_str}")
+        
+        return {
+            "success": True,
+            "message": success_msg,
+            "error": "",
+        }
+
+    def swap_players(self, team_id: str, out_player_id: str, in_player_id: str, period: int = None) -> dict:
+        """
+        Swap two players on a roster.
+        - Same-position (G↔G, D↔D, M↔M, F↔F): use simple slot swap (existing logic).
+        - Cross-position (D↔M, M↔F, etc.): delegate to full XI planner via swap_cross_position().
+
+        Returns:
+            dict with keys: success (bool), message (str), error (str)
+        """
+        try:
+            if not self.league_id:
+                raise ValueError("league_id is required")
+
             log.info(f"[swap] Starting swap: out={out_player_id}, in={in_player_id}, explicit_period={period}")
+
+            # First, get positions to decide which path to take
+            roster = self.get_roster(self.league_id, team_id)
+            out_row = self._find_row_by_id(roster, out_player_id)
+            in_row = self._find_row_by_id(roster, in_player_id)
+
+            if not out_row or not in_row:
+                missing = []
+                if not out_row:
+                    missing.append("OUT player not on roster")
+                if not in_row:
+                    missing.append("IN player not on roster")
+                return {
+                    "success": False,
+                    "message": "",
+                    "error": "; ".join(missing),
+                }
+
+            out_bucket = self._pos_of_row(out_row, overrides=None)
+            in_bucket = self._pos_of_row(in_row, overrides=None)
+
+            log.info(f"[swap] Position buckets: OUT={out_bucket}, IN={in_bucket}")
+
+            same_bucket = (
+                out_bucket in {"G", "D", "M", "F"} and
+                in_bucket in {"G", "D", "M", "F"} and
+                out_bucket == in_bucket
+            )
+
+            known_both = (
+                out_bucket in {"G", "D", "M", "F"} and
+                in_bucket in {"G", "D", "M", "F"}
+            )
+
+            # --- Cross-position path ---
+            if known_both and not same_bucket:
+                log.info("[swap] Detected cross-position swap, delegating to swap_cross_position()")
+                return self.swap_cross_position(
+                    team_id=team_id,
+                    out_player_id=out_player_id,
+                    in_player_id=in_player_id,
+                    period=period,
+                )
+
+            # --- Unknown positions: fail with a clear message ---
+            if not known_both:
+                return {
+                    "success": False,
+                    "message": "",
+                    "error": (
+                        "Cannot determine one or both players' eligible positions. "
+                        "Refresh your roster in Fantrax and try again."
+                    ),
+                }
+
+            # --- Same-position: keep existing simple swap behavior ---
+            log.info(f"[swap] Same-position swap detected ({out_bucket}), using simple swap logic")
             confirm_resp = self._confirm_swap(team_id, out_player_id, in_player_id, explicit_period=period)
             log.info(f"[swap] Confirm response: {confirm_resp}")
 
-            # Even if confirm says WARNING/CONFIRM, proceed to execute with robust period selection.
             execute_resp = self._execute_swap(team_id, out_player_id, in_player_id, explicit_period=period)
             log.info(f"[swap] Execute response: {execute_resp}")
 
-            success = execute_resp.get("ok", False)
-            if not success:
-                log.error(f"[swap] Execute failed: {execute_resp}")
-            return success
-        except Exception:
+            fantasy_resp = execute_resp.get("fantasyResponse", {})
+            main_msg = fantasy_resp.get("mainMsg") or execute_resp.get("mainMsg", "")
+            msg_type = fantasy_resp.get("msgType") or execute_resp.get("msgType", "")
+            lineup_changes = fantasy_resp.get("lineupChanges", [])
+
+            has_error_message = (
+                "Sorry, you cannot perform that action" in main_msg
+                or "not eligible" in main_msg
+            )
+            needs_correction = (msg_type == "CONFIRM")
+
+            if has_error_message or needs_correction:
+                log.error(
+                    f"[swap] Execute failed - msgType={msg_type}, "
+                    f"lineupChanges={len(lineup_changes)}, error: {main_msg}"
+                )
+                return {
+                    "success": False,
+                    "message": "",
+                    "error": main_msg or "Swap failed - please check player eligibility and formation rules",
+                }
+
+            if not lineup_changes:
+                log.warning(f"[swap] No lineupChanges returned. msgType={msg_type}, mainMsg={main_msg}")
+                if not main_msg or "success" in main_msg.lower():
+                    log.info("[swap] Execute succeeded (no changes listed, but no error)")
+                else:
+                    return {
+                        "success": False,
+                        "message": "",
+                        "error": main_msg or "No lineup changes applied",
+                    }
+
+            log.info(f"[swap] Execute succeeded - {len(lineup_changes)} lineup changes applied")
+            return {
+                "success": True,
+                "message": "Swap completed successfully!",
+                "error": "",
+            }
+
+        except Exception as e:
             log.exception("[swap] Exception during swap")
-            return False
+            return {
+                "success": False,
+                "message": "",
+                "error": f"Error during swap: {str(e)}",
+            }
 
     def _build_swap_field_map(self, team_id: str, out_id: str, in_id: str) -> dict:
         """
@@ -1419,9 +1732,9 @@ class SubsService:
                 continue
 
             if pid in want:
-                fmap[pid] = {"posId": int(pos_id), "stId": "1"}
+                fmap[pid] = {"posId": str(pos_id), "stId": "1"}
             else:
-                fmap[pid] = {"posId": 0, "stId": "2"}
+                fmap[pid] = {"posId": "0", "stId": "2"}
 
         return fmap
 
