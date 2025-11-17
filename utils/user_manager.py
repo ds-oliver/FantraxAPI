@@ -2,17 +2,27 @@
 User management for multi-user cookie-based authentication.
 
 Handles user identification, cookie storage, and retrieval for multiple users.
+Uses Fantrax Secret ID as authentication mechanism (read-only credential).
 """
 from __future__ import annotations
 
 import json
 import hashlib
+import os
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Encryption for Secret IDs
+try:
+    from cryptography.fernet import Fernet
+    CRYPTO_AVAILABLE = True
+except ImportError:
+    CRYPTO_AVAILABLE = False
+    logger.warning("cryptography library not installed - Secret IDs will be hashed but not encrypted")
 
 
 class UserManager:
@@ -33,11 +43,62 @@ class UserManager:
         
         self.users_file = self.data_dir / "users.json"
         self._ensure_users_file()
+        
+        # Initialize encryption for Secret IDs
+        self._init_encryption()
     
     def _ensure_users_file(self):
         """Create users.json if it doesn't exist."""
         if not self.users_file.exists():
             self.users_file.write_text(json.dumps({"users": {}}, indent=2))
+    
+    def _init_encryption(self):
+        """Initialize encryption key for Secret IDs."""
+        if not CRYPTO_AVAILABLE:
+            self.cipher = None
+            return
+        
+        # Get encryption key from environment or generate one
+        key_file = self.data_dir / ".encryption_key"
+        
+        if key_file.exists():
+            with open(key_file, 'rb') as f:
+                key = f.read()
+        else:
+            # Generate new key
+            key = Fernet.generate_key()
+            with open(key_file, 'wb') as f:
+                f.write(key)
+            # Secure the key file
+            os.chmod(key_file, 0o600)
+            logger.info("Generated new encryption key for Secret IDs")
+        
+        self.cipher = Fernet(key)
+    
+    def _encrypt_secret_id(self, secret_id: str) -> str:
+        """Encrypt a Secret ID for storage."""
+        if not CRYPTO_AVAILABLE or not self.cipher:
+            # Fallback: just hash it (not reversible, but secure)
+            return hashlib.sha256(secret_id.encode()).hexdigest()
+        
+        return self.cipher.encrypt(secret_id.encode()).decode()
+    
+    def _decrypt_secret_id(self, encrypted: str) -> Optional[str]:
+        """Decrypt a stored Secret ID."""
+        if not CRYPTO_AVAILABLE or not self.cipher:
+            # Can't decrypt hashed values
+            return None
+        
+        try:
+            return self.cipher.decrypt(encrypted.encode()).decode()
+        except Exception as e:
+            logger.error(f"Failed to decrypt Secret ID: {e}")
+            return None
+    
+    @staticmethod
+    def _hash_secret_id(secret_id: str) -> str:
+        """Hash Secret ID for verification (one-way)."""
+        return hashlib.sha256(secret_id.encode()).hexdigest()
     
     def _load_users(self) -> Dict[str, Any]:
         """Load users database."""
@@ -201,6 +262,137 @@ class UserManager:
         """Get list of all users."""
         data = self._load_users()
         return list(data.get("users", {}).values())
+    
+    def save_secret_id(self, user_id: str, secret_id: str) -> bool:
+        """
+        Save encrypted Secret ID for a user.
+        
+        Args:
+            user_id: User identifier
+            secret_id: Fantrax Secret ID from user's profile
+            
+        Returns:
+            True if saved successfully
+        """
+        try:
+            data = self._load_users()
+            users = data.get("users", {})
+            
+            if user_id not in users:
+                logger.error(f"User {user_id} not found")
+                return False
+            
+            # Store both encrypted (for display/recovery) and hashed (for verification)
+            users[user_id]["secret_id_encrypted"] = self._encrypt_secret_id(secret_id)
+            users[user_id]["secret_id_hash"] = self._hash_secret_id(secret_id)
+            users[user_id]["secret_id_set_at"] = datetime.utcnow().isoformat()
+            
+            data["users"] = users
+            self._save_users(data)
+            
+            logger.info(f"Saved Secret ID for user {user_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to save Secret ID for user {user_id}: {e}")
+            return False
+    
+    def verify_secret_id(self, user_id: str, secret_id: str) -> bool:
+        """
+        Verify a Secret ID matches the stored one for a user.
+        
+        Args:
+            user_id: User identifier
+            secret_id: Secret ID to verify
+            
+        Returns:
+            True if Secret ID matches
+        """
+        try:
+            user = self.get_user_by_id(user_id)
+            if not user:
+                return False
+            
+            stored_hash = user.get("secret_id_hash")
+            if not stored_hash:
+                return False
+            
+            provided_hash = self._hash_secret_id(secret_id)
+            return provided_hash == stored_hash
+            
+        except Exception as e:
+            logger.error(f"Failed to verify Secret ID for user {user_id}: {e}")
+            return False
+    
+    def authenticate_user(self, email: str, secret_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Authenticate a user with email and Secret ID.
+        
+        Args:
+            email: User's email address
+            secret_id: Fantrax Secret ID
+            
+        Returns:
+            User dict if authenticated, None otherwise
+        """
+        user_id = self._email_to_user_id(email)
+        
+        # Check if user exists
+        user = self.get_user_by_id(user_id)
+        if not user:
+            logger.warning(f"Authentication failed: User not found for email {email}")
+            return None
+        
+        # Verify Secret ID
+        if not self.verify_secret_id(user_id, secret_id):
+            logger.warning(f"Authentication failed: Invalid Secret ID for user {user_id}")
+            return None
+        
+        # Update last login
+        data = self._load_users()
+        data["users"][user_id]["last_login"] = datetime.utcnow().isoformat()
+        self._save_users(data)
+        
+        logger.info(f"User authenticated: {email}")
+        return user
+    
+    def revoke_secret_id(self, user_id: str) -> bool:
+        """
+        Revoke (delete) Secret ID for a user.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            True if revoked successfully
+        """
+        try:
+            data = self._load_users()
+            users = data.get("users", {})
+            
+            if user_id not in users:
+                return False
+            
+            # Remove Secret ID fields
+            users[user_id].pop("secret_id_encrypted", None)
+            users[user_id].pop("secret_id_hash", None)
+            users[user_id].pop("secret_id_set_at", None)
+            users[user_id]["secret_id_revoked_at"] = datetime.utcnow().isoformat()
+            
+            data["users"] = users
+            self._save_users(data)
+            
+            logger.info(f"Revoked Secret ID for user {user_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to revoke Secret ID for user {user_id}: {e}")
+            return False
+    
+    def has_secret_id(self, user_id: str) -> bool:
+        """Check if user has a Secret ID set."""
+        user = self.get_user_by_id(user_id)
+        return user is not None and "secret_id_hash" in user
     
     def delete_user_cookies(self, user_id: str) -> bool:
         """

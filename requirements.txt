@@ -9,3 +9,4 @@ pandas>=2.0.0
 PyYAML>=6.0.0  # For player mapping configuration
 unidecode>=2.0.0  # For handling accented characters in player names
 rapidfuzz>=3.0.0  # For fast fuzzy string matching in player names
+cryptography>=41.0.0  # For encrypting Fantrax Secret IDs

@@ -162,6 +162,56 @@ def _fmt_row(row: RosterRow) -> tuple[str, str, str, str]:
 	return "", "", "", ""
 
 
+def calculate_formation(roster: Roster) -> str:
+	"""Calculate formation string from starters (e.g., 1-3-5-2)."""
+	starters = roster.get_starters()
+	gk_count = 0
+	def_count = 0
+	mid_count = 0
+	fwd_count = 0
+	
+	for row in starters:
+		if row.pos and row.pos.short_name:
+			pos = row.pos.short_name.upper()
+			if pos in ("G", "GK"):
+				gk_count += 1
+			elif pos in ("D", "DEF"):
+				def_count += 1
+			elif pos in ("M", "MID"):
+				mid_count += 1
+			elif pos in ("F", "FWD"):
+				fwd_count += 1
+	
+	# Build formation string
+	formation_parts = []
+	if gk_count > 0:
+		formation_parts.append(str(gk_count))
+	if def_count > 0:
+		formation_parts.append(str(def_count))
+	if mid_count > 0:
+		formation_parts.append(str(mid_count))
+	if fwd_count > 0:
+		formation_parts.append(str(fwd_count))
+	
+	return "-".join(formation_parts) if formation_parts else "N/A"
+
+
+def get_position_bg_color(pos: str) -> str:
+	"""Get background color for position cell."""
+	p = (pos or "").upper()
+	# Map positions to background colors
+	if p in ("D", "DEF"):
+		return "#aed8e7"  # Light blue/cyan for defenders
+	elif p in ("M", "MID"):
+		return "#dda0dd"  # Plum/light purple for midfielders
+	elif p in ("F", "FWD"):
+		return "#ffb6c1"  # Light pink for forwards
+	elif p in ("G", "GK"):
+		return "#7DA6FF"  # Cornflower blue for GK
+	else:
+		return "transparent"  # No background for bench/reserves
+
+
 def roster_to_html(league_name: str, roster: Roster, starters_only: bool) -> str:
 	base = (st.get_option("theme.base") or "dark").lower()
 	if base == "light":
@@ -169,6 +219,9 @@ def roster_to_html(league_name: str, roster: Roster, starters_only: bool) -> str
 	else:
 		PAGE_BG = "transparent"; ROW_BG = "#101620"; FG = "#E8EDF5"; HEAD="#151C27"; MUTED="#2A3442"
 
+	# Calculate formation
+	formation = calculate_formation(roster)
+	
 	# cache to keep team colors consistent within a table
 	team_color_cache: dict[str, str] = {}
 	used_colors: dict[str, int] = {}
@@ -210,9 +263,12 @@ def roster_to_html(league_name: str, roster: Roster, starters_only: bool) -> str
 			fppg = f"{r.fppg:.1f}" if r.fppg is not None else "-"
 			pc = _pos_color(pos)
 			tc = team_color(team)
+			pos_bg = get_position_bg_color(pos)
+			# Use dark text on colored backgrounds for better readability
+			pos_text_color = "#000000" if pos_bg != "transparent" else pc
 			html.append(
 				f'<tr>'
-				f'<td class="c-pos" style="color:{pc}">{pos}</td>'
+				f'<td class="c-pos" style="background-color:{pos_bg}; color:{pos_text_color}; font-weight:700;">{pos}</td>'
 				f'<td class="c-name">{name}</td>'
 				f'<td class="c-team" style="color:{tc}">{team}</td>'
 				f'<td class="c-fppg">{fppg}</td>'
@@ -231,7 +287,11 @@ def roster_to_html(league_name: str, roster: Roster, starters_only: bool) -> str
   /* Use the same monospace as table so league name pairs perfectly */
   .league-title {{
 	  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-	  font-weight: 700; margin: .25rem 0 .5rem 0;
+	  font-weight: 700; margin: .25rem 0 .25rem 0;
+  }}
+  .formation {{
+	  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+	  font-size: 13px; color: #9AA4B2; margin: 0 0 .5rem 0; font-weight: 600;
   }}
   .roster-table {{
 	  width: 100%; border-collapse: collapse;
@@ -255,6 +315,7 @@ def roster_to_html(league_name: str, roster: Roster, starters_only: bool) -> str
 </head>
 <body>
   <div class="league-title">{league_name}</div>
+  <div class="formation">Formation: {formation}</div>
   <table class="roster-table">
 	<thead>
 	  <tr>
