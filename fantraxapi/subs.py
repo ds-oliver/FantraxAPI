@@ -789,6 +789,23 @@ class SubsService:
                 in_bucket in {"G", "D", "M", "F"}
             )
 
+            # --- Goalkeeper special rule: GK can only swap with GK ---
+            if known_both:
+                if (out_bucket == "G" and in_bucket != "G") or (in_bucket == "G" and out_bucket != "G"):
+                    out_name = getattr(out_row.player, "name", "Unknown")
+                    in_name = getattr(in_row.player, "name", "Unknown")
+                    log.error(f"[swap] Rejected GK↔outfield swap: {out_name} ({out_bucket}) ↔ {in_name} ({in_bucket})")
+                    return {
+                        "success": False,
+                        "message": "",
+                        "error": (
+                            f"Cannot swap goalkeeper with outfield player. "
+                            f"Formations must have exactly 1 goalkeeper. "
+                            f"Please swap {out_name} ({out_bucket}) with another {out_bucket}, "
+                            f"or swap {in_name} ({in_bucket}) with another {in_bucket}."
+                        ),
+                    }
+
             # --- Cross-position path ---
             if known_both and not same_bucket:
                 log.info("[swap] Detected cross-position swap, delegating to swap_cross_position()")

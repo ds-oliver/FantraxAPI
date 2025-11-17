@@ -1030,7 +1030,10 @@ def ui_simple_subs_section():
                 st.error(f"❌ Swap failed: {error_msg}")
                 
                 # Additional context for formation errors
-                if "formation" in error_msg.lower() or "illegal" in error_msg.lower():
+                if "goalkeeper" in error_msg.lower() and "outfield" in error_msg.lower():
+                    st.warning("⚠️ Goalkeepers can only be swapped with other goalkeepers. "
+                              "Your formation must always have exactly 1 goalkeeper.")
+                elif "formation" in error_msg.lower() or "illegal" in error_msg.lower():
                     st.info("💡 This swap would result in an illegal formation. Make sure you have:\n"
                            "- Exactly 1 goalkeeper\n"
                            "- 3-5 defenders\n"
