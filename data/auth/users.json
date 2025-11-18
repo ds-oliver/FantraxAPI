@@ -14,7 +14,9 @@
       "created_at": "2025-11-16T21:57:43.941603",
       "auth_status": "connected",
       "last_login": "2025-11-16T22:07:20.654190",
-      "last_updated": "2025-11-16T22:07:20.654182"
+      "last_updated": "2025-11-16T22:07:20.654182",
+      "password_hash": "$2b$12$WCbiF5kYDBb5.gFSv50if.JVtwR4CMefh9vTKd3hkh3S.LIX0fxqm",
+      "password_set_at": "2025-11-17T17:10:21.119053"
     },
     "40aa0bf13ddf3ac1": {
       "user_id": "40aa0bf13ddf3ac1",

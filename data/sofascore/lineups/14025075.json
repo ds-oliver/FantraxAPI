@@ -2,15 +2,249 @@
   "event_id": 14025075,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 103335,
+        "name": "Bernd Leno",
+        "position": "G",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 190877,
+        "name": "Kenny Tete",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 362682,
+        "name": "Joachim Andersen",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 861972,
+        "name": "Calvin Bassey",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836698,
+        "name": "Ryan Sessegnon",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 793167,
+        "name": "Sander Berge",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 352770,
+        "name": "Alex Iwobi",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 355528,
+        "name": "Harry Wilson",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1546231,
+        "name": "Joshua King",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1112879,
+        "name": "Kevin",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 192442,
+        "name": "Raúl Jiménez",
+        "position": "F",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 371222,
+        "name": "Saša Lukić",
+        "position": "M",
+        "reason": 11
+      },
+      {
+        "id": 1015256,
+        "name": "Rodrigo Muniz",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 803174,
+        "name": "Antonee Robinson",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "5-4-1",
+    "starters": [
+      {
+        "id": 1012928,
+        "name": "Robin Roefs",
+        "position": "G",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 989034,
+        "name": "Trai Hume",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 780014,
+        "name": "Nordi Mukiele",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 958878,
+        "name": "Daniel Ballard",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 856739,
+        "name": "Lutsharel Geertruida",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 831424,
+        "name": "Reinildo Mandava",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 218160,
+        "name": "Bertrand Traoré",
+        "position": "F",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 117777,
+        "name": "Granit Xhaka",
+        "position": "M",
+        "team_id": 41,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 1171539,
+        "name": "Noah Sadiki",
+        "position": "M",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 984014,
+        "name": "Enzo Le Fée",
+        "position": "M",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 877980,
+        "name": "Wilson Isidor",
+        "position": "F",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 934228,
+        "name": "Ajibola-Joshua Alese",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1014987,
+        "name": "Dennis Cirkin",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1097848,
+        "name": "Leo Fuhr Hjelde",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1128532,
+        "name": "Habib Diarra",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 805137,
+        "name": "Omar Alderete",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1094440,
+        "name": "Romaine Mundle",
+        "position": "F",
+        "reason": 1
+      }
+    ]
   }
 }

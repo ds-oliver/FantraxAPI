@@ -2,15 +2,309 @@
   "event_id": 14025066,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 581310,
+        "name": "David Raya",
+        "position": "G",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 958959,
+        "name": "Jurriën Timber",
+        "position": "D",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 941168,
+        "name": "William Saliba",
+        "position": "D",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1002837,
+        "name": "Piero Hincapié",
+        "position": "D",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1423711,
+        "name": "Myles Lewis-Skelly",
+        "position": "D",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 966837,
+        "name": "Martín Zubimendi",
+        "position": "M",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 856714,
+        "name": "Declan Rice",
+        "position": "M",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 934235,
+        "name": "Bukayo Saka",
+        "position": "F",
+        "team_id": 42,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 864921,
+        "name": "Eberechi Eze",
+        "position": "F",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 135666,
+        "name": "Leandro Trossard",
+        "position": "F",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 592010,
+        "name": "Mikel Merino",
+        "position": "M",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 966547,
+        "name": "Noni Madueke",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 547410,
+        "name": "Martin Ødegaard",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 922573,
+        "name": "Gabriel Martinelli",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 804508,
+        "name": "Viktor Gyökeres",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 836705,
+        "name": "Kai Havertz",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 869792,
+        "name": "Gabriel Magalhães",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 794839,
+        "name": "Gabriel Jesus",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 957602,
+        "name": "Riccardo Calafiori",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 553606,
+        "name": "Guglielmo Vicario",
+        "position": "G",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 913654,
+        "name": "Pedro Porro",
+        "position": "D",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 829932,
+        "name": "Cristian Romero",
+        "position": "D",
+        "team_id": 33,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 998247,
+        "name": "Micky van de Ven",
+        "position": "D",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 945798,
+        "name": "Djed Spence",
+        "position": "D",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 364612,
+        "name": "João Palhinha",
+        "position": "M",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1002711,
+        "name": "Pape Matar Sarr",
+        "position": "M",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 791190,
+        "name": "Rodrigo Bentancur",
+        "position": "M",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1085180,
+        "name": "Brennan Johnson",
+        "position": "F",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 840217,
+        "name": "Richarlison",
+        "position": "F",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 997183,
+        "name": "Xavi Simons",
+        "position": "M",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 928124,
+        "name": "Dejan Kulusevski",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 356398,
+        "name": "James Maddison",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 94758,
+        "name": "Ben Davies",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1142335,
+        "name": "Archie Gray",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 361420,
+        "name": "Dominic Solanke",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 871706,
+        "name": "Randal Kolo Muani",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 1391251,
+        "name": "Lucas Bergvall",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 905163,
+        "name": "Mohammed Kudus",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 997103,
+        "name": "Radu Drăguşin",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1144143,
+        "name": "Kota Takai",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 844842,
+        "name": "Yves Bissouma",
+        "position": "M",
+        "reason": 1
+      }
+    ]
   }
 }

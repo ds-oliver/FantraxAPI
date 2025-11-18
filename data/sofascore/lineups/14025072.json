@@ -2,15 +2,267 @@
   "event_id": 14025072,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 42209,
+        "name": "Martin Dúbravka",
+        "position": "G",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 44614,
+        "name": "Kyle Walker",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 817979,
+        "name": "Axel Tuanzebe",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1117223,
+        "name": "Maxime Estève",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1392044,
+        "name": "Quilindschy Hartman",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 792122,
+        "name": "Josh Cullen",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 855845,
+        "name": "Florentino Luís",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1004505,
+        "name": "Loum Tchaouna",
+        "position": "F",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1048916,
+        "name": "Lesley Ugochukwu",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1020680,
+        "name": "Jaidon Anthony",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 875137,
+        "name": "Zian Flemming",
+        "position": "F",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 927175,
+        "name": "Jordan Beyer",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 990550,
+        "name": "Zeki Amdouni",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 804613,
+        "name": "Connor Roberts",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1195757,
+        "name": "Enock Agyei",
+        "position": "F",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 920546,
+        "name": "Robert Sánchez",
+        "position": "G",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 885908,
+        "name": "Reece James",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 923894,
+        "name": "Wesley Fofana",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 826134,
+        "name": "Trevoh Chalobah",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 794939,
+        "name": "Marc Cucurella",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 987650,
+        "name": "Moisés Caicedo",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 974505,
+        "name": "Enzo Fernández",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 879349,
+        "name": "Pedro Neto",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 975079,
+        "name": "João Pedro",
+        "position": "F",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1135873,
+        "name": "Alejandro Garnacho",
+        "position": "F",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 997087,
+        "name": "Liam Delap",
+        "position": "F",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 904827,
+        "name": "Benoît Badiashile",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 974505,
+        "name": "Enzo Fernández",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 879349,
+        "name": "Pedro Neto",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 958966,
+        "name": "Mykhaylo Mudryk",
+        "position": "M",
+        "reason": 3
+      },
+      {
+        "id": 1110006,
+        "name": "Dário Essugo",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 996911,
+        "name": "Levi Colwill",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 982780,
+        "name": "Cole Palmer",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1069488,
+        "name": "Roméo Lavia",
+        "position": "M",
+        "reason": 1
+      }
+    ]
   }
 }

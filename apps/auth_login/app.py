@@ -42,8 +42,16 @@ from fantraxapi.subs import SubsService
 # Import _detect_divisions from scripts
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "examples"))
-from list_rosters import _detect_divisions
+_scripts_path = Path(__file__).parent.parent.parent / "scripts" / "examples"
+if str(_scripts_path) not in sys.path:
+	sys.path.insert(0, str(_scripts_path))
+
+try:
+	from list_rosters import _detect_divisions
+except ImportError:
+	# Fallback if import fails
+	def _detect_divisions(api):
+		return {}
 
 logger = logging.getLogger(__name__)
 logger.info("fantraxapi.__file__=%s", getattr(fantraxapi, "__file__", "?"))
@@ -817,11 +825,20 @@ def ui_simple_subs_section():
     # Current roster
     try:
         roster = api.roster_info(team_id)
+        # Store in session state so Lineup Intelligence page can access it
+        st.session_state["roster"] = roster
+        st.session_state["api"] = api
+        st.session_state["session"] = session
+        st.session_state["league_id"] = league_id
+        st.session_state["team_id"] = team_id
     except Exception as e:
         logger.exception("Failed to fetch roster")
         st.error(f"Failed to fetch roster: {e}")
         return
 
+    st.success(f"✅ Roster loaded for: **{label}**")
+    st.caption("Your roster is now available for use in Lineup Intelligence!")
+    
     st.subheader(label)
     starters_only = st.checkbox("Show starters only", value=False)
     starters, bench = _render_roster_tables(roster, starters_only=starters_only)
@@ -1133,6 +1150,13 @@ def ui_simple_subs_section():
         logger.exception("Drop UI error")
         st.error(f"Could not load drop UI: {e}")
 
+    # --- Lineup Intelligence Link ---
+    with st.sidebar:
+        st.divider()
+        st.page_link("pages/lineup_intelligence_page.py", 
+                     label="⚽ Fantrax x SofaScore Link", 
+                     icon="⚽")
+
     # --- League FAAB & Claims ---
     st.divider()
     st.subheader("League FAAB & Claims")
@@ -1392,14 +1416,71 @@ def check_auth_on_startup():
 
 
 def main():
-    # Check authentication status on startup
-    check_auth_on_startup()
-    
-    st.title("Fantrax (BYOC) — Simple Substitutions GUI")
-    ui_login_section()
-    st.divider()
-    ui_simple_subs_section()
+	"""Main app entry point with authentication."""
+	# Import auth guard and user manager
+	from apps.auth_login.auth_guard import require_auth, get_current_username, logout
+	from utils.user_manager import UserManager
+	
+	# Require authentication - will show login UI if not authenticated
+	user_id = require_auth()
+	
+	# Get user info
+	user_mgr = UserManager()
+	user = user_mgr.get_user_by_id(user_id)
+	username = user.get("username") or user.get("email", "") if user else ""
+	
+	# Show header with user info and logout button
+	col1, col2 = st.columns([4, 1])
+	with col1:
+		st.title("Fantrax (BYOC) — Simple Substitutions GUI")
+		st.caption(f"Logged in as: {username}")
+	with col2:
+		if st.button("Logout", type="secondary"):
+			logout()
+	
+	# Check if user has connected their Fantrax cookies
+	artifacts = user_mgr.load_user_cookies(user_id)
+	if not artifacts:
+		st.warning("""
+		**Connect your Fantrax account**
+		
+		Upload your Fantrax cookies to enable roster management.
+		""")
+	else:
+		# Store artifacts in session state for existing functionality
+		st.session_state["auth_artifacts"] = artifacts
+		st.session_state["user_id"] = user_id
+		
+		# Check authentication status
+		try:
+			session = load_requests_session_from_artifacts(artifacts)
+			from utils.auth_helpers import validate_cookies
+			validation = validate_cookies(artifacts, session)
+			
+			if not validation['valid']:
+				st.error("""
+				🔴 **Your Fantrax session has expired**
+				
+				Your background automations have been paused. 
+				Please reconnect below to resume.
+				""")
+				st.session_state.pop("auth_artifacts", None)
+			elif validation['expires_soon']:
+				st.warning("""
+				⚠️ **Cookies expire soon (< 24 hours)**
+				
+				Re-upload fresh cookies to avoid interruption.
+				""")
+		except Exception as e:
+			logger.error(f"Error checking auth: {e}")
+			st.warning(f"⚠️ Could not validate session: {str(e)}")
+	
+	# Show main UI sections
+	st.divider()
+	ui_login_section()
+	st.divider()
+	ui_simple_subs_section()
 
 
 if __name__ == "__main__":
-    main()
+	main()

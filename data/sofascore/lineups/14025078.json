@@ -2,15 +2,213 @@
   "event_id": 14025078,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 871290,
+        "name": "Lucas Perri",
+        "position": "G",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 929132,
+        "name": "Jayden Bogle",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 828640,
+        "name": "Joe Rodon",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 886930,
+        "name": "Jaka Bijol",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 834308,
+        "name": "Gabriel Gudmundsson",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 866191,
+        "name": "Sean Longstaff",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 847097,
+        "name": "Ethan Ampadu",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 889861,
+        "name": "Anton Stach",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 973431,
+        "name": "Brenden Aaronson",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 803185,
+        "name": "Lukas Nmecha",
+        "position": "F",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 865523,
+        "name": "Noah Okafor",
+        "position": "F",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 826167,
+        "name": "Sebastiaan Bornauw",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-4-2",
+    "starters": [
+      {
+        "id": 158263,
+        "name": "Emiliano Martínez",
+        "position": "G",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 833956,
+        "name": "Matty Cash",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 827679,
+        "name": "Ezri Konsa",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 864169,
+        "name": "Pau Torres",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 96538,
+        "name": "Lucas Digne",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 250223,
+        "name": "John McGinn",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 826204,
+        "name": "Boubacar Kamara",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 923973,
+        "name": "Amadou Onana",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 783126,
+        "name": "Emiliano Buendía",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 948261,
+        "name": "Morgan Rogers",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 555386,
+        "name": "Ollie Watkins",
+        "position": "F",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 1457536,
+        "name": "Andrés García",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 303638,
+        "name": "Tyrone Mings",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   }
 }
