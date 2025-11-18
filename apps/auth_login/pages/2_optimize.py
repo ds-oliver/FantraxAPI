@@ -1,5 +1,5 @@
 """
-Lineup Intelligence Page - Fantrax x SofaScore Integration
+Optimize Page - Fantrax x SofaScore Integration
 
 Shows predicted and confirmed lineups from SofaScore for your rostered players,
 helping you make informed decisions about active/reserve swaps, waiver claims, and drops.
@@ -15,10 +15,12 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
+# Configure page
+st.set_page_config(page_title="Optimize", page_icon="⚽", layout="wide")
+
 # Page header
-st.title("Fantrax x SofaScore Lineup Intelligence")
+st.title("Optimize: Lineup Intelligence")
 st.markdown("**Predicted and confirmed lineups to help optimize your roster decisions**")
-st.page_link("app.py", label="← Back to Main App")
 
 # Check for authentication
 if "auth_artifacts" not in st.session_state:
@@ -26,67 +28,53 @@ if "auth_artifacts" not in st.session_state:
 	st.markdown("""
 	### How to get started:
 	
-	1. Go back to main app (link below)
+	1. Go back to Overview page
 	2. Upload your Fantrax cookies OR use Selenium login
-	3. Return here to select your league and view lineup predictions
+	3. Return here to view lineup predictions
 	""")
-	st.page_link("app.py", label="← Go to Main App to Authenticate")
 	st.stop()
 
 # Build session from artifacts
 try:
-	from utils.auth_helpers import load_requests_session_from_artifacts, fetch_user_leagues
+	from utils.auth_helpers import load_requests_session_from_artifacts
+	from apps.auth_login.context import select_league_and_team_in_sidebar
 	session = load_requests_session_from_artifacts(st.session_state["auth_artifacts"])
 except Exception as e:
 	st.error(f"Failed to create session: {e}")
-	st.page_link("app.py", label="← Go to Main App")
 	st.stop()
 
-# League selection
-st.subheader("Select Your League")
+# Global league/team selector (sidebar)
+league_id, team_id = select_league_and_team_in_sidebar(session=session)
 
+if not league_id:
+	st.warning("Select a league in the sidebar to use Lineup Intelligence.")
+	st.stop()
+if not team_id:
+	st.warning("Select a team/roster in the sidebar to use Lineup Intelligence.")
+	st.stop()
+
+# Store in session state for consistency
+st.session_state["league_id"] = league_id
+st.session_state["team_id"] = team_id
+
+# Load roster
 try:
-	leagues = fetch_user_leagues(session)
-	if not leagues:
-		st.error("No leagues found. Your cookies may be expired.")
-		st.page_link("app.py", label="← Go to Main App to Re-authenticate")
-		st.stop()
-	
-	# Create dropdown options
-	choices = {f"{lt['league']} — your team: {lt['team']}": lt for lt in leagues}
-	
-	# Use session state to persist selection
-	if "selected_league_label" not in st.session_state:
-		st.session_state["selected_league_label"] = list(choices.keys())[0]
-	
-	selected_label = st.selectbox(
-		"Choose a league",
-		list(choices.keys()),
-		index=list(choices.keys()).index(st.session_state["selected_league_label"]) if st.session_state["selected_league_label"] in choices else 0,
-		key="lineup_league_selector"
-	)
-	
-	# Update stored selection
-	st.session_state["selected_league_label"] = selected_label
-	
-	picked = choices[selected_label]
-	league_id = picked["leagueId"]
-	team_id = picked["teamId"]
-	
-	# Load roster
 	from fantraxapi.fantrax import FantraxAPI
 	api = FantraxAPI(league_id=league_id, session=session)
 	
 	with st.spinner("Loading roster..."):
 		roster = api.roster_info(team_id)
 	
-	st.success(f"Roster loaded: **{selected_label}**")
+	# Get league/team names from session state
+	league_name = st.session_state.get("league_name", league_id)
+	team_name = st.session_state.get("team_name", team_id)
+	
+	st.success(f"Roster loaded: **{league_name} — {team_name}**")
 	st.caption(f"League ID: {league_id} | Team ID: {team_id}")
 
 except Exception as e:
 	logger.exception("Failed to load roster")
 	st.error(f"Failed to load roster: {e}")
-	st.page_link("app.py", label="← Go to Main App")
 	st.stop()
 
 # Main content area

@@ -76,60 +76,70 @@ class TradesService:
 				player_ids_to_receive=["def456"]
 			)
 		"""
-		transactions = []
+		# Build transactionSets - each asset gets its own set
+		transaction_sets = []
 
-		# Add your outgoing players
+		# Add your outgoing players (one transactionSet per player)
 		if player_ids_to_give:
 			for player_id in player_ids_to_give:
-				transactions.append({
-					"destinationTeamId": to_team_id,
-					"sourceTeamId": from_team_id,
-					"scorerId": player_id,
-					"type": {"code": "TRADE", "name": "Trade"}
+				transaction_sets.append({
+					"transactions": [{
+						"sourceTeamId": from_team_id,
+						"destTeamId": to_team_id,
+						"scorerId": player_id,
+					}]
 				})
 
-		# Add their players you want
+		# Add their players you want (one transactionSet per player)
 		if player_ids_to_receive:
 			for player_id in player_ids_to_receive:
-				transactions.append({
-					"destinationTeamId": from_team_id,
-					"sourceTeamId": to_team_id,
-					"scorerId": player_id,
-					"type": {"code": "TRADE", "name": "Trade"}
+				transaction_sets.append({
+					"transactions": [{
+						"sourceTeamId": to_team_id,
+						"destTeamId": from_team_id,
+						"scorerId": player_id,
+					}]
 				})
 
-		# Add FAAB if included
-		if faab_to_give:
-			transactions.append({
-				"destinationTeamId": to_team_id,
-				"sourceTeamId": from_team_id,
-				"scorerId": f"BA_{faab_to_give}",
-				"type": {"code": "TRADE", "name": "Trade"}
+		# Add FAAB if included (as string, using budgetAmount)
+		if faab_to_give and faab_to_give > 0:
+			transaction_sets.append({
+				"transactions": [{
+					"sourceTeamId": from_team_id,
+					"destTeamId": to_team_id,
+					"budgetAmount": str(int(faab_to_give)),
+				}]
 			})
-		if faab_to_receive:
-			transactions.append({
-				"destinationTeamId": from_team_id,
-				"sourceTeamId": to_team_id,
-				"scorerId": f"BA_{faab_to_receive}",
-				"type": {"code": "TRADE", "name": "Trade"}
+		
+		if faab_to_receive and faab_to_receive > 0:
+			transaction_sets.append({
+				"transactions": [{
+					"sourceTeamId": to_team_id,
+					"destTeamId": from_team_id,
+					"budgetAmount": str(int(faab_to_receive)),
+				}]
 			})
 
-		if not transactions:
+		if not transaction_sets:
 			raise FantraxException("Trade must include at least one asset (players or FAAB)")
 
 		# Add conditional drops if specified
 		if conditional_drops:
 			for incoming_id, drop_id in conditional_drops.items():
-				transactions.append({
-					"type": {"code": "DROP", "name": "Drop"},
-					"scorerId": drop_id,
-					"sourceTeamId": from_team_id if incoming_id in (player_ids_to_receive or []) else to_team_id,
-					"conditional": True,
-					"conditionalOnScorerId": incoming_id
+				transaction_sets.append({
+					"transactions": [{
+						"sourceTeamId": from_team_id if incoming_id in (player_ids_to_receive or []) else to_team_id,
+						"scorerId": drop_id,
+						"conditional": True,
+						"conditionalOnScorerId": incoming_id,
+					}]
 				})
 
-		# Submit the trade
-		response = self._request("submitTrade", transactions=transactions)
+		# Create the trade using correct API method and payload structure
+		response = self._request(
+			"createTrade",
+			transactionSets=transaction_sets
+		)
 		return response
 
 	def cancel_trade(self, trade_id: str) -> dict:

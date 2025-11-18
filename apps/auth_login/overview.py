@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Streamlit (BYOC) — Simple Substitutions GUI
+Overview Page — Fantrax Roster Management
 
 Keeps original auth/cookie practices:
 - Upload artifacts (cookies+storage) or legacy cookie file
@@ -69,6 +69,7 @@ from utils.auth_helpers import (
     fetch_user_leagues,
     validate_logged_in,
 )
+from apps.auth_login.context import select_league_and_team_in_sidebar
 
 # Prefer the token-aware builder; fall back to cookies-only builder if absent.
 try:
@@ -116,7 +117,7 @@ except Exception:
             api_logger.addHandler(ah)
         api_logger.setLevel(logging.DEBUG)
 
-st.set_page_config(page_title="Fantrax (BYOC) — Simple Subs", page_icon="🔁", layout="wide")
+st.set_page_config(page_title="Overview", page_icon="🔁", layout="wide")
 
 LOG_PATH = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log"
 configure_logging(LOG_PATH)
@@ -789,15 +790,12 @@ def ui_simple_subs_section():
             except Exception:
                 st.caption("Probe failed.")
 
-    # List leagues via fxpa
-    logger.info("Fetching user leagues via fxpa getAllLeagues")
-    leagues = fetch_user_leagues(session)
-    if not leagues:
-        st.error("No leagues found (cookie may be expired).")
-        st.stop()
+    # Global league/team selector (sidebar) - render first
+    league_id, team_id = select_league_and_team_in_sidebar(session=session)
 
     # Sidebar user card
     with st.sidebar:
+        st.divider()
         try:
             info = fetch_user_profile(session) or {}
             logger.info(f"User info: {info}")
@@ -812,12 +810,13 @@ def ui_simple_subs_section():
             if line: st.caption(line)
             if info.get("numLeagues"): st.caption(f"Leagues: {info['numLeagues']}")
 
-    # Choose a league (showing user's team)
-    choices = {f"{lt['league']} — your team: {lt['team']}": lt for lt in leagues}
-    label = st.selectbox("Choose a league", list(choices.keys()))
-    picked = choices[label]
-    league_id = picked["leagueId"]
-    team_id = picked["teamId"]
+    if not league_id:
+        st.warning("Select a league in the sidebar to continue.")
+        st.stop()
+    if not team_id:
+        st.warning("Select a team/roster in the sidebar to continue.")
+        st.stop()
+
     st.caption(f"Selected leagueId={league_id}, your teamId={team_id}")
 
     api = FantraxAPI(league_id=league_id, session=session)
@@ -836,10 +835,13 @@ def ui_simple_subs_section():
         st.error(f"Failed to fetch roster: {e}")
         return
 
-    st.success(f"✅ Roster loaded for: **{label}**")
+    # Get league/team names from session state for display
+    league_name = st.session_state.get("league_name", league_id)
+    team_name = st.session_state.get("team_name", team_id)
+    st.success(f"✅ Roster loaded for: **{league_name} — {team_name}**")
     st.caption("Your roster is now available for use in Lineup Intelligence!")
     
-    st.subheader(label)
+    st.subheader(f"{league_name} — {team_name}")
     starters_only = st.checkbox("Show starters only", value=False)
     starters, bench = _render_roster_tables(roster, starters_only=starters_only)
 
@@ -1150,13 +1152,6 @@ def ui_simple_subs_section():
         logger.exception("Drop UI error")
         st.error(f"Could not load drop UI: {e}")
 
-    # --- Lineup Intelligence Link ---
-    with st.sidebar:
-        st.divider()
-        st.page_link("pages/lineup_intelligence_page.py", 
-                     label="⚽ Fantrax x SofaScore Link", 
-                     icon="⚽")
-
     # --- League FAAB & Claims ---
     st.divider()
     st.subheader("League FAAB & Claims")
@@ -1432,7 +1427,7 @@ def main():
 	# Show header with user info and logout button
 	col1, col2 = st.columns([4, 1])
 	with col1:
-		st.title("Fantrax (BYOC) — Simple Substitutions GUI")
+		st.title("Overview: Roster Management")
 		st.caption(f"Logged in as: {username}")
 	with col2:
 		if st.button("Logout", type="secondary"):
