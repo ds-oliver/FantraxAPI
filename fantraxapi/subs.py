@@ -675,7 +675,7 @@ class SubsService:
         # Check final result
         fantasy_resp = result.get("fantasyResponse", {})
         final_model = result.get("model", {})
-        main_msg = fantasy_resp.get("mainMsg") or result.get("mainMsg", "")
+        main_msg = fantasy_resp.get("mainMsg") or result.get("mainMsg") or ""
         msg_type = fantasy_resp.get("msgType") or result.get("msgType", "")
         lineup_changes = fantasy_resp.get("lineupChanges", [])
         errors = fantasy_resp.get("illegalRosterMsgs") or []
@@ -836,7 +836,7 @@ class SubsService:
             log.info(f"[swap] Execute response: {execute_resp}")
 
             fantasy_resp = execute_resp.get("fantasyResponse", {})
-            main_msg = fantasy_resp.get("mainMsg") or execute_resp.get("mainMsg", "")
+            main_msg = fantasy_resp.get("mainMsg") or execute_resp.get("mainMsg") or ""
             msg_type = fantasy_resp.get("msgType") or execute_resp.get("msgType", "")
             lineup_changes = fantasy_resp.get("lineupChanges", [])
 

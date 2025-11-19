@@ -564,7 +564,7 @@ class SubsService:
 
             # Parse response
             fantasy_resp = execute_resp.get("fantasyResponse", {}) or {}
-            main_msg = fantasy_resp.get("mainMsg") or execute_resp.get("mainMsg", "")
+            main_msg = fantasy_resp.get("mainMsg") or execute_resp.get("mainMsg") or ""
             msg_type = fantasy_resp.get("msgType") or execute_resp.get("msgType", "")
             lineup_changes = fantasy_resp.get("lineupChanges") or []
 
