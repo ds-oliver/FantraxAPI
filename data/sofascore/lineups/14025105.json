@@ -2,15 +2,250 @@
   "event_id": 14025105,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 138530,
+        "name": "Jordan Pickford",
+        "position": "G",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927361,
+        "name": "James Garner",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 145188,
+        "name": "James Tarkowski",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 110846,
+        "name": "Michael Keane",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 876643,
+        "name": "Vitaliy Mykolenko",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1085950,
+        "name": "Tim Iroegbunam",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 106337,
+        "name": "Idrissa Gueye",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 914309,
+        "name": "Iliman Ndiaye",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 861970,
+        "name": "Kiernan Dewsbury-Hall",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 189061,
+        "name": "Jack Grealish",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 987489,
+        "name": "Beto",
+        "position": "F",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 979563,
+        "name": "Jarrad Branthwaite",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1064082,
+        "name": "Merlin Röhl",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1020141,
+        "name": "Nathan Patterson",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-5-1",
+    "starters": [
+      {
+        "id": 162653,
+        "name": "Nick Pope",
+        "position": "G",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 980634,
+        "name": "Valentino Livramento",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1014286,
+        "name": "Malick Thiaw",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 101882,
+        "name": "Fabian Schär",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 99090,
+        "name": "Dan Burn",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 372336,
+        "name": "Jacob Murphy",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 892673,
+        "name": "Sandro Tonali",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 866469,
+        "name": "Bruno Guimarães",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 560128,
+        "name": "Joelinton",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 914902,
+        "name": "Anthony Gordon",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 980623,
+        "name": "Nick Woltemade",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 1122603,
+        "name": "William Osula",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 914902,
+        "name": "Anthony Gordon",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 69256,
+        "name": "Kieran Trippier",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1136730,
+        "name": "Lewis Hall",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 805123,
+        "name": "Yoane Wissa",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 1084284,
+        "name": "Harrison Ashby",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2025-11-24 23:05:01+0000"
 }

@@ -280,6 +280,51 @@ class UserManager:
 		"""Get user info by user_id."""
 		data = self._load_users()
 		return data.get("users", {}).get(user_id)
+
+	def get_default_league(self, user_id: str) -> Optional[Dict[str, Any]]:
+		"""Return the user's preferred default league/team if set."""
+		user = self.get_user_by_id(user_id)
+		if not user:
+			return None
+		league_id = user.get("default_league_id")
+		if not league_id:
+			return None
+		return {
+			"league_id": str(league_id),
+			"team_id": str(user.get("default_team_id")) if user.get("default_team_id") else None,
+			"league_name": user.get("default_league_name") or "",
+			"team_name": user.get("default_team_name") or "",
+			"updated_at": user.get("default_league_updated_at"),
+		}
+
+	def set_default_league(
+		self,
+		user_id: str,
+		league_id: str,
+		team_id: str,
+		league_name: str = "",
+		team_name: str = "",
+	) -> bool:
+		"""Persist the user's preferred default league/team selection."""
+		try:
+			data = self._load_users()
+			users = data.get("users", {})
+			if user_id not in users:
+				logger.error(f"User {user_id} not found")
+				return False
+
+			users[user_id]["default_league_id"] = str(league_id)
+			users[user_id]["default_team_id"] = str(team_id)
+			users[user_id]["default_league_name"] = league_name or ""
+			users[user_id]["default_team_name"] = team_name or ""
+			users[user_id]["default_league_updated_at"] = datetime.utcnow().isoformat()
+			data["users"] = users
+			self._save_users(data)
+			logger.info(f"Saved default league for user {user_id}: {league_name} ({league_id})")
+			return True
+		except Exception as e:
+			logger.error(f"Failed to save default league for user {user_id}: {e}")
+			return False
 	
 	def list_all_users(self) -> list[Dict[str, Any]]:
 		"""Get list of all users."""
@@ -569,4 +614,3 @@ class UserManager:
 		"""Get username for a user (returns None if not set)."""
 		user = self.get_user_by_id(user_id)
 		return user.get("username") if user else None
-

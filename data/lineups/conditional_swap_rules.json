@@ -1,0 +1,38 @@
+[
+  {
+    "active_player_id": "06p4k",
+    "backups": [
+      {
+        "priority": 1,
+        "reserve_player_id": "0642l"
+      }
+    ],
+    "condition": "not_starting",
+    "enforce_kickoff_order": true,
+    "id": "5ce624f79405407787ae06b24f53826f",
+    "league_id": "o90qdw15mc719reh",
+    "max_fires_per_period": 1,
+    "period_id": "13",
+    "period_label": "Gameweek 13",
+    "state": "active",
+    "team_id": "3uxxpgpemc719rep"
+  },
+  {
+    "active_player_id": "0700u",
+    "backups": [
+      {
+        "priority": 1,
+        "reserve_player_id": "060wh"
+      }
+    ],
+    "condition": "not_starting",
+    "enforce_kickoff_order": true,
+    "id": "719ce686c8fa41488f40ebc1aa9bce58",
+    "league_id": "wpkabxe9md2ygbqb",
+    "max_fires_per_period": 1,
+    "period_id": "13",
+    "period_label": "Gameweek 13",
+    "state": "active",
+    "team_id": "5u6ce0wkmd8wxnnc"
+  }
+]

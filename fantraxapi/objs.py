@@ -14,10 +14,37 @@ class Player:
 		self.first_name = data.get("firstName", "")
 		self.last_name = data.get("lastName", "")
 		self.team = data.get("proTeamAbbr", "")	 # Pro team abbreviation
+		self.team_name = data.get("teamName", "")
+		self.team_short_name = data.get("teamShortName", self.team)
+		self.team_id = data.get("teamId")
 		self.position = data.get("position", "")  # Primary position
 		self.positions = data.get("eligiblePositions", [])	# All eligible positions
+		self.default_pos_id = data.get("defaultPosId")
+		self.pos_ids = data.get("posIds", [])
+		self.pos_ids_no_flex = data.get("posIdsNoFlex", [])
 		self.status = data.get("status", "")  # Player status (e.g., Active, Injured)
 		self.injury_status = data.get("injuryStatus", "")  # Detailed injury status
+		self.rank = data.get("rank")
+		self.short_name = data.get("shortName", "")
+		self.url_name = data.get("urlName", "")
+		self.headshot_url = data.get("headshotUrl", "")
+		self.upcoming_event_status = data.get("upcomingEventStatusId")
+		self.icons = data.get("icons", [])
+		self.team_logo = data.get("teamLogo")
+		self.table_rank = data.get("tableRank")
+		self.owner_team = data.get("ownerTeam")
+		self.owner_tooltip = data.get("ownerToolTip")
+		self.owner_team_id = data.get("ownerTeamId")
+		self.next_opponent_raw = data.get("nextOpponentRaw")
+		self.next_opponent = data.get("nextOpponent")
+		self.next_opponent_is_away = data.get("nextOpponentIsAway")
+		self.next_kickoff = data.get("nextKickoff")
+		self.next_event_id = data.get("nextEventId")
+		self.season_points = data.get("seasonPoints")
+		self.fppg_value = data.get("fppgValue")
+		self.percent_owned = data.get("percentOwned")
+		self.percent_started = data.get("percentStarted")
+		self.percent_started_delta = data.get("percentStartedDelta")
 		
 	def __str__(self) -> str:
 		return f"{self.name} ({self.team} - {self.position})"

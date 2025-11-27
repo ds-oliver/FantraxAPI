@@ -73,6 +73,17 @@ See `ARCHITECTURE.md`_ for detailed architecture documentation, core file descri
 .. _ARCHITECTURE.md: ARCHITECTURE.md
 
 
+SofaScore lineup automation (cron-friendly)
+----------------------------------------------------------
+- Entry script: ``scripts/sofascore_lineup_listener.py`` (predictions + confirmed listener + optional mappings).
+- High-frequency watcher: ``scripts/sofascore_kickoff_watcher.py`` for 10s polling inside a hot pre-kickoff window.
+- Runs are idempotent and guarded by a lock file; invoke via cron instead of a long-lived daemon.
+- Watcher uses the cached upcoming schedule from disk—keep it fresh via the daily/weekly listener run.
+- Example crons (adjust paths/env) are in ``deploy/sofascore_crontab`` ready for ``crontab deploy/sofascore_crontab``.
+- Host clock should be NTP-synced (kickoffs treated as UTC). Cron granularity approximates the 70–80m window.
+- Use ``--with-mappings`` sparingly (e.g., after predictions) and set ``--browser-path`` to a Chrome/Chromium binary available to the cron user.
+
+
 Installation & Documentation
 ----------------------------------------------------------
 

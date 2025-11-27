@@ -15,6 +15,7 @@ from fantraxapi.trade_analysis import (
 	_extract_primary_position,
 	compute_surplus_and_needs,
 	compute_trade_matches,
+	default_position_limits,
 )
 
 
@@ -124,7 +125,7 @@ def test_compute_surplus_and_needs():
 	}
 	
 	# Compute surplus/needs
-	compute_surplus_and_needs(profiles, min_delta=1)
+	compute_surplus_and_needs(profiles, min_delta=1, position_limits=default_position_limits())
 	
 	# Team 1 should have surplus D (8 vs avg ~6)
 	assert "D" in profiles["team1"].surplus_positions
@@ -136,6 +137,34 @@ def test_compute_surplus_and_needs():
 	assert "D" in profiles["team2"].need_positions
 	
 	print("✓ Surplus/need computation tests passed")
+
+
+def test_compute_surplus_and_needs_uses_limits():
+	"""Constraints should trigger surplus/needs even without large average deltas."""
+	profiles = {
+		"team1": TeamPositionProfile(
+			league_id="test",
+			team_id="team1",
+			team_name="Team 1",
+			division="Test",
+			position_counts={"GK": 2, "D": 2, "M": 7, "F": 3},
+			total_players=14,
+		),
+		"team2": TeamPositionProfile(
+			league_id="test",
+			team_id="team2",
+			team_name="Team 2",
+			division="Test",
+			position_counts={"GK": 1, "D": 4, "M": 5, "F": 3},
+			total_players=13,
+		),
+	}
+	
+	# Use high min_delta so averages won't trip flags
+	compute_surplus_and_needs(profiles, min_delta=5, position_limits=default_position_limits())
+	
+	assert "M" in profiles["team1"].surplus_positions, "7 midfielders exceeds 5 active + 1 buffer"
+	assert "D" in profiles["team1"].need_positions, "Only 2 defenders violates minimum requirement"
 
 
 def test_compute_trade_matches():
@@ -246,4 +275,3 @@ if __name__ == "__main__":
 		print(f"Error running tests: {e}")
 		print("=" * 50)
 		sys.exit(1)
-

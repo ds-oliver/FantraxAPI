@@ -1,12 +1,27 @@
 """Trade partner analysis based on roster composition."""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional, Tuple
 
 from fantraxapi.fantrax import FantraxAPI
 from fantraxapi.objs import RosterRow
 
 PositionKey = Literal["GK", "D", "M", "F"]
+PositionLimits = Dict[PositionKey, Dict[str, int]]
+
+
+DEFAULT_POSITION_LIMITS: PositionLimits = {
+	# Keys support: min/min_active/min_roster, max/max_active/max_roster, bench_buffer/surplus_buffer
+	"GK": {"min_active": 1, "max_active": 1, "bench_buffer": 1},
+	"D": {"min_active": 3, "max_active": 5, "bench_buffer": 1},
+	"M": {"min_active": 2, "max_active": 5, "bench_buffer": 1},
+	"F": {"min_active": 1, "max_active": 3, "bench_buffer": 1},
+}
+
+
+def default_position_limits() -> PositionLimits:
+	"""Return a copy of the default Premier League-style lineup bounds."""
+	return {pos: limits.copy() for pos, limits in DEFAULT_POSITION_LIMITS.items()}
 
 
 @dataclass
@@ -160,19 +175,21 @@ def build_division_profiles(
 def compute_surplus_and_needs(
 	profiles: Dict[str, TeamPositionProfile],
 	min_delta: int = 1,
+	position_limits: Optional[PositionLimits] = None,
 ) -> None:
 	"""
 	Mutates each TeamPositionProfile in-place to set surplus and need positions.
 	
 	Strategy:
-		- Compute division-average count per position.
-		- A team is:
-			surplus if count >= avg + min_delta
-			need    if count <= avg - min_delta
+		- Honor league lineup constraints (min/max bounds) if provided.
+		- Fall back to division-average deltas when within legal bounds.
 	
 	Args:
 		profiles: Dict of team profiles to analyze
 		min_delta: Minimum difference from average to be considered surplus/need
+		position_limits: Optional per-position bounds (GK/D/M/F) with keys like
+			min/min_active/min_roster and max/max_active/max_roster plus optional
+			bench_buffer/surplus_buffer to allow a healthy cushion past max_active
 	"""
 	if not profiles:
 		return
@@ -186,6 +203,28 @@ def compute_surplus_and_needs(
 			sums[pos] += p.position_counts.get(pos, 0)
 	
 	avgs: Dict[PositionKey, float] = {pos: sums[pos] / n for pos in sums.keys()}
+	limits = position_limits or {}
+	
+	def _first(limit_dict: Dict[str, int], keys: Tuple[str, ...]) -> Optional[int]:
+		for key in keys:
+			if key in limit_dict and limit_dict[key] is not None:
+				try:
+					return int(limit_dict[key])
+				except (TypeError, ValueError):
+					continue
+		return None
+	
+	def _resolve_limits(limit_dict: Dict[str, int]) -> Tuple[Optional[int], Optional[int]]:
+		if not limit_dict:
+			return None, None
+		min_threshold = _first(limit_dict, ("need_trigger", "min_roster", "min", "min_active"))
+		surplus_threshold = _first(limit_dict, ("surplus_trigger", "max_roster", "max_total"))
+		if surplus_threshold is None:
+			max_active = _first(limit_dict, ("max_active", "max"))
+			buffer_val = _first(limit_dict, ("bench_buffer", "surplus_buffer", "buffer")) or 0
+			if max_active is not None:
+				surplus_threshold = max_active + buffer_val
+		return min_threshold, surplus_threshold
 	
 	# 2) Classify each team
 	for p in profiles.values():
@@ -195,6 +234,17 @@ def compute_surplus_and_needs(
 		for pos in ["GK", "D", "M", "F"]:
 			count = p.position_counts.get(pos, 0)
 			avg = avgs[pos]
+			limit_dict = limits.get(pos, {})
+			
+			min_threshold, surplus_threshold = _resolve_limits(limit_dict)
+			
+			if min_threshold is not None and count < min_threshold:
+				p.need_positions.append(pos)
+				continue
+			
+			if surplus_threshold is not None and count > surplus_threshold:
+				p.surplus_positions.append(pos)
+				continue
 			
 			if count >= avg + min_delta:
 				p.surplus_positions.append(pos)
@@ -260,4 +310,3 @@ def compute_trade_matches(
 	# sort best first
 	suggestions.sort(key=lambda s: s.score, reverse=True)
 	return suggestions
-

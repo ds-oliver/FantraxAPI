@@ -2,15 +2,268 @@
   "event_id": 14025111,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 78152,
+        "name": "Matz Sels",
+        "position": "G",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1010220,
+        "name": "Nicolò Savona",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836168,
+        "name": "Nikola Milenković",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1199282,
+        "name": "Murillo",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927356,
+        "name": "Neco Williams",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 843754,
+        "name": "Ibrahim Sangaré",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 994546,
+        "name": "Elliot Anderson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 944327,
+        "name": "Dan Ndoye",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 865912,
+        "name": "Morgan Gibbs-White",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 871765,
+        "name": "Nicolás Domínguez",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 981619,
+        "name": "Igor Jesus",
+        "position": "F",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 800417,
+        "name": "Ola Aina",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 359664,
+        "name": "Taiwo Awoniyi",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 867887,
+        "name": "Douglas Luiz",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 963298,
+        "name": "Dilane Bakwa",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 287643,
+        "name": "Oleksandr Zinchenko",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 50480,
+        "name": "Chris Wood",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 227946,
+        "name": "Angus Gunn",
+        "position": "G",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 994363,
+        "name": "Bart Verbruggen",
+        "position": "G",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 959628,
+        "name": "Mats Wieffer",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 962012,
+        "name": "Jan Paul van Hecke",
+        "position": "D",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 115365,
+        "name": "Lewis Dunk",
+        "position": "D",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 825844,
+        "name": "Ferdi Kadıoğlu",
+        "position": "D",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1199043,
+        "name": "Carlos Baleba",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1036269,
+        "name": "Yasin Ayari",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1400106,
+        "name": "Yankuba Minteh",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 946695,
+        "name": "Georginio Rutter",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1065588,
+        "name": "Diego Gómez",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 33902,
+        "name": "Danny Welbeck",
+        "position": "F",
+        "team_id": 30,
+        "substitute": false,
+        "captain": true
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 216308,
+        "name": "Adam Webster",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 301288,
+        "name": "Solly March",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 791,
+        "name": "James Milner",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 936849,
+        "name": "Kaoru Mitoma",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1167066,
+        "name": "Tom Watson",
+        "position": "M",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2025-11-24 23:05:05+0000"
 }

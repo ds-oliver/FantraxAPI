@@ -2,15 +2,207 @@
   "event_id": 14025108,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-3-2-1",
+    "starters": [
+      {
+        "id": 824509,
+        "name": "Gianluigi Donnarumma",
+        "position": "G",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 945122,
+        "name": "Matheus Nunes",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 318941,
+        "name": "Rúben Dias",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 964994,
+        "name": "Joško Gvardiol",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 931278,
+        "name": "Rayan Aït-Nouri",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 331209,
+        "name": "Bernardo Silva",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 954056,
+        "name": "Nico González",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 859765,
+        "name": "Phil Foden",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 979128,
+        "name": "Rayan Cherki",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 934386,
+        "name": "Jérémy Doku",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 839956,
+        "name": "Erling Haaland",
+        "position": "F",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [],
+    "missing": [
+      {
+        "id": 136710,
+        "name": "Mateo Kovačić",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 827606,
+        "name": "Rodri",
+        "position": "M",
+        "reason": 1
+      }
+    ]
+  },
+  "away": {
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 871290,
+        "name": "Lucas Perri",
+        "position": "G",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 929132,
+        "name": "Jayden Bogle",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 828640,
+        "name": "Joe Rodon",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836675,
+        "name": "Pascal Struijk",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 834308,
+        "name": "Gabriel Gudmundsson",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 866191,
+        "name": "Sean Longstaff",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 847097,
+        "name": "Ethan Ampadu",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 889861,
+        "name": "Anton Stach",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 973431,
+        "name": "Brenden Aaronson",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 803185,
+        "name": "Lukas Nmecha",
+        "position": "F",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 865523,
+        "name": "Noah Okafor",
+        "position": "F",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
     "missing": []
   },
-  "away": {
-    "formation": null,
-    "starters": [],
-    "subs": [],
-    "missing": []
-  }
+  "fetched_at_utc": "2025-11-24 23:04:58+0000"
 }

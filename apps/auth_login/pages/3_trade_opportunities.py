@@ -10,11 +10,27 @@ import pandas as pd
 
 from fantraxapi.fantrax import FantraxAPI
 from fantraxapi.utils import group_teams_by_division_api
-from fantraxapi.trade_analysis import (
-	build_division_profiles,
-	compute_surplus_and_needs,
-	compute_trade_matches,
-)
+try:
+	from fantraxapi.trade_analysis import (
+		build_division_profiles,
+		compute_surplus_and_needs,
+		compute_trade_matches,
+		default_position_limits,
+	)
+except ImportError:
+	from fantraxapi.trade_analysis import (
+		build_division_profiles,
+		compute_surplus_and_needs,
+		compute_trade_matches,
+	)
+	
+	def default_position_limits():
+		return {
+			"GK": {"min_active": 1, "max_active": 1, "bench_buffer": 1},
+			"D": {"min_active": 3, "max_active": 5, "bench_buffer": 1},
+			"M": {"min_active": 2, "max_active": 5, "bench_buffer": 1},
+			"F": {"min_active": 1, "max_active": 3, "bench_buffer": 1},
+		}
 
 # Configure page
 st.set_page_config(page_title="Trade Opportunities", page_icon="🔄", layout="wide")
@@ -177,8 +193,19 @@ def main():
 		st.error("Could not build profiles for any teams in division.")
 		st.stop()
 	
-	# 5) Compute surplus/needs
-	compute_surplus_and_needs(profiles, min_delta=1)
+	# 5) Compute surplus/needs (respect lineup bounds when possible)
+	position_limits = default_position_limits()
+	session_bounds = st.session_state.get("lineup_position_limits")
+	if isinstance(session_bounds, dict):
+		for pos, overrides in session_bounds.items():
+			if pos in position_limits and isinstance(overrides, dict):
+				position_limits[pos].update(overrides)
+	st.caption("Lineup bounds: 1 GK, 3-5 D, 2-5 M, 1-3 F. Surpluses trigger once you exceed the max active slot by more than a single bench cushion.")
+	try:
+		compute_surplus_and_needs(profiles, min_delta=1, position_limits=position_limits)
+	except TypeError:
+		# Older versions of compute_surplus_and_needs do not accept position_limits
+		compute_surplus_and_needs(profiles, min_delta=1)
 	
 	your_profile = profiles.get(your_team_id)
 	if not your_profile:
@@ -244,7 +271,7 @@ def main():
 		# Highlight your team
 		def highlight_your_team(row):
 			if row["Team"] == your_profile.team_name:
-				return ["background-color: #e6f3ff"] * len(row)
+				return ["background-color: #F94D00"] * len(row)
 			return [""] * len(row)
 		
 		st.dataframe(
@@ -577,4 +604,3 @@ def main():
 
 if __name__ == "__main__":
 	main()
-

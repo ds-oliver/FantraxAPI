@@ -1,0 +1,31 @@
+{
+  "colorKeys": {
+    "--color-teal": "#14b8a6",
+    "--color-primary": "#2563eb",
+    "--color-primary--softer": "#60a5fa",
+    "--color-purple--softer": "#c084fc",
+    "--color-amber--light": "#fde68a",
+    "--color-green--softer": "#86efac",
+    "--color-amber--softer": "#fcd34d",
+    "--color-red--softer": "#fca5a5",
+    "--color-purple": "#a855f7",
+    "--color-red": "#ef4444",
+    "PRIMARY": "#3b82f6"
+  },
+  "positionMap": {
+    "700": { "id": "700", "name": "Outfielder", "shortName": "OF", "colorKey": "--color-purple--softer" },
+    "701": { "id": "701", "name": "Forward", "shortName": "F", "colorKey": "--color-green--softer" },
+    "702": { "id": "702", "name": "Midfielder", "shortName": "M", "colorKey": "--color-primary--softer" },
+    "703": { "id": "703", "name": "Defender", "shortName": "D", "colorKey": "--color-amber--softer" },
+    "704": { "id": "704", "name": "Goalkeeper", "shortName": "G", "colorKey": "--color-red--softer" },
+    "707": { "id": "707", "name": "Team Outfielder", "shortName": "TmOF", "colorKey": "--color-purple" },
+    "708": { "id": "708", "name": "Team Goalkeepers", "shortName": "TmG", "colorKey": "--color-red" },
+    "709": { "id": "709", "name": "Team", "shortName": "Tm", "colorKey": "--color-teal" },
+    "710": { "id": "710", "name": "Midfielder/Forward", "shortName": "M/F", "colorKey": "--color-primary" },
+    "711": { "id": "711", "name": "Defender/Midfielder", "shortName": "D/M", "colorKey": "--color-amber--light" },
+    "712": { "id": "712", "name": "Defender 2", "shortName": "D2", "colorKey": "PRIMARY" },
+    "713": { "id": "713", "name": "Midfielder 2", "shortName": "M2", "colorKey": "PRIMARY" },
+    "714": { "id": "714", "name": "Outfielder 2", "shortName": "OF2", "colorKey": "PRIMARY" },
+    "715": { "id": "715", "name": "Defender/Forward", "shortName": "D/F", "colorKey": "PRIMARY" }
+  }
+}

@@ -5,6 +5,7 @@ Authentication helpers for Fantrax: Selenium login and cookie/session utilities.
 from __future__ import annotations
 
 import os
+import re
 import json
 import pickle
 import logging
@@ -524,17 +525,60 @@ def fetch_user_leagues(session: requests.Session) -> List[Dict[str, str]]:
 
 	d = resp0.get("data") or {}
 
-	# A) tableList → rows → cells
-	for table in d.get("tableList", []) or []:
+	def _extract_start_year(table: dict) -> Optional[int]:
+		"""Try to pull the season start year from a table caption or the first column."""
+		caption = table.get("caption") or ""
+		match = re.search(r"(\d{4})", caption)
+		if match:
+			return int(match.group(1))
+
+		for row in table.get("rows") or []:
+			cells = row.get("cells") or []
+			if not cells:
+				continue
+			first_cell = cells[0] or {}
+			if isinstance(first_cell, dict):
+				year_str = str(first_cell.get("content") or "")
+			else:
+				year_str = str(first_cell)
+			match = re.match(r"(\d{4})", year_str)
+			if match:
+				return int(match.group(1))
+		return None
+
+	table_list = d.get("tableList", []) or []
+	table_years = [
+		(tbl, _extract_start_year(tbl))
+		for tbl in table_list
+	]
+	season_years = [yr for _, yr in table_years if yr is not None]
+	target_year = max(season_years) if season_years else None
+	if target_year:
+		logger.info("Filtering leagues to start year %s", target_year)
+		table_list = [tbl for tbl, yr in table_years if yr == target_year]
+
+	# A) tableList → rows → cells (filtered to current season if available)
+	for table in table_list:
 		for row in table.get("rows", []) or []:
 			cells = row.get("cells", []) or []
 			if len(cells) >= 4 and isinstance(cells[2], dict) and isinstance(cells[3], dict):
 				_add(cells[2].get("leagueId"), cells[3].get("teamId"),
 					 cells[2].get("content", ""), cells[3].get("content", ""))
 
+	def _season_to_year(season_str: str) -> Optional[int]:
+		"""Extract the starting year from a season string like '2025-26'."""
+		if not season_str:
+			return None
+		match = re.match(r"(\d{4})", str(season_str))
+		return int(match.group(1)) if match else None
+
 	# B) fallback: leagues[].leaguesTeams[]
 	if not leagues:
 		for lg in d.get("leagues", []) or []:
+			if target_year is not None:
+				lg_year = _season_to_year(lg.get("season") or lg.get("seasonDisplay") or "")
+				if lg_year is not None and lg_year != target_year:
+					continue
 			for lt in lg.get("leaguesTeams", []) or []:
 				_add(lt.get("leagueId"), lt.get("teamId"), lt.get("league", ""), lt.get("team", ""))
 

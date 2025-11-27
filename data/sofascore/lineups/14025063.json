@@ -106,6 +106,24 @@
         "name": "Tyler Adams",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 934354,
+        "name": "Antoine Semenyo",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 44566,
+        "name": "Adam Smith",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 851596,
+        "name": "Justin Kluivert",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
@@ -246,5 +264,6 @@
         "reason": 11
       }
     ]
-  }
+  },
+  "fetched_at_utc": "2025-11-19 05:53:01+0000"
 }

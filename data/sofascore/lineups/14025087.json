@@ -136,6 +136,12 @@
         "name": "William Osula",
         "position": "F",
         "reason": 1
+      },
+      {
+        "id": 162653,
+        "name": "Nick Pope",
+        "position": "G",
+        "reason": 1
       }
     ]
   },
@@ -246,5 +252,6 @@
         "reason": 1
       }
     ]
-  }
+  },
+  "fetched_at_utc": "2025-11-19 05:53:04+0000"
 }

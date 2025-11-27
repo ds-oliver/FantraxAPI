@@ -100,6 +100,12 @@
         "name": "Sebastiaan Bornauw",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 998951,
+        "name": "Wilfried Gnonto",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
@@ -208,7 +214,20 @@
         "name": "Tyrone Mings",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 827679,
+        "name": "Ezri Konsa",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1089388,
+        "name": "Lamare Bogarde",
+        "position": "D",
+        "reason": 1
       }
     ]
-  }
+  },
+  "fetched_at_utc": "2025-11-19 05:53:05+0000"
 }

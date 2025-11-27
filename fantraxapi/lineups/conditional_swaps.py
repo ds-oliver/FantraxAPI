@@ -188,10 +188,95 @@ class RosterView:
         return self._row(player_id)
 
     def active_player_ids(self) -> List[str]:
-        return [pid for pid, row in self._row_by_player.items() if getattr(row, "pos_id", "0") != "0"]
+        return [
+            pid
+            for pid, row in self._row_by_player.items()
+            if getattr(row, "pos_id", "0") != "0"
+        ]
 
     def reserve_player_ids(self) -> List[str]:
-        return [pid for pid, row in self._row_by_player.items() if getattr(row, "pos_id", "0") == "0"]
+        return [
+            pid
+            for pid, row in self._row_by_player.items()
+            if getattr(row, "pos_id", "0") == "0"
+        ]
+
+
+def _canonical_pos_from_row(row: RosterRow) -> str:
+    """
+    Return a normalized position code for lineup legality checks.
+
+    - Starters: use row.pos.short_name directly.
+    - Reserves ("RES"): derive the player's underlying position from player/raw.
+    """
+    pos_obj = getattr(row, "pos", None)
+    raw_short = (getattr(pos_obj, "short_name", None) or "").strip().upper()
+    if raw_short and raw_short not in {"RES", "R", "BENCH"}:
+        code = raw_short
+    else:
+        player = getattr(row, "player", None)
+        raw = getattr(row, "_raw", {}) or {}
+        scorer = raw.get("scorer") or {}
+        candidates = [
+            getattr(player, "position_short", None) if player is not None else None,
+            getattr(player, "positionShort", None) if player is not None else None,
+            getattr(player, "position", None) if player is not None else None,
+            scorer.get("positionShort"),
+            scorer.get("position"),
+            raw.get("positionShort"),
+            raw.get("position"),
+        ]
+        code = ""
+        for c in candidates:
+            if c:
+                code = str(c).strip().upper()
+                if code:
+                    break
+
+    if not code:
+        return ""
+
+    if code.startswith("GK") or code.startswith("G"):
+        return "G"
+    if code.startswith("D"):
+        return "D"
+    if code.startswith("M"):
+        return "M"
+    if code.startswith("F"):
+        return "F"
+    return code
+
+
+def would_break_mandatory_slots(
+    roster_view: RosterView,
+    active_id: str,
+    reserve_id: str,
+    *,
+    min_gks: int = 1,
+) -> bool:
+    """
+    Return True if swapping active_id -> reserve_id would violate hard roster invariants (e.g., 0 active GKs).
+    Uses the player's underlying position, not 'RES', for bench rows.
+    """
+    starters = roster_view.active_player_ids()
+    if active_id not in starters:
+        return True
+
+    new_starters = [pid for pid in starters if pid != active_id]
+    new_starters.append(reserve_id)
+
+    gk_count = 0
+    for pid in new_starters:
+        row = roster_view.get_row(pid)
+        if not row:
+            continue
+        pos = _canonical_pos_from_row(row)
+        if pos == "G":
+            gk_count += 1
+
+    if gk_count < min_gks:
+        return True
+    return False
 
 
 def is_row_locked(
@@ -256,7 +341,7 @@ def get_row_lock_flags(
 
     visually_locked = fx_locked or finished_marker or kickoff_passed
 
-    log.debug(
+    log.info(
         "[conditional-swaps] lock flags for %s: fx_locked=%s kickoff_passed=%s finished_marker=%s",
         player_id,
         fx_locked,
@@ -383,6 +468,64 @@ class FireTracker:
         self._counts[key] = self.get(rule) + 1
 
 
+def choose_backup_for_rule_preview(
+    rule: "ConditionalSwapRule",
+    roster_view: "RosterView",
+    lineup_info_by_player: Dict[str, "PlayerLineupInfo"],
+    *,
+    now: Optional[datetime] = None,
+) -> Tuple[Optional[str], str]:
+    """
+    For a given rule, pick the backup that *would* be used if the active player
+    were NOT STARTING, following the same ordering and constraints as the engine.
+
+    Returns (backup_player_id_or_None, reason_string).
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+
+    info_active = lineup_info_by_player.get(rule.active_player_id)
+    if not info_active:
+        return None, "missing_active_info"
+
+    if not info_active.kickoff:
+        return None, "missing_active_kickoff"
+
+    for backup in rule.sorted_backups():
+        candidate_id = backup.reserve_player_id
+
+        if not roster_view.is_reserve(candidate_id):
+            continue
+        if roster_view.is_locked(candidate_id):
+            continue
+
+        info_candidate = lineup_info_by_player.get(candidate_id)
+        if not info_candidate:
+            continue
+        if info_candidate.status != LineupStatus.STARTING:
+            continue
+        if not info_candidate.kickoff:
+            continue
+        if now >= info_candidate.kickoff:
+            continue
+        if (
+            rule.enforce_kickoff_order
+            and info_candidate.kickoff < info_active.kickoff
+        ):
+            continue
+        if would_break_mandatory_slots(
+            roster_view,
+            rule.active_player_id,
+            candidate_id,
+            min_gks=1,
+        ):
+            continue
+
+        return candidate_id, "ok"
+
+    return None, "no_valid_backup"
+
+
 class ConditionalSwapEngine:
     """
     Evaluates tiered backup rules and determines whether any should trigger.
@@ -471,6 +614,13 @@ class ConditionalSwapEngine:
                 and info_candidate.kickoff < info_active.kickoff
             ):
                 continue
+            if would_break_mandatory_slots(
+                roster_view,
+                rule.active_player_id,
+                candidate_id,
+                min_gks=1,
+            ):
+                continue
 
             if not can_swap_in_period(
                 subs_service=self.subs_service,
@@ -519,6 +669,109 @@ def get_available_periods(league_id: str, team_id: str, session=None) -> List[Di
     return items
 
 
+def test_swap_in_period(
+    *,
+    subs_service: SubsService,
+    roster: Roster,
+    league_id: str,
+    team_id: str,
+    active_id: str,
+    reserve_id: str,
+    period_id: str | int,
+    enforce_invariants: bool = True,
+) -> dict:
+    """
+    Dry-run a swap for a specific period. Does not finalize the lineup.
+    """
+    try:
+        period_int = int(str(period_id))
+    except (TypeError, ValueError):
+        return {
+            "ok": False,
+            "reason": "invalid_period",
+            "illegal_msgs": [],
+            "confirm": {},
+        }
+
+    starters = [
+        r.player.id for r in roster.get_starters() if getattr(r, "player", None)
+    ]
+
+    if active_id not in starters:
+        return {
+            "ok": False,
+            "reason": "active_not_starter",
+            "illegal_msgs": [],
+            "confirm": {},
+        }
+
+    if reserve_id in starters:
+        return {
+            "ok": False,
+            "reason": "reserve_already_starter",
+            "illegal_msgs": [],
+            "confirm": {},
+        }
+
+    roster_view = RosterView(roster)
+    if enforce_invariants and would_break_mandatory_slots(
+        roster_view,
+        active_id=active_id,
+        reserve_id=reserve_id,
+    ):
+        return {
+            "ok": False,
+            "reason": "would_break_mandatory_slots",
+            "illegal_msgs": [
+                "Swap would violate mandatory position constraints (e.g. 0 GKs)."
+            ],
+            "confirm": {},
+        }
+
+    desired = [pid for pid in starters if pid != active_id]
+    desired.append(reserve_id)
+
+    try:
+        field_map = subs_service.build_field_map(roster, desired)
+    except Exception:
+        log.exception("[conditional-swaps] Failed to build field map for test")
+        return {
+            "ok": False,
+            "reason": "field_map_error",
+            "illegal_msgs": ["Failed to build field map for test."],
+            "confirm": {},
+        }
+
+    try:
+        confirm = subs_service.confirm_or_execute_lineup(
+            league_id=league_id,
+            fantasy_team_id=team_id,
+            roster_limit_period=period_int,
+            field_map=field_map,
+            apply_to_future=False,
+            do_finalize=False,
+        )
+    except Exception:
+        log.exception("[conditional-swaps] Confirm request failed during test")
+        return {
+            "ok": False,
+            "reason": "confirm_request_failed",
+            "illegal_msgs": ["Fantrax confirm request failed."],
+            "confirm": {},
+        }
+
+    fantasy_response = confirm.get("fantasyResponse") or {}
+    illegal_msgs = fantasy_response.get("illegalRosterMsgs") or []
+    ok = bool(confirm.get("ok", False)) and not illegal_msgs
+
+    return {
+        "ok": ok,
+        "reason": "ok" if ok else "illegal",
+        "illegal_msgs": illegal_msgs,
+        "confirm": confirm,
+    }
+
+
 def can_swap_in_period(
     *,
     subs_service: SubsService,
@@ -531,50 +784,19 @@ def can_swap_in_period(
 ) -> bool:
     """
     Validate whether a given active->reserve swap would be legal for a specific period.
-    Uses the existing confirm_or_execute_lineup confirm phase to check legality.
+    Uses the confirm_or_execute_lineup confirm phase to check legality.
     """
-    try:
-        period_int = int(str(period_id))
-    except (TypeError, ValueError):
-        return False
-
-    starters = [
-        r.player.id for r in roster.get_starters() if getattr(r, "player", None)
-    ]
-    if active_id not in starters:
-        return False
-    if reserve_id in starters:
-        return False
-
-    desired = [pid for pid in starters if pid != active_id]
-    desired.append(reserve_id)
-
-    try:
-        field_map = subs_service.build_field_map(roster, desired)
-    except Exception:
-        log.exception("[conditional-swaps] Failed to build field map for validation")
-        return False
-
-    try:
-        confirm = subs_service.confirm_or_execute_lineup(
-            league_id=league_id,
-            fantasy_team_id=team_id,
-            roster_limit_period=period_int,
-            field_map=field_map,
-            apply_to_future=False,
-            do_finalize=False,
-        )
-    except Exception:
-        log.exception("[conditional-swaps] Confirm request failed during validation")
-        return False
-
-    fantasy_response = confirm.get("fantasyResponse") or {}
-    illegal_msgs = fantasy_response.get("illegalRosterMsgs") or []
-    if illegal_msgs:
-        return False
-    if not confirm.get("ok", False):
-        return False
-    return True
+    result = test_swap_in_period(
+        subs_service=subs_service,
+        roster=roster,
+        league_id=league_id,
+        team_id=team_id,
+        active_id=active_id,
+        reserve_id=reserve_id,
+        period_id=period_id,
+        enforce_invariants=True,
+    )
+    return bool(result.get("ok"))
 
 
 __all__ = [
@@ -591,7 +813,11 @@ __all__ = [
     "RuleStorage",
     "SwapCondition",
     "can_swap_in_period",
+    "choose_backup_for_rule_preview",
     "generate_rule_id",
     "get_available_periods",
     "get_row_lock_flags",
+    "_canonical_pos_from_row",
+    "test_swap_in_period",
+    "would_break_mandatory_slots",
 ]

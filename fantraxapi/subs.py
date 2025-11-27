@@ -681,23 +681,31 @@ class SubsService:
         errors = fantasy_resp.get("illegalRosterMsgs") or []
         page_error = result.get("pageError")
         change_allowed = final_model.get("changeAllowed")
+        ok = result.get("ok", False)
         
-        log.info(f"[swap:cross-pos] Final result: msgType={msg_type}, mainMsg={main_msg}, lineupChanges={len(lineup_changes)}, errors={len(errors)}, changeAllowed={change_allowed}")
+        # Also check model.rosterAdjustmentInfo for scheduled changes
+        roster_adjustment = final_model.get("rosterAdjustmentInfo", {})
+        model_lineup_changes = roster_adjustment.get("lineupChanges", [])
+        
+        log.info(f"[swap:cross-pos] Final result: msgType={msg_type}, mainMsg={main_msg}, fantasyResponse.lineupChanges={len(lineup_changes)}, model.lineupChanges={len(model_lineup_changes)}, errors={len(errors)}, changeAllowed={change_allowed}, ok={ok}")
         
         # Success detection:
         # When scheduling for future period (apply_to_future=True), Fantrax returns:
         # - msgType=CONFIRM (not SUCCESS)
-        # - lineupChanges=0 (because it's scheduled, not immediately visible)
+        # - fantasyResponse.lineupChanges=0 (because it's scheduled, not immediately visible)
+        # - model.rosterAdjustmentInfo.lineupChanges=['Reserve to Active', ...] (the actual changes)
         # - changeAllowed=True
         # - No errors or error messages
         has_immediate_changes = len(lineup_changes) > 0
+        has_model_changes = len(model_lineup_changes) > 0
         no_errors = page_error is None and not errors
         has_error_msg = main_msg and ("sorry" in main_msg.lower() or "not eligible" in main_msg.lower() or "cannot" in main_msg.lower() or "illegal" in main_msg.lower())
         
         # Success if either:
         # 1. Has immediate lineupChanges (current period change)
-        # 2. No errors AND (changeAllowed=True or msgType=CONFIRM) when apply_to_future=True (scheduled change)
-        is_scheduled_success = apply_to_future and no_errors and not has_error_msg and (change_allowed or msg_type == "CONFIRM")
+        # 2. Has model.lineupChanges (scheduled change)
+        # 3. No errors AND (ok=True and changeAllowed=True) when apply_to_future=True (scheduled change)
+        is_scheduled_success = apply_to_future and no_errors and not has_error_msg and ok and (change_allowed or msg_type == "CONFIRM")
         
         if not no_errors or has_error_msg:
             # Definite failure - has errors or error messages
@@ -717,7 +725,7 @@ class SubsService:
                 "error": msg,
             }
         
-        if not has_immediate_changes and not is_scheduled_success:
+        if not has_immediate_changes and not has_model_changes and not is_scheduled_success:
             # No changes and not a valid scheduled change
             msg = f"No lineup changes detected (msgType={msg_type}, changeAllowed={change_allowed})"
             log.error(f"[swap:cross-pos] Execute failed: {msg}")
@@ -835,21 +843,41 @@ class SubsService:
             execute_resp = self._execute_swap(team_id, out_player_id, in_player_id, explicit_period=period)
             log.info(f"[swap] Execute response: {execute_resp}")
 
+            # Parse response
             fantasy_resp = execute_resp.get("fantasyResponse", {})
+            model = execute_resp.get("model", {})
             main_msg = fantasy_resp.get("mainMsg") or execute_resp.get("mainMsg") or ""
             msg_type = fantasy_resp.get("msgType") or execute_resp.get("msgType", "")
             lineup_changes = fantasy_resp.get("lineupChanges", [])
+            page_error = execute_resp.get("pageError")
+            illegal_msgs = model.get("illegalRosterMsgs", [])
+            show_confirm_window = fantasy_resp.get("showConfirmWindow", False)
+            ok = execute_resp.get("ok", False)
+            
+            # Also check model.rosterAdjustmentInfo for scheduled changes
+            roster_adjustment = model.get("rosterAdjustmentInfo", {})
+            model_lineup_changes = roster_adjustment.get("lineupChanges", [])
 
-            has_error_message = (
-                "Sorry, you cannot perform that action" in main_msg
-                or "not eligible" in main_msg
+            # Detect actual errors (not just msgType=CONFIRM)
+            has_error_message = main_msg and (
+                "sorry, you cannot perform that action" in main_msg.lower()
+                or "not eligible" in main_msg.lower()
+                or "cannot" in main_msg.lower()
             )
-            needs_correction = (msg_type == "CONFIRM")
+            has_error_signals = (
+                page_error is not None
+                or len(illegal_msgs) > 0
+                or show_confirm_window  # User interaction needed
+                or not ok
+            )
 
-            if has_error_message or needs_correction:
+            # CONFIRM with error signals = failure
+            # CONFIRM without error signals = scheduled success
+            if has_error_message or has_error_signals:
                 log.error(
                     f"[swap] Execute failed - msgType={msg_type}, "
-                    f"lineupChanges={len(lineup_changes)}, error: {main_msg}"
+                    f"ok={ok}, pageError={page_error}, illegalMsgs={len(illegal_msgs)}, "
+                    f"showConfirmWindow={show_confirm_window}, error: {main_msg}"
                 )
                 return {
                     "success": False,
@@ -857,18 +885,22 @@ class SubsService:
                     "error": main_msg or "Swap failed - please check player eligibility and formation rules",
                 }
 
-            if not lineup_changes:
-                log.warning(f"[swap] No lineupChanges returned. msgType={msg_type}, mainMsg={main_msg}")
-                if not main_msg or "success" in main_msg.lower():
-                    log.info("[swap] Execute succeeded (no changes listed, but no error)")
+            # Success detection: check both fantasyResponse.lineupChanges and model.rosterAdjustmentInfo.lineupChanges
+            has_changes = len(lineup_changes) > 0 or len(model_lineup_changes) > 0
+            
+            if not has_changes:
+                log.warning(f"[swap] No lineupChanges in response or model. msgType={msg_type}, mainMsg={main_msg}")
+                # If no error signals and ok=True, treat as optimistic success
+                if ok and not has_error_signals:
+                    log.info("[swap] Execute succeeded (ok=True, no error signals, treating as success)")
                 else:
                     return {
                         "success": False,
                         "message": "",
-                        "error": main_msg or "No lineup changes applied",
+                        "error": main_msg or "No lineup changes detected",
                     }
 
-            log.info(f"[swap] Execute succeeded - {len(lineup_changes)} lineup changes applied")
+            log.info(f"[swap] Execute succeeded - fantasyResponse.lineupChanges={len(lineup_changes)}, model.lineupChanges={len(model_lineup_changes)}, msgType={msg_type}")
             return {
                 "success": True,
                 "message": "Swap completed successfully!",

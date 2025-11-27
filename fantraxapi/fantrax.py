@@ -1,8 +1,9 @@
 # fantrax.py
 
+import html
 import json
 import logging
-from typing import Optional, Union, List, Dict
+from typing import Optional, Union, List, Dict, Any
 from requests import Session
 from json.decoder import JSONDecodeError
 from requests.exceptions import RequestException
@@ -519,6 +520,19 @@ class FantraxAPI:
 		if debug and rows:
 			print(f"Total extracted rows (all pages): {len(rows)}")
 
+		def _cell_value(cells_list: list, idx: int) -> Dict[str, Any]:
+			if isinstance(cells_list, list) and 0 <= idx < len(cells_list):
+				cell = cells_list[idx]
+				if isinstance(cell, dict):
+					return cell
+			return {}
+
+		def _clean_cell_text(value: Any) -> str:
+			if not isinstance(value, str):
+				return str(value or "")
+			text = value.replace("<br/>", "\n").replace("<br>", "\n")
+			return html.unescape(text).strip()
+
 		# Build Player objects from all extracted rows
 		players = []
 		for player_data in rows:
@@ -529,6 +543,29 @@ class FantraxAPI:
 					pos_list = scorer.get("posShortNames") or scorer.get("pos") or []
 					if isinstance(pos_list, str):
 						pos_list = [pos_list]
+					cells = player_data.get("cells") or []
+					rank_cell = _cell_value(cells, 0)
+					owner_cell = _cell_value(cells, 1)
+					schedule_cell = _cell_value(cells, 2)
+					fp_cell = _cell_value(cells, 3)
+					fppg_cell = _cell_value(cells, 4)
+					owned_cell = _cell_value(cells, 5)
+					started_cell = _cell_value(cells, 6)
+
+					next_raw = schedule_cell.get("content") or ""
+					next_clean = _clean_cell_text(next_raw)
+					next_opponent = ""
+					next_kickoff = ""
+					is_away = False
+					if next_clean:
+						parts = [p.strip() for p in next_clean.split("\n") if p.strip()]
+						if parts:
+							next_opponent = parts[0]
+							if next_opponent.startswith("@"):
+								is_away = True
+								next_opponent = next_opponent.lstrip("@")
+						if len(parts) > 1:
+							next_kickoff = parts[1]
 					
 					# Debug: Log the first few players to see what's happening
 					if len(players) < 3:
@@ -540,10 +577,38 @@ class FantraxAPI:
 						"firstName": scorer.get("firstName"),
 						"lastName": scorer.get("lastName"),
 						"proTeamAbbr": scorer.get("teamShortName") or scorer.get("proTeamAbbr") or scorer.get("team"),
+						"teamName": scorer.get("teamName"),
+						"teamShortName": scorer.get("teamShortName"),
+						"teamId": scorer.get("teamId"),
 						"position": (pos_list[0] if isinstance(pos_list, list) and pos_list else None),
 						"eligiblePositions": pos_list if isinstance(pos_list, list) else [],
+						"defaultPosId": scorer.get("defaultPosId"),
+						"posIds": scorer.get("posIds") or [],
+						"posIdsNoFlex": scorer.get("posIdsNoFlex") or [],
 						"status": scorer.get("status") or scorer.get("statusId"),
 						"injuryStatus": scorer.get("injuryStatus"),
+						"rank": scorer.get("rank"),
+						"shortName": scorer.get("shortName"),
+						"urlName": scorer.get("urlName"),
+						"headshotUrl": scorer.get("headshotUrl"),
+						"upcomingEventStatusId": scorer.get("upcomingEventStatusId"),
+						"icons": scorer.get("icons") or [],
+						"teamLogo": scorer.get("teamLogo"),
+						"team": scorer.get("team"),
+						"tableRank": rank_cell.get("content"),
+						"ownerTeam": owner_cell.get("content"),
+						"ownerToolTip": owner_cell.get("toolTip") or owner_cell.get("tooltip"),
+						"ownerTeamId": owner_cell.get("teamId"),
+						"nextOpponentRaw": next_raw,
+						"nextOpponent": next_opponent,
+						"nextOpponentIsAway": is_away,
+						"nextKickoff": next_kickoff,
+						"nextEventId": schedule_cell.get("eventId"),
+						"seasonPoints": fp_cell.get("content"),
+						"fppgValue": fppg_cell.get("content"),
+						"percentOwned": owned_cell.get("content"),
+						"percentStarted": started_cell.get("content"),
+						"percentStartedDelta": started_cell.get("gainColor"),
 					}
 					
 					# Debug: Log the created player_dict
@@ -706,4 +771,3 @@ class FantraxAPI:
 	def move_to_bench(self, team_id: str, player_ids: list) -> bool:
 		changes = {pid: {"stId": "2", "posId": "0"} for pid in player_ids}
 		return self.make_lineup_changes(team_id, changes)
-

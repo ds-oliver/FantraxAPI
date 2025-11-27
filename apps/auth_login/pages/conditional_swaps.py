@@ -28,6 +28,9 @@ from fantraxapi.lineups.conditional_swaps import (
     get_available_periods,
     is_row_locked,
     get_row_lock_flags,
+    test_swap_in_period,
+    choose_backup_for_rule_preview,
+    would_break_mandatory_slots,
 )
 from fantraxapi.lineups.lineup_resolver import LineupSourceStrategy, resolve_lineup_info
 from fantraxapi.lineups.fantrax_lineup_bridge import debug_fx_lineup_context
@@ -35,6 +38,8 @@ try:
     from fantraxapi.lineups.sofascore_bridge import (
         debug_player_lineup_context,
         infer_current_gameweek,
+        _team_code,
+        DEFAULT_LINEUPS_DIR,
     )
 except ImportError:  # pragma: no cover - fallback for older deployments
     def debug_player_lineup_context(*args, **kwargs):
@@ -42,6 +47,8 @@ except ImportError:  # pragma: no cover - fallback for older deployments
 
     def infer_current_gameweek(*args, **kwargs):
         return None
+    _team_code = None  # type: ignore
+    DEFAULT_LINEUPS_DIR = Path("data/sofascore/lineups")
 from fantraxapi.player_mapping import PlayerMappingManager
 from fantraxapi.subs import SubsService
 from urllib.parse import unquote
@@ -90,6 +97,55 @@ def _require_session() -> Optional["requests.Session"]:
         return None
     st.session_state["session"] = session
     return session
+
+
+def _match_period_from_round(
+    round_hint: Optional[str],
+    period_id_map: Dict[str, str],
+) -> Optional[str]:
+    """
+    Try to map a SofaScore 'round' (EPL gameweek) string to a Fantrax period id,
+    using the period labels.
+
+    We try, in order:
+      - direct id match
+      - substring in label
+      - 'GW {round}', 'Gameweek {round}', 'Week {round}' in label
+    """
+    if not round_hint:
+        return None
+
+    round_str = str(round_hint).strip()
+    if not round_str:
+        return None
+
+    if round_str in period_id_map:
+        return round_str
+
+    candidates: list[str] = []
+    for pid, label in period_id_map.items():
+        label_text = (label or "").lower()
+        r = round_str.lower()
+        if r and r in label_text:
+            candidates.append(pid)
+            continue
+        if f"gw {r}" in label_text:
+            candidates.append(pid)
+            continue
+        if f"gameweek {r}" in label_text:
+            candidates.append(pid)
+            continue
+        if f"week {r}" in label_text:
+            candidates.append(pid)
+            continue
+
+    if not candidates:
+        return None
+
+    try:
+        return sorted(candidates, key=lambda x: int(x))[0]
+    except Exception:
+        return candidates[0]
 
 
 def _ensure_xsrf_header(session: Session) -> None:
@@ -188,24 +244,104 @@ strategy = (
     else LineupSourceStrategy.FANTRAX_PRIMARY
 )
 
+# ---------------------------------------------------------------------
+# EPL gameweek + Fantrax period selection (single source of truth)
+# ---------------------------------------------------------------------
 inferred_round = st.session_state.get("current_sofascore_round")
 if inferred_round is None:
     inferred_round = infer_current_gameweek()
     if inferred_round:
         st.session_state["current_sofascore_round"] = inferred_round
 
+periods: List[Dict[str, str]] = []
+try:
+    periods = get_available_periods(
+        league_id=league_id,
+        team_id=team_id,
+        session=session,
+    )
+except Exception as exc:
+    logger.exception("Failed to load roster-change periods")
+    st.error(f"Unable to load Fantrax periods: {exc}")
+    periods = []
+
+selected_period_id: Optional[str] = None
+selected_period_label: str = ""
+period_id_map: Dict[str, str] = {}
+detected_period: Optional[str] = None
+
+if periods:
+    period_id_map = {str(opt["id"]): opt["label"] for opt in periods}
+    period_choices = list(period_id_map.keys())
+
+    try:
+        detected_period = str(api.resolve_active_period(team_id))
+    except Exception:
+        detected_period = None
+
+    cached_period = st.session_state.get("selected_gameweek_period_id")
+    if cached_period and cached_period in period_id_map:
+        default_period_id = cached_period
+    else:
+        inferred_match = _match_period_from_round(inferred_round, period_id_map)
+        if inferred_match and inferred_match in period_id_map:
+            default_period_id = inferred_match
+        elif detected_period and detected_period in period_id_map:
+            default_period_id = detected_period
+        else:
+            default_period_id = period_choices[0]
+
+    st.subheader("Gameweek / Fantrax period")
+    col_gw, col_period = st.columns([1, 3])
+    with col_gw:
+        st.metric("Inferred EPL GW", inferred_round or "Unknown")
+    with col_period:
+        selected_period_id = st.selectbox(
+            "Fantrax period to use for swaps and rules",
+            options=period_choices,
+            index=period_choices.index(default_period_id),
+            format_func=lambda pid: period_id_map.get(pid, pid),
+            key="selected_gameweek_period_id",
+            help=(
+                "We infer the current EPL gameweek from SofaScore and map it to your Fantrax "
+                "scoring periods. You can override it here to target a future gameweek."
+            ),
+        )
+
+    selected_period_label = period_id_map.get(selected_period_id, "")
+    st.caption(
+        f"Using Fantrax period **{selected_period_label or selected_period_id}** "
+        f"for immediate swaps and new conditional rules."
+    )
+else:
+    st.warning(
+        "No roster-change periods are available from Fantrax. "
+        "Swaps and rules will fall back to Fantrax's own active period."
+    )
+    selected_period_id = None
+    selected_period_label = ""
+    detected_period = None
+
+# Decide which period to feed into lineup resolution
+if selected_period_id is not None:
+    try:
+        lineup_period = int(selected_period_id)
+    except Exception:
+        lineup_period = None
+else:
+    try:
+        lineup_period = api.resolve_active_period(team_id)
+    except Exception:
+        lineup_period = None
+
 with st.spinner("Loading lineup data..."):
     try:
         mapping_manager = PlayerMappingManager()
-        try:
-            detected_period = api.resolve_active_period(team_id)
-        except Exception:
-            detected_period = None
         lineup_info_by_player = resolve_lineup_info(
             roster,
             session=session,
             league_id=league_id,
-            period=detected_period,
+            period=lineup_period,
             strategy=strategy,
             mapping_manager=mapping_manager,
             round_hint=inferred_round,
@@ -234,32 +370,85 @@ def _format_kickoff(dt: Optional[datetime]) -> str:
     return dt.strftime("%b %d %H:%M UTC")
 
 
+def _team_code_for_display(raw: Optional[str]) -> str:
+    """
+    Normalize to a 3-letter team code when possible.
+    Uses SofaScore/Fantrax mapping when available; otherwise first 3 letters.
+    """
+    if raw in (None, "-", ""):
+        return "-"
+    try:
+        candidate = _team_code(raw) if callable(_team_code) else None
+    except Exception:
+        candidate = None
+    if candidate:
+        return candidate
+    trimmed = str(raw).strip()
+    if not trimmed:
+        return "-"
+    if len(trimmed) <= 4 and trimmed.replace(" ", "").isalpha():
+        return trimmed.upper()
+    return trimmed[:3].upper()
+
+
+def _parse_fetch_timestamp(raw: Optional[str]) -> Optional[datetime]:
+    if not raw:
+        return None
+    sanitized = str(raw).replace("+0000", "+00:00")
+    try:
+        return datetime.fromisoformat(sanitized)
+    except Exception:
+        return None
+
+
+def _latest_lineup_fetch_timestamp(lineups_dir: Path) -> Optional[datetime]:
+    """
+    Scan SofaScore lineup JSON files and return the most recent fetched_at_utc timestamp.
+    """
+    if not lineups_dir.exists():
+        return None
+    latest: Optional[datetime] = None
+    for path in lineups_dir.glob("*.json"):
+        try:
+            data = json.loads(path.read_text())
+        except Exception:
+            continue
+        ts = _parse_fetch_timestamp(data.get("fetched_at_utc"))
+        if ts and (latest is None or ts > latest):
+            latest = ts
+    return latest
+
+
 def _fantrax_team_and_opponent(row) -> tuple[str, str]:
     """
     Extract team and opponent strings from a roster row's Fantrax data.
     """
     player = getattr(row, "player", None)
-    team = (
+    team_raw = (
         getattr(player, "team_short_name", None)
         or getattr(player, "team_name", None)
         or ""
     )
     raw = getattr(row, "_raw", {}) or {}
     scorer = raw.get("scorer") or {}
-    if not team:
-        team = scorer.get("teamShortName") or scorer.get("teamName") or ""
+    if not team_raw:
+        team_raw = scorer.get("teamShortName") or scorer.get("teamName") or ""
 
-    opp = (
+    opp_raw = (
         scorer.get("nextOpponentShortName")
         or scorer.get("nextOpponent")
         or scorer.get("nextOpponentName")
         or ""
     )
-    if opp:
+    if opp_raw:
         is_away = scorer.get("nextOpponentIsAway")
-        if is_away:
-            opp = f"@ {opp}"
-    return team or "-", opp or "-"
+    else:
+        is_away = False
+
+    team = _team_code_for_display(team_raw)
+    opp_code = _team_code_for_display(opp_raw)
+    opp = f"@{opp_code}" if is_away and opp_code != "-" else opp_code
+    return team, opp
 
 
 def _team_and_opponent_for_player(
@@ -271,42 +460,14 @@ def _team_and_opponent_for_player(
     Prefer schedule-derived team/opponent from PlayerLineupInfo; fallback to Fantrax scorer.
     """
     info = lineup_info_by_player.get(pid)
-<<<<<<< ours
-    if info:
-        # 1) Fantrax scores-based fields (fx_*)
-        if getattr(info, "fx_team_name", None) or getattr(info, "fx_opponent_name", None):
-            team = getattr(info, "fx_team_name", None) or "-"
-            opp = getattr(info, "fx_opponent_name", None) or "-"
-            if getattr(info, "fx_is_home", None) is False and opp != "-":
-                opp = f"@ {opp}"
-            return team or "-", opp or "-"
-
-        # 2) SofaScore schedule-derived fields
-        if getattr(info, "team_name", None) or getattr(info, "opponent_name", None):
-            team = getattr(info, "team_name", None) or "-"
-            opp = getattr(info, "opponent_name", None) or "-"
-            if getattr(info, "is_home", None) is False and opp != "-":
-                opp = f"@ {opp}"
-            return team or "-", opp or "-"
-
-    # 3) Fallback to Fantrax scorer fields on the roster row
-=======
     if info and (getattr(info, "team_name", None) or getattr(info, "opponent_name", None)):
-        team = getattr(info, "team_name", None) or "-"
-        opp = getattr(info, "opponent_name", None) or "-"
+        team = _team_code_for_display(getattr(info, "team_name", None))
+        opp = _team_code_for_display(getattr(info, "opponent_name", None))
         if getattr(info, "is_home", None) is False and opp != "-":
-            opp = f"@ {opp}"
+            opp = f"@{opp}"
         return team or "-", opp or "-"
 
->>>>>>> theirs
-    row = player_lookup.get(pid)
-    if row:
-        return _fantrax_team_and_opponent(row)
-    return "-", "-"
-
-            opp = f"@ {opp}"
-        return team or "-", opp or "-"
-
+    # Fallback to Fantrax scorer fields on the roster row
     row = player_lookup.get(pid)
     if row:
         return _fantrax_team_and_opponent(row)
@@ -316,6 +477,20 @@ def _fmt_debug_datetime(dt: Optional[datetime]) -> Optional[str]:
     if not dt:
         return None
     return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+
+def _opponent_source(info: Optional[PlayerLineupInfo]) -> str:
+    """
+    Best-effort tag for where team/opponent came from.
+    SofaScore schedule entries carry event_id; otherwise we assume Fantrax scorer.
+    """
+    if info is None:
+        return "-"
+    if getattr(info, "event_id", None) is not None:
+        return "sofascore_schedule"
+    if getattr(info, "team_name", None) or getattr(info, "opponent_name", None):
+        return "fantrax_scorer"
+    return "-"
 
 
 def _dump_debug_for_player(fantrax_player_id: Optional[str]) -> None:
@@ -421,57 +596,72 @@ swap_reserve = st.selectbox(
 
 _dump_debug_for_player(swap_active)
 
-try:
-    detected_swap_period = api.resolve_active_period(team_id)
-except Exception:
-    detected_swap_period = 1
+if selected_period_id is not None:
+    try:
+        swap_period_int = int(selected_period_id)
+    except Exception:
+        swap_period_int = None
+else:
+    try:
+        swap_period_int = int(api.resolve_active_period(team_id))
+    except Exception:
+        swap_period_int = None
 
-swap_period = st.number_input(
-    "Period (gameweek) for immediate swap",
-    min_value=1,
-    max_value=50,
-    value=max(1, detected_swap_period),
-    step=1,
-    key="immediate_swap_period_top",
-    help="Set the Fantrax period this immediate swap should apply to.",
-)
+if swap_period_int is not None:
+    st.caption(
+        f"Immediate swaps will apply to Fantrax period **{selected_period_label or swap_period_int}**."
+    )
+else:
+    st.warning("Unable to resolve a valid Fantrax period; swap requests may fail.")
 
 if st.button("Execute swap now", type="primary", key="immediate_swap_button_top"):
-    try:
+    if swap_period_int is None:
+        st.error("Cannot execute swap because no valid Fantrax period is selected.")
+    else:
         try:
-            current_period = int(swap_period)
-        except Exception:
-            current_period = api.resolve_active_period(team_id)
-        fresh_roster = api.roster_info(team_id)
-        starters = [r.player.id for r in fresh_roster.get_starters() if getattr(r, "player", None)]
-        if swap_active not in starters:
-            st.error("Selected active player is no longer a starter.")
-        elif swap_reserve in starters:
-            st.info("Reserve player is already a starter.")
-        else:
-            result = subs_service.swap_players(
-                team_id=team_id,
-                out_player_id=swap_active,
-                in_player_id=swap_reserve,
-                period=int(current_period),
-            )
-            if result.get("success"):
-                msg = result.get("message") or "Swap executed successfully."
-                st.success(f"✅ {msg}")
-                st.rerun()
+            fresh_roster = api.roster_info(team_id)
+            starters = [r.player.id for r in fresh_roster.get_starters() if getattr(r, "player", None)]
+            if swap_active not in starters:
+                st.error("Selected active player is no longer a starter.")
+            elif swap_reserve in starters:
+                st.info("Reserve player is already a starter.")
             else:
-                st.error(
-                    f"Swap failed: {result.get('error') or result.get('message') or 'Unknown error'}"
+                result = subs_service.swap_players(
+                    team_id=team_id,
+                    out_player_id=swap_active,
+                    in_player_id=swap_reserve,
+                    period=int(swap_period_int),
                 )
-    except Exception as exc:  # pragma: no cover - runtime feedback
-        logger.exception("Immediate swap failed")
-        st.error(f"Immediate swap failed: {exc}")
+                if result.get("success"):
+                    msg = result.get("message") or "Swap executed successfully."
+                    st.success(f"✅ {msg}")
+                    st.rerun()
+                else:
+                    st.error(
+                        f"Swap failed: {result.get('error') or result.get('message') or 'Unknown error'}"
+                    )
+        except Exception as exc:  # pragma: no cover - runtime feedback
+            logger.exception("Immediate swap failed")
+            st.error(f"Immediate swap failed: {exc}")
 
 
 # ----------------------------------------------------------------------
 # Current lineup snapshot (single)
 # ----------------------------------------------------------------------
 st.subheader("Current Lineup Snapshot")
+latest_lineup_fetch = _latest_lineup_fetch_timestamp(Path(DEFAULT_LINEUPS_DIR))
+if latest_lineup_fetch:
+    st.caption(f"Predicted lineups refreshed on {latest_lineup_fetch.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+else:
+    st.caption("Predicted lineups refresh time unavailable.")
+
+with st.expander("What do these columns mean?"):
+    st.markdown(
+        "- SS status / FX status: Source-specific lineup signals.\n"
+        "- Effective status: The value used by the engine (SofaScore preferred unless missing).\n"
+        "- Kickoff: Effective kickoff used for ordering and locking heuristics.\n"
+        "- FX locked / markers: Fantrax disableLineupChange and visual markers that indicate player is locked and cannot be changed."
+    )
 
 active_display = []
 for pid in roster_view.active_player_ids():
@@ -626,6 +816,7 @@ with st.expander("🔍 Debug: Team/Opponent context"):
                 "team_name": getattr(info, "team_name", None) if info else None,
                 "opponent_name": getattr(info, "opponent_name", None) if info else None,
                 "is_home": getattr(info, "is_home", None) if info else None,
+                "opponent_source": _opponent_source(info),
             }
         )
     if debug_rows:
@@ -675,18 +866,6 @@ if active_row:
         f"`{status_text}` (kickoff {kickoff_text})"
     )
 
-periods: List[Dict[str, str]] = []
-try:
-    periods = get_available_periods(
-        league_id=league_id,
-        team_id=team_id,
-        session=session,
-    )
-except Exception as exc:
-    logger.exception("Failed to load roster-change periods")
-    st.error(f"Unable to load Fantrax periods: {exc}")
-    periods = []
-
 if not periods:
     st.error("No roster-change periods available. Visit the Overview page to refresh your session.")
     period_id = None
@@ -695,119 +874,77 @@ else:
     period_id_map = {str(opt["id"]): opt["label"] for opt in periods}
     period_choices = list(period_id_map.keys())
 
-    def _match_period_from_round(round_hint: Optional[str]) -> Optional[str]:
-        if not round_hint:
-            return None
-        round_hint = str(round_hint)
-        if round_hint in period_id_map:
-            return round_hint
-        for pid, label in period_id_map.items():
-            if round_hint in (label or ""):
-                return pid
-        return None
+    base_default = st.session_state.get("selected_gameweek_period_id")
+    if not base_default or base_default not in period_id_map:
+        base_default = period_choices[0]
 
-    default_idx = 0
-    cached_period = str(st.session_state.get("conditional_period_id", ""))
+    cached_period = str(st.session_state.get("conditional_period_id", "")) or None
     if cached_period and cached_period in period_id_map:
-        default_idx = period_choices.index(cached_period)
+        default_period_id = cached_period
     else:
-        inferred_period_id = _match_period_from_round(inferred_round)
-        if inferred_period_id and inferred_period_id in period_id_map:
-            default_idx = period_choices.index(inferred_period_id)
+        default_period_id = base_default
 
     period_id = st.selectbox(
         "Apply rule during period",
         options=period_choices,
-        index=default_idx,
+        index=period_choices.index(default_period_id),
         format_func=lambda pid: period_id_map.get(pid, pid),
         key="conditional_period_select",
     )
     period_label = period_id_map.get(period_id, "")
     st.session_state["conditional_period_id"] = period_id
 
-# --- Form for backup selection + SAVE button ---
-with st.form("conditional_rule_form", clear_on_submit=False):
+candidate_rows: List[Dict[str, str]] = []
+candidate_order: Dict[str, int] = {}
+debug_candidates: List[Dict[str, object]] = []
 
-    candidate_rows: List[Dict[str, str]] = []
-    candidate_order: Dict[str, int] = {}
-    debug_candidates: List[Dict[str, object]] = []
-
-    if (
-        active_player_id
-        and active_lineup
-        and active_lineup.kickoff
-        and active_lineup.status != LineupStatus.UNKNOWN
-        and period_id
-    ):
-        bench_rows = [
-            row
-            for row in roster.rows
-            if getattr(row, "player", None) and getattr(row, "pos_id", "0") == "0"
-        ]
-        with st.spinner("Evaluating eligible backups..."):
-            for row in bench_rows:
-                bench_id = str(row.player.id)
-                locked = is_row_locked(
-                    row,
-                    now=now,
-                    lineup_info_by_player=lineup_info_by_player,
-                )
-                info = lineup_info_by_player.get(bench_id)
-                status_known = bool(info and info.status != LineupStatus.UNKNOWN)
-                kickoff_ok = bool(
-                    info
-                    and info.kickoff
-                    and info.kickoff >= now
-                    and info.kickoff >= active_lineup.kickoff
-                )
-                can_swap_flag = False
-                swap_reason = ""
-                if locked:
-                    swap_reason = "locked"
-                elif not info:
-                    swap_reason = "no status"
-                elif info.status != LineupStatus.STARTING:
-                    swap_reason = f"status={info.status.value}"
-                elif not kickoff_ok:
-                    swap_reason = "kickoff earlier than active or missing"
-                else:
-                    if can_swap_in_period(
-                        subs_service=subs_service,
-                        roster=roster,
-                        league_id=league_id,
-                        team_id=team_id,
-                        active_id=active_player_id,
-                        reserve_id=bench_id,
-                        period_id=period_id,
-                    ):
-                        can_swap_flag = True
-                        swap_reason = "ok"
-                    else:
-                        swap_reason = "illegal by Fantrax/formation"
-
-                debug_candidates.append(
-                    {
-                        "Player": row.player.name,
-                        "Status": info.status.value if info else "unknown",
-                        "Kickoff": _format_kickoff(info.kickoff) if info else "—",
-                        "Locked": locked,
-                        "Has lineup": status_known,
-                        "Future kickoff ok": kickoff_ok,
-                        "Swap legal": can_swap_flag,
-                        "Reason": swap_reason,
-                    }
-                )
-
-                if locked:
-                    continue
-                info = lineup_info_by_player.get(bench_id)
-                if not info or info.status != LineupStatus.STARTING:
-                    continue
-                if not info.kickoff or info.kickoff < now:
-                    continue
-                if info.kickoff < active_lineup.kickoff:
-                    continue
-                if not can_swap_in_period(
+if (
+    active_player_id
+    and active_lineup
+    and active_lineup.kickoff
+    and active_lineup.status != LineupStatus.UNKNOWN
+    and period_id
+):
+    bench_rows = [
+        row
+        for row in roster.rows
+        if getattr(row, "player", None) and getattr(row, "pos_id", "0") == "0"
+    ]
+    with st.spinner("Evaluating eligible backups..."):
+        for row in bench_rows:
+            bench_id = str(row.player.id)
+            locked = is_row_locked(
+                row,
+                now=now,
+                lineup_info_by_player=lineup_info_by_player,
+            )
+            info = lineup_info_by_player.get(bench_id)
+            status_known = bool(info and info.status != LineupStatus.UNKNOWN)
+            kickoff_ok = bool(
+                info
+                and info.kickoff
+                and info.kickoff >= now
+                and info.kickoff >= active_lineup.kickoff
+            )
+            can_swap_flag = False
+            swap_reason = ""
+            if locked:
+                swap_reason = "locked"
+            elif not info:
+                swap_reason = "no status"
+            elif info.status != LineupStatus.STARTING:
+                swap_reason = f"status={info.status.value}"
+            elif not kickoff_ok:
+                swap_reason = "kickoff earlier than active or missing"
+            else:
+                if would_break_mandatory_slots(
+                    roster_view,
+                    active_player_id,
+                    bench_id,
+                    min_gks=1,
+                ):
+                    swap_reason = "mandatory slot break"
+                elif not can_swap_in_period(
                     subs_service=subs_service,
                     roster=roster,
                     league_id=league_id,
@@ -816,104 +953,146 @@ with st.form("conditional_rule_form", clear_on_submit=False):
                     reserve_id=bench_id,
                     period_id=period_id,
                 ):
-                    continue
-                pos = SubsService._pos_of_row(row)  # type: ignore[attr-defined]
-                candidate_rows.append(
-                    {
-                        "player_id": bench_id,
-                        "Player": f"{row.player.name} ({pos})",
-                        "Kickoff (UTC)": _format_kickoff(info.kickoff),
-                        "Status": _format_status(info.status),
-                        "Select": False,
-                        "Priority": len(candidate_rows) + 1,
-                    }
-                )
-                candidate_order[bench_id] = len(candidate_rows)
-    elif active_lineup and active_lineup.status == LineupStatus.UNKNOWN:
-        st.info("Waiting for confirmed SofaScore lineup before backups can be evaluated.")
-    else:
-        if active_lineup and not active_lineup.kickoff:
-            st.info("Active player has no upcoming kickoff; waiting for schedule/lineup data.")
+                    swap_reason = "illegal by Fantrax/formation"
+                else:
+                    can_swap_flag = True
+                    swap_reason = "ok"
 
-    if debug_candidates:
-        with st.expander("🔍 Debug: backup eligibility checks"):
-            st.dataframe(pd.DataFrame(debug_candidates))
+            debug_candidates.append(
+                {
+                    "Player": row.player.name,
+                    "Status": info.status.value if info else "unknown",
+                    "Kickoff": _format_kickoff(info.kickoff) if info else "—",
+                    "Locked": locked,
+                    "Has lineup": status_known,
+                    "Future kickoff ok": kickoff_ok,
+                    "Swap legal": can_swap_flag,
+                    "Reason": swap_reason,
+                }
+            )
 
-    selected_backup_ids: List[str] = []
-    if candidate_rows:
-        candidate_df = pd.DataFrame(candidate_rows)
-        edited_df = st.data_editor(
-            candidate_df,
-            hide_index=True,
-            use_container_width=True,
-            column_config={
-                "Select": st.column_config.CheckboxColumn(
-                    "Use as backup", help="Enable to include this reserve in the rule."
-                ),
-                "Priority": st.column_config.NumberColumn(
-                    "Priority",
-                    min_value=1,
-                    max_value=len(candidate_rows),
-                    step=1,
-                    help="Lower numbers fire first when multiple backups are eligible.",
-                ),
-                "Player": st.column_config.TextColumn("Player", disabled=True),
-                "Kickoff (UTC)": st.column_config.TextColumn("Kickoff (UTC)", disabled=True),
-                "Status": st.column_config.TextColumn("Status", disabled=True),
-            },
-            key="conditional_candidates_editor",
-        )
-        selected = edited_df[edited_df["Select"]].copy()
-        if not selected.empty:
-            selected["Priority"] = pd.to_numeric(selected["Priority"], errors="coerce")
-            ordering = []
-            for _, row in selected.iterrows():
-                pid = str(row["player_id"])
-                priority = row["Priority"]
-                if pd.isna(priority):
-                    priority = float("inf")
-                ordering.append((priority, candidate_order.get(pid, 0), pid))
-            ordering.sort(key=lambda item: (item[0], item[1]))
-            selected_backup_ids = [pid for _, _, pid in ordering]
-    else:
-        st.info(
-            "No eligible reserve players meet the kickoff / lineup / legality requirements right now. "
-            "Once confirmed lineups or legal swaps become available, the list will populate automatically."
-        )
-
-    submit_disabled = not (
-        active_player_id
-        and period_id
-        and selected_backup_ids
-        and active_lineup
-        and active_lineup.kickoff
-    )
-
-    # THIS is the submit button Streamlit was complaining about missing
-    submitted = st.form_submit_button("Save Rule", disabled=submit_disabled, type="primary")
-
-    if submitted and not submit_disabled:
-        try:
-            rule = ConditionalSwapRule(
+            if locked:
+                continue
+            info = lineup_info_by_player.get(bench_id)
+            if not info or info.status != LineupStatus.STARTING:
+                continue
+            if not info.kickoff or info.kickoff < now:
+                continue
+            if info.kickoff < active_lineup.kickoff:
+                continue
+            if would_break_mandatory_slots(
+                roster_view,
+                active_player_id,
+                bench_id,
+                min_gks=1,
+            ):
+                continue
+            if not can_swap_in_period(
+                subs_service=subs_service,
+                roster=roster,
                 league_id=league_id,
                 team_id=team_id,
-                active_player_id=active_player_id,
-                backups=[
-                    BackupOption(reserve_player_id=pid, priority=index + 1)
-                    for index, pid in enumerate(selected_backup_ids)
-                ],
-                period_id=str(period_id),
-                period_label=period_label,
-                condition=SwapCondition.NOT_STARTING,
+                active_id=active_player_id,
+                reserve_id=bench_id,
+                period_id=period_id,
+            ):
+                continue
+            pos = SubsService._pos_of_row(row)  # type: ignore[attr-defined]
+            candidate_rows.append(
+                {
+                    "player_id": bench_id,
+                    "Player": f"{row.player.name} ({pos})",
+                    "Kickoff (UTC)": _format_kickoff(info.kickoff),
+                    "Status": _format_status(info.status),
+                    "Select": False,
+                    "Priority": len(candidate_rows) + 1,
+                }
             )
-            storage.save_rule(rule)
-            st.success("Rule saved successfully.")
-            st.rerun()
-        except ValueError as exc:
-            st.warning(str(exc))
-        except Exception as exc:  # pragma: no cover - runtime feedback
-            logger.exception("Failed to save conditional rule")
-            st.error(f"Failed to save rule: {exc}")
+            candidate_order[bench_id] = len(candidate_rows)
+elif active_lineup and active_lineup.status == LineupStatus.UNKNOWN:
+    st.info("Waiting for confirmed SofaScore lineup before backups can be evaluated.")
+else:
+    if active_lineup and not active_lineup.kickoff:
+        st.info("Active player has no upcoming kickoff; waiting for schedule/lineup data.")
+
+if debug_candidates:
+    with st.expander("🔍 Debug: backup eligibility checks"):
+        st.dataframe(pd.DataFrame(debug_candidates))
+
+selected_backup_ids: List[str] = []
+if candidate_rows:
+    candidate_df = pd.DataFrame(candidate_rows)
+    edited_df = st.data_editor(
+        candidate_df,
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "Select": st.column_config.CheckboxColumn(
+                "Use as backup", help="Enable to include this reserve in the rule."
+            ),
+            "Priority": st.column_config.NumberColumn(
+                "Priority",
+                min_value=1,
+                max_value=len(candidate_rows),
+                step=1,
+                help="Lower numbers fire first when multiple backups are eligible.",
+            ),
+            "Player": st.column_config.TextColumn("Player", disabled=True),
+            "Kickoff (UTC)": st.column_config.TextColumn("Kickoff (UTC)", disabled=True),
+            "Status": st.column_config.TextColumn("Status", disabled=True),
+        },
+        key="conditional_candidates_editor",
+    )
+    selected = edited_df[edited_df["Select"]].copy()
+    if not selected.empty:
+        selected["Priority"] = pd.to_numeric(selected["Priority"], errors="coerce")
+        ordering = []
+        for _, row in selected.iterrows():
+            pid = str(row["player_id"])
+            priority = row["Priority"]
+            if pd.isna(priority):
+                priority = float("inf")
+            ordering.append((priority, candidate_order.get(pid, 0), pid))
+        ordering.sort(key=lambda item: (item[0], item[1]))
+        selected_backup_ids = [pid for _, _, pid in ordering]
+else:
+    st.info(
+        "No eligible reserve players meet the kickoff / lineup / legality requirements right now. "
+        "Once confirmed lineups or legal swaps become available, the list will populate automatically."
+    )
+
+submit_disabled = not (
+    active_player_id
+    and period_id
+    and selected_backup_ids
+    and active_lineup
+    and active_lineup.kickoff
+)
+
+submitted = st.button("Save Rule", disabled=submit_disabled, type="primary", key="save_rule_btn")
+
+if submitted and not submit_disabled:
+    try:
+        rule = ConditionalSwapRule(
+            league_id=league_id,
+            team_id=team_id,
+            active_player_id=active_player_id,
+            backups=[
+                BackupOption(reserve_player_id=pid, priority=index + 1)
+                for index, pid in enumerate(selected_backup_ids)
+            ],
+            period_id=str(period_id),
+            period_label=period_label,
+            condition=SwapCondition.NOT_STARTING,
+        )
+        storage.save_rule(rule)
+        st.success("Rule saved successfully.")
+        st.rerun()
+    except ValueError as exc:
+        st.warning(str(exc))
+    except Exception as exc:  # pragma: no cover - runtime feedback
+        logger.exception("Failed to save conditional rule")
+        st.error(f"Failed to save rule: {exc}")
 
 
 # ----------------------------------------------------------------------
@@ -941,9 +1120,11 @@ else:
         info_line = lineup_info_by_player.get(rule.active_player_id)
         status_text = _format_status(info_line.status) if info_line else "Unknown"
         kickoff_text = _format_kickoff(info_line.kickoff if info_line else None)
+        condition_text = getattr(rule.condition, "value", str(rule.condition)).replace("_", " ")
+        state_text = getattr(rule.state, "value", str(rule.state))
         st.caption(
-            f"Period: {rule.period_label} | Condition: {rule.condition.value.replace('_', ' ')} "
-            f"| Max fires: {rule.max_fires_per_period} | State: {rule.state.value} "
+            f"Period: {rule.period_label} | Condition: {condition_text} "
+            f"| Max fires: {rule.max_fires_per_period} | State: {state_text} "
             f"| Current lineup: {status_text} ({kickoff_text})"
         )
 
@@ -967,6 +1148,101 @@ else:
         ):
             storage.delete_rule(rule.id)
             st.rerun()
+
+        if action_cols[2].button(
+            "Test rule (no changes)",
+            key=f"test_{rule.id}",
+            use_container_width=True,
+        ):
+            with st.spinner("Testing rule against Fantrax (dry run)..."):
+                try:
+                    fresh_roster = api.roster_info(team_id)
+                    fresh_roster_view = RosterView(fresh_roster)
+
+                    mapping_manager = PlayerMappingManager()
+                    try:
+                        detected_period = api.resolve_active_period(team_id)
+                    except Exception:
+                        detected_period = None
+
+                    fresh_lineup_info = resolve_lineup_info(
+                        fresh_roster,
+                        session=session,
+                        league_id=league_id,
+                        period=detected_period,
+                        strategy=strategy,
+                        mapping_manager=mapping_manager,
+                        round_hint=inferred_round,
+                    )
+
+                    now_ts = datetime.now(timezone.utc)
+                    candidate_id, reason = choose_backup_for_rule_preview(
+                        rule,
+                        fresh_roster_view,
+                        fresh_lineup_info,
+                        now=now_ts,
+                    )
+
+                    if not candidate_id:
+                        st.error(f"🚫 Cannot test rule: {reason}")
+                    else:
+                        active_row = fresh_roster_view.get_row(rule.active_player_id)
+                        backup_row = fresh_roster_view.get_row(candidate_id)
+
+                        active_label = getattr(
+                            getattr(active_row, "player", None),
+                            "name",
+                            rule.active_player_id,
+                        )
+                        backup_label = getattr(
+                            getattr(backup_row, "player", None),
+                            "name",
+                            candidate_id,
+                        )
+
+                        scenario_text = (
+                            f"Testing scenario: {active_label} confirmed as non-starter, "
+                            f"{backup_label} moving to active slot."
+                        )
+                        st.info(scenario_text)
+
+                        test_result = test_swap_in_period(
+                            subs_service=subs_service,
+                            roster=fresh_roster,
+                            league_id=league_id,
+                            team_id=team_id,
+                            active_id=rule.active_player_id,
+                            reserve_id=candidate_id,
+                            period_id=rule.period_id,
+                            enforce_invariants=True,
+                        )
+
+                        if test_result["ok"]:
+                            st.success(
+                                "✅ Fantrax confirms this rule's swap would be legal for the selected period. "
+                                "(No changes applied.)"
+                            )
+                        else:
+                            reason = test_result.get("reason") or "unknown"
+                            st.error(
+                                f"🚫 Rule swap would be illegal or rejected. Reason: {reason}"
+                            )
+                            msgs = test_result.get("illegal_msgs") or []
+                            if msgs:
+                                st.write("Fantrax illegal roster messages:")
+                                for m in msgs:
+                                    st.write(f"- {m}")
+                            with st.expander("Raw Fantrax confirm payload"):
+                                st.code(
+                                    json.dumps(
+                                        test_result.get("confirm") or {},
+                                        indent=2,
+                                        default=str,
+                                    )
+                                )
+                except Exception as exc:
+                    logger.exception("Rule test failed")
+                    st.error(f"Rule test failed: {exc}")
 
         st.caption(f"Rule ID: {rule.id}")
         st.markdown("---")

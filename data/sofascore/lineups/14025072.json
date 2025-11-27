@@ -118,6 +118,12 @@
         "name": "Enock Agyei",
         "position": "F",
         "reason": 1
+      },
+      {
+        "id": 996985,
+        "name": "Armando Broja",
+        "position": "F",
+        "reason": 1
       }
     ]
   },
@@ -264,5 +270,6 @@
         "reason": 1
       }
     ]
-  }
+  },
+  "fetched_at_utc": "2025-11-19 05:52:59+0000"
 }

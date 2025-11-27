@@ -1,0 +1,9 @@
+1. Pull in flags
+2. Other page ideas: 
+a. Trade opportunities page:    
+b. Review available players (submit bids for players before waivers or claim players as free agents if they are available for pickup after waiver wire processing), 
+c. Lineups predictions v2: Based on predicted lineups and other rules set provide suggested active <-> reserve moves,
+d. Conditional swaps page: Handles conditional active <-> reserve (both directions) roster swaps, for example the user would be able to establish rules such as: we should assume that the current state of the roster, with active and reserve players, is already the user's preference, so they are setting up active to reserve swaps between the reserve and the active players, not swapping active for active or reserve for reserve. for example, if player1 is not starting then swap player1 out for player2 - we would need to enforce that player2's game kicks off at <= the same time as player1's game, so user cannot select a player that will have already played their game and is thus locked.
+this will be expanded to allowing the following scenario,1. if player1 is not starting then drop player1 and pick up player2, if player2 is still available, if player2 is not available claim player3, if player3 is not available drop player1 without claiming another player. , 2. if player1 is not starting then drop player1 full stop.
+
+Dont generate faab balances on overview page unless button is clicked, generate them on demand.
