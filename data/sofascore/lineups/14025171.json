@@ -2,15 +2,226 @@
   "event_id": 14025171,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 824509,
+        "name": "Gianluigi Donnarumma",
+        "position": "G",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 945122,
+        "name": "Matheus Nunes",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 318941,
+        "name": "Rúben Dias",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 964994,
+        "name": "Joško Gvardiol",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142703,
+        "name": "Nico O'Reilly",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 331209,
+        "name": "Bernardo Silva",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 954056,
+        "name": "Nico González",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 893549,
+        "name": "Tijjani Reijnders",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 859765,
+        "name": "Phil Foden",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 839956,
+        "name": "Erling Haaland",
+        "position": "F",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 934386,
+        "name": "Jérémy Doku",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 136710,
+        "name": "Mateo Kovačić",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 827606,
+        "name": "Rodri",
+        "position": "M",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-4-2",
+    "starters": [
+      {
+        "id": 1012928,
+        "name": "Robin Roefs",
+        "position": "G",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 780014,
+        "name": "Nordi Mukiele",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 958878,
+        "name": "Daniel Ballard",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 805137,
+        "name": "Omar Alderete",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 831424,
+        "name": "Reinildo Mandava",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 989034,
+        "name": "Trai Hume",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 117777,
+        "name": "Granit Xhaka",
+        "position": "M",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1171539,
+        "name": "Noah Sadiki",
+        "position": "M",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142675,
+        "name": "Chemsdine Talbi",
+        "position": "M",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 984014,
+        "name": "Enzo Le Fée",
+        "position": "M",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 910048,
+        "name": "Brian Brobbey",
+        "position": "F",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 934228,
+        "name": "Ajibola-Joshua Alese",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1128532,
+        "name": "Habib Diarra",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1442017,
+        "name": "Ahmed Abdullahi",
+        "position": "F",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2025-12-05 04:00:37+0000"
 }

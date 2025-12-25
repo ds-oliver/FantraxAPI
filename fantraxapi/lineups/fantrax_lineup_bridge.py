@@ -169,6 +169,10 @@ class FantraxPlayerStatus:
     status: LineupStatus
     icons: list[dict]
     event_id: Optional[str] = None
+    kickoff: Optional[datetime] = None
+    team_name: Optional[str] = None
+    opponent_name: Optional[str] = None
+    is_home: Optional[bool] = None
 
 
 def parse_fantrax_player_statuses(payload: dict) -> dict[str, FantraxPlayerStatus]:
@@ -191,14 +195,64 @@ def parse_fantrax_player_statuses(payload: dict) -> dict[str, FantraxPlayerStatu
         if len(cells) >= 3 and isinstance(cells[2], dict):
             event_id = cells[2].get("eventId")
 
+        kickoff = None
+        start_ts = scorer.get("startTime") or scorer.get("startTimestamp")
+        if start_ts:
+            try:
+                kickoff = datetime.fromtimestamp(int(start_ts), tz=timezone.utc)
+            except Exception:
+                kickoff = None
+
+        team_name = scorer.get("teamShortName") or scorer.get("teamName")
+        opponent_name = scorer.get("nextOpponentShortName") or scorer.get("nextOpponentName") or scorer.get("nextOpponent")
+        is_home = scorer.get("nextOpponentIsAway")
+
         results[str(fantrax_id)] = FantraxPlayerStatus(
             fantrax_player_id=str(fantrax_id),
             status=status,
             icons=icons,
             event_id=event_id,
+            kickoff=kickoff,
+            team_name=team_name,
+            opponent_name=opponent_name,
+            is_home=not bool(is_home) if is_home is not None else None,
         )
 
     return results
+
+
+@dataclass
+class FALineupSnapshot:
+    scorer_id: str
+    status: LineupStatus
+    kickoff: Optional[datetime] = None
+    event_id: Optional[int] = None
+    team_name: Optional[str] = None
+    opponent_name: Optional[str] = None
+    is_home: Optional[bool] = None
+
+
+def fetch_fa_status_map(*, session: requests.Session, league_id: str, max_results: int = 500) -> Dict[str, FALineupSnapshot]:
+    payload = fetch_fantrax_player_status_snapshot(
+        session=session,
+        league_id=league_id,
+        status_filter="ALL_AVAILABLE",
+        misc_display_type="10",
+        max_results=max_results,
+    )
+    statuses = parse_fantrax_player_statuses(payload)
+    result: Dict[str, FALineupSnapshot] = {}
+    for sid, s_obj in statuses.items():
+        result[sid] = FALineupSnapshot(
+            scorer_id=sid,
+            status=s_obj.status,
+            kickoff=s_obj.kickoff,
+            event_id=int(s_obj.event_id) if s_obj.event_id is not None else None,
+            team_name=s_obj.team_name,
+            opponent_name=s_obj.opponent_name,
+            is_home=s_obj.is_home,
+        )
+    return result
 
 
 def build_lineup_info_by_player_fantrax(

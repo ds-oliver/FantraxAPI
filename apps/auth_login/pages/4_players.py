@@ -111,6 +111,11 @@ def _to_dataframe(players) -> pd.DataFrame:
 		)
 	return pd.DataFrame(rows)
 
+def _coerce_numeric(series: pd.Series) -> pd.Series:
+	"""Normalize numeric-looking strings (commas, percent signs) into numbers."""
+	cleaned = series.astype(str).str.replace(",", "", regex=False).str.replace("%", "", regex=False)
+	return pd.to_numeric(cleaned, errors="coerce")
+
 try:
 	api = FantraxAPI(league_id=league_id, session=session)
 	with st.spinner("Fetching players from Fantrax..."):
@@ -126,6 +131,11 @@ if not players:
 
 df = _to_dataframe(players)
 df = df.sort_values("name")
+
+# Normalize key numeric columns so Streamlit can sort them properly
+for col in ["rank", "table_rank", "season_points", "fppg_value", "percent_owned", "percent_started"]:
+	if col in df.columns:
+		df[col] = _coerce_numeric(df[col])
 
 display_df = df.rename(
 	columns={
@@ -160,8 +170,17 @@ display_df["Next Opponent"] = display_df["Next Opponent"].fillna("")
 display_df["Next Kickoff"] = display_df["Next Kickoff"].fillna("")
 display_df["Icon Notes"] = display_df["Icon Notes"].fillna("")
 
-# Force certain datatypes such as rank should be an integer
-display_df["Rank"] = display_df["Rank"].astype(int)
+# Force certain datatypes for sorting in the UI
+numeric_display_cols = ["Rank", "Overall Rank", "FPts", "FP/G", "% Owned", "% Started"]
+for col in numeric_display_cols:
+	if col in display_df.columns:
+		display_df[col] = _coerce_numeric(display_df[col])
+
+# Round decimal-friendly columns for cleaner display
+decimal_cols = ["FPts", "FP/G", "% Owned", "% Started"]
+for col in decimal_cols:
+	if col in display_df.columns:
+		display_df[col] = display_df[col].round(2)
 
 display_columns = [
 	"Fantrax ID",

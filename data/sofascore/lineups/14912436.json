@@ -2,15 +2,238 @@
   "event_id": 14912436,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "3-4-3",
+    "starters": [
+      {
+        "id": 98427,
+        "name": "Sam Johnstone",
+        "position": "G",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1014835,
+        "name": "Yerson Mosquera",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1013842,
+        "name": "Emmanuel Agbadou",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 973418,
+        "name": "Toti Gomes",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1096210,
+        "name": "Jackson Tchatchoua",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1035996,
+        "name": "André",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1015267,
+        "name": "João Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1031283,
+        "name": "David Möller Wolfe",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 844096,
+        "name": "Jhon Arias",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 876599,
+        "name": "Jørgen Strand Larsen",
+        "position": "F",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 845273,
+        "name": "Jean-Ricner Bellegarde",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 1006073,
+        "name": "Rodrigo Gomes",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 101367,
+        "name": "Daniel Bentley",
+        "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 1526628,
+        "name": "Fer López",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 856250,
+        "name": "Ladislav Krejčí",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1015267,
+        "name": "João Gomes",
+        "position": "M",
+        "reason": 3
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "3-4-2-1",
+    "starters": [
+      {
+        "id": 964753,
+        "name": "Senne Lammens",
+        "position": "G",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1153315,
+        "name": "Leny Yoro",
+        "position": "D",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 803031,
+        "name": "Matthijs de Ligt",
+        "position": "D",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 190839,
+        "name": "Luke Shaw",
+        "position": "D",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 971037,
+        "name": "Amad Diallo",
+        "position": "F",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 122951,
+        "name": "Casemiro",
+        "position": "M",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 288205,
+        "name": "Bruno Fernandes",
+        "position": "M",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 843200,
+        "name": "Diogo Dalot",
+        "position": "M",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927083,
+        "name": "Bryan Mbeumo",
+        "position": "M",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836694,
+        "name": "Mason Mount",
+        "position": "M",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 886363,
+        "name": "Matheus Cunha",
+        "position": "F",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 986397,
+        "name": "Benjamin Šeško",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 149380,
+        "name": "Harry Maguire",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2025-12-05 04:00:42+0000"
 }

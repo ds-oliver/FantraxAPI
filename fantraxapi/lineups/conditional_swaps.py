@@ -18,7 +18,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
-from pydantic import BaseModel, Field, validator
+from pydantic.v1 import BaseModel, Field, validator
 
 from fantraxapi.fantrax import FantraxAPI
 from fantraxapi.objs import Roster, RosterRow
@@ -40,6 +40,11 @@ class LineupStatus(str, Enum):
     DOUBTFUL = "doubtful"
 
 
+class RuleActionType(str, Enum):
+    LINEUP_SWAP = "lineup_swap"
+    FA_CLAIM_DROP = "fa_claim_drop"
+
+
 @dataclass
 class PlayerLineupInfo:
     fantrax_player_id: str
@@ -51,6 +56,8 @@ class PlayerLineupInfo:
 
     # Source-specific views
     ss_status: Optional[LineupStatus] = None
+    ss_pred_status: Optional[LineupStatus] = None
+    ss_conf_status: Optional[LineupStatus] = None
     ss_kickoff: Optional[datetime] = None
     fx_status: Optional[LineupStatus] = None
     fx_kickoff: Optional[datetime] = None
@@ -71,6 +78,11 @@ class RuleState(str, Enum):
     DISABLED = "disabled"
 
 
+class RuleActionType(str, Enum):
+    LINEUP_SWAP = "lineup_swap"
+    FA_CLAIM_DROP = "fa_claim_drop"
+
+
 class BackupOption(BaseModel):
     reserve_player_id: str
     priority: int = Field(gt=0)
@@ -84,8 +96,8 @@ class ConditionalSwapRule(BaseModel):
     league_id: str
     team_id: str
 
-    active_player_id: str
-    backups: List[BackupOption]
+    active_player_id: str  # monitored roster player
+    backups: List[BackupOption]  # used only for lineup swaps
 
     condition: SwapCondition = SwapCondition.NOT_STARTING
 
@@ -96,23 +108,45 @@ class ConditionalSwapRule(BaseModel):
     max_fires_per_period: int = Field(default=1, ge=1)
 
     state: RuleState = RuleState.ACTIVE
+    action_type: RuleActionType = RuleActionType.LINEUP_SWAP
+
+    # FA claim/drop config (for action_type == FA_CLAIM_DROP)
+    fa_add_scorer_id: Optional[str] = None
+    fa_add_position_id: Optional[str] = None
+    fa_claim_to_status_id: str = "2"
+    fa_bid_amount: float = 0.0
+    fa_add_display_name: Optional[str] = None
 
     class Config:
         use_enum_values = True
 
-    @validator("backups")
-    def _validate_backups(cls, value: Sequence[BackupOption]) -> Sequence[BackupOption]:
-        if not value:
-            raise ValueError("At least one backup must be provided.")
-        seen = set()
-        for opt in value:
-            key = opt.reserve_player_id
-            if key == "":
-                raise ValueError("Empty reserve player id.")
-            if key in seen:
-                raise ValueError("Backups must be unique per rule.")
-            seen.add(key)
-        return value
+    @validator("backups", pre=True, always=True)
+    def _validate_backups(cls, value: Sequence[BackupOption], values) -> Sequence[BackupOption]:
+        action_type = values.get("action_type", RuleActionType.LINEUP_SWAP)
+        if action_type == RuleActionType.LINEUP_SWAP:
+            if not value:
+                raise ValueError("At least one backup must be provided for lineup swap rules.")
+            seen = set()
+            for opt in value:
+                key = opt.reserve_player_id
+                if key == "":
+                    raise ValueError("Empty reserve player id.")
+                if key in seen:
+                    raise ValueError("Backups must be unique per rule.")
+                seen.add(key)
+            return value
+        # FA rules ignore backups
+        return []
+
+    @validator("fa_add_scorer_id", "fa_add_position_id", always=True)
+    def _validate_fa_fields(cls, v, values, field):
+        action_type = values.get("action_type", RuleActionType.LINEUP_SWAP)
+        if action_type == RuleActionType.FA_CLAIM_DROP:
+            if field.name == "fa_add_scorer_id" and not v:
+                raise ValueError("fa_add_scorer_id is required for FA_CLAIM_DROP rules.")
+            if field.name == "fa_add_position_id" and not v:
+                raise ValueError("fa_add_position_id is required for FA_CLAIM_DROP rules.")
+        return v
 
     def sorted_backups(self) -> List[BackupOption]:
         return sorted(self.backups, key=lambda opt: opt.priority)
@@ -449,8 +483,129 @@ class RuleStorage:
 class RuleEvaluationResult:
     rule: ConditionalSwapRule
     should_fire: bool
-    chosen_backup_id: Optional[str] = None
     reason: Optional[str] = None
+
+    swap_out_id: Optional[str] = None
+    swap_in_id: Optional[str] = None
+    add_player_id: Optional[str] = None
+    drop_player_id: Optional[str] = None
+
+
+def execute_rules(
+    *,
+    rules: Sequence[ConditionalSwapRule],
+    roster_view: RosterView,
+    lineup_info_by_player: Dict[str, PlayerLineupInfo],
+    now: datetime,
+    current_period_id: str,
+    subs_service: SubsService,
+    waivers_service,
+    engine: "ConditionalSwapEngine",
+    session=None,
+    league_id: Optional[str] = None,
+    fa_status_map: Optional[Dict[str, Any]] = None,
+) -> None:
+    """
+    Evaluate and execute rules, dispatching to lineup swaps or FA claims.
+    """
+    results = engine.evaluate_rules(
+        rules=rules,
+        roster_view=roster_view,
+        lineup_info_by_player=lineup_info_by_player,
+        now=now,
+        current_period_id=current_period_id,
+        fa_status_map=fa_status_map,
+    )
+
+    for res in results:
+        rule = res.rule
+        if not res.should_fire:
+            continue
+
+        if rule.action_type == RuleActionType.LINEUP_SWAP:
+            if not (res.swap_out_id and res.swap_in_id):
+                log.warning("[conditional-swaps] swap rule=%s missing swap ids", rule.id)
+                continue
+            try:
+                subs_service.swap_players(
+                    team_id=rule.team_id,
+                    out_player_id=res.swap_out_id,
+                    in_player_id=res.swap_in_id,
+                    period=int(current_period_id),
+                )
+                engine.mark_rule_fired(rule)
+                log.info(
+                    "[conditional-swaps] Executed lineup swap rule=%s out=%s in=%s",
+                    rule.id,
+                    res.swap_out_id,
+                    res.swap_in_id,
+                )
+            except Exception:
+                log.exception("[conditional-swaps] Failed to execute lineup swap rule=%s", rule.id)
+        elif rule.action_type == RuleActionType.FA_CLAIM_DROP:
+            if not waivers_service:
+                log.warning("[conditional-swaps] waivers service missing; cannot submit FA claim for rule=%s", rule.id)
+                continue
+            if not (res.add_player_id and res.drop_player_id):
+                log.warning("[conditional-swaps] FA rule=%s missing add/drop ids", rule.id)
+                continue
+            if session and league_id:
+                if not _fa_is_starting(session=session, league_id=league_id, scorer_id=res.add_player_id):
+                    log.info(
+                        "[conditional-swaps] FA rule=%s skipped; add target %s not starting",
+                        rule.id,
+                        res.add_player_id,
+                    )
+                    continue
+            try:
+                resp = waivers_service.submit_claim(
+                    team_id=rule.team_id,
+                    claim_scorer_id=res.add_player_id,
+                    bid_amount=rule.fa_bid_amount,
+                    drop_scorer_id=res.drop_player_id,
+                    to_position_id=rule.fa_add_position_id,
+                    to_status_id=rule.fa_claim_to_status_id,
+                )
+                fantasy_error = resp.get("error") or resp.get("errorMsg")
+                if fantasy_error:
+                    log.warning(
+                        "[conditional-swaps] FA claim rejected rule=%s add=%s drop=%s error=%s",
+                        rule.id,
+                        res.add_player_id,
+                        res.drop_player_id,
+                        fantasy_error,
+                    )
+                else:
+                    engine.mark_rule_fired(rule)
+                    log.info(
+                        "[conditional-swaps] Submitted FA claim rule=%s add=%s drop=%s",
+                        rule.id,
+                        res.add_player_id,
+                        res.drop_player_id,
+                    )
+            except Exception:
+                log.exception("[conditional-swaps] Failed to submit FA claim rule=%s", rule.id)
+
+
+def _fa_is_starting(*, session, league_id: str, scorer_id: str) -> bool:
+    try:
+        from fantraxapi.lineups.fantrax_lineup_bridge import (
+            fetch_fantrax_player_status_snapshot,
+            parse_fantrax_player_statuses,
+        )
+        payload = fetch_fantrax_player_status_snapshot(
+            session=session,
+            league_id=league_id,
+            status_filter="ALL_AVAILABLE",
+            misc_display_type="10",
+            max_results=500,
+        )
+        statuses = parse_fantrax_player_statuses(payload)
+        status_obj = statuses.get(str(scorer_id))
+        return bool(status_obj and status_obj.status == LineupStatus.STARTING)
+    except Exception:
+        log.exception("[conditional-swaps] Unable to determine FA lineup status for scorer_id=%s", scorer_id)
+        return False
 
 
 class FireTracker:
@@ -543,6 +698,7 @@ class ConditionalSwapEngine:
         lineup_info_by_player: Dict[str, PlayerLineupInfo],
         now: datetime,
         current_period_id: str,
+        fa_status_map: Optional[Dict[str, Any]] = None,
     ) -> List[RuleEvaluationResult]:
         results: List[RuleEvaluationResult] = []
         for rule in rules:
@@ -552,6 +708,7 @@ class ConditionalSwapEngine:
                 lineup_info_by_player=lineup_info_by_player,
                 now=now,
                 current_period_id=current_period_id,
+                fa_status_map=fa_status_map,
             )
             results.append(result)
         return results
@@ -564,6 +721,7 @@ class ConditionalSwapEngine:
         lineup_info_by_player: Dict[str, PlayerLineupInfo],
         now: datetime,
         current_period_id: str,
+        fa_status_map: Optional[Dict[str, Any]],
     ) -> RuleEvaluationResult:
         if rule.state != RuleState.ACTIVE:
             return RuleEvaluationResult(rule, False, reason="rule_disabled")
@@ -574,6 +732,34 @@ class ConditionalSwapEngine:
         if self.fire_tracker.get(rule) >= rule.max_fires_per_period:
             return RuleEvaluationResult(rule, False, reason="fire_limit_reached")
 
+        if rule.action_type == RuleActionType.FA_CLAIM_DROP:
+            return self._evaluate_fa_claim_rule(
+                rule=rule,
+                roster_view=roster_view,
+                lineup_info_by_player=lineup_info_by_player,
+                now=now,
+                current_period_id=current_period_id,
+                fa_status_map=fa_status_map,
+            )
+
+        # default: lineup swap
+        return self._evaluate_lineup_swap_rule(
+            rule=rule,
+            roster_view=roster_view,
+            lineup_info_by_player=lineup_info_by_player,
+            now=now,
+            current_period_id=current_period_id,
+        )
+
+    def _evaluate_lineup_swap_rule(
+        self,
+        *,
+        rule: ConditionalSwapRule,
+        roster_view: RosterView,
+        lineup_info_by_player: Dict[str, PlayerLineupInfo],
+        now: datetime,
+        current_period_id: str,
+    ) -> RuleEvaluationResult:
         if not roster_view.is_active(rule.active_player_id):
             return RuleEvaluationResult(rule, False, reason="active_not_active")
 
@@ -612,17 +798,17 @@ class ConditionalSwapEngine:
             if (
                 rule.enforce_kickoff_order
                 and info_candidate.kickoff < info_active.kickoff
-            ):
-                continue
+                ):
+                    continue
             if would_break_mandatory_slots(
                 roster_view,
                 rule.active_player_id,
                 candidate_id,
                 min_gks=1,
-            ):
-                continue
+                ):
+                    continue
 
-            if not can_swap_in_period(
+            result = can_swap_in_period(
                 subs_service=self.subs_service,
                 roster=roster_view.roster,
                 league_id=rule.league_id,
@@ -630,7 +816,8 @@ class ConditionalSwapEngine:
                 active_id=rule.active_player_id,
                 reserve_id=candidate_id,
                 period_id=rule.period_id,
-            ):
+            )
+            if not result:
                 continue
 
             chosen_backup = candidate_id
@@ -639,7 +826,84 @@ class ConditionalSwapEngine:
         if not chosen_backup:
             return RuleEvaluationResult(rule, False, reason="no_valid_backup")
 
-        return RuleEvaluationResult(rule, True, chosen_backup_id=chosen_backup)
+        return RuleEvaluationResult(
+            rule=rule,
+            should_fire=True,
+            swap_out_id=rule.active_player_id,
+            swap_in_id=chosen_backup,
+        )
+
+    def _evaluate_fa_claim_rule(
+        self,
+        *,
+        rule: ConditionalSwapRule,
+        roster_view: RosterView,
+        lineup_info_by_player: Dict[str, PlayerLineupInfo],
+        now: datetime,
+        current_period_id: str,
+        fa_status_map: Optional[Dict[str, Any]],
+    ) -> RuleEvaluationResult:
+        drop_id = rule.active_player_id
+        add_id = rule.fa_add_scorer_id
+
+        if not add_id:
+            return RuleEvaluationResult(rule, False, reason="missing_fa_add")
+
+        if not roster_view.get_row(drop_id):
+            return RuleEvaluationResult(rule, False, reason="drop_not_on_roster")
+        if roster_view.is_locked(drop_id, now=now, lineup_info_by_player=lineup_info_by_player):
+            return RuleEvaluationResult(rule, False, reason="drop_locked")
+
+        info_drop = lineup_info_by_player.get(drop_id)
+        if not info_drop or info_drop.status == LineupStatus.UNKNOWN:
+            return RuleEvaluationResult(rule, False, reason="drop_status_unknown")
+        if info_drop.status == LineupStatus.STARTING:
+            return RuleEvaluationResult(rule, False, reason="drop_still_starting")
+        if info_drop.kickoff and now >= info_drop.kickoff:
+            return RuleEvaluationResult(rule, False, reason="drop_kickoff_passed")
+
+        fa_snapshot = fa_status_map.get(add_id) if fa_status_map else None
+        if not fa_snapshot:
+            return RuleEvaluationResult(rule, False, reason="fa_status_unknown")
+        status_val = getattr(fa_snapshot, "status", None)
+        kickoff = getattr(fa_snapshot, "kickoff", None)
+        if isinstance(status_val, LineupStatus):
+            is_starting = status_val == LineupStatus.STARTING
+        else:
+            is_starting = str(status_val).lower() == LineupStatus.STARTING.value
+        if not is_starting:
+            return RuleEvaluationResult(rule, False, reason="fa_not_starting")
+        if kickoff and now >= kickoff:
+            return RuleEvaluationResult(rule, False, reason="fa_kickoff_passed")
+        if kickoff and info_drop.kickoff and kickoff < info_drop.kickoff:
+            return RuleEvaluationResult(rule, False, reason="fa_kickoff_before_active")
+
+        if not self._drop_would_keep_roster_legal(roster_view, drop_id):
+            return RuleEvaluationResult(rule, False, reason="drop_illegal_minimums")
+
+        return RuleEvaluationResult(
+            rule=rule,
+            should_fire=True,
+            add_player_id=add_id,
+            drop_player_id=drop_id,
+        )
+
+    @staticmethod
+    def _drop_would_keep_roster_legal(roster_view: RosterView, drop_id: str, *, min_gks: int = 1) -> bool:
+        """
+        Quick local invariant: do not drop to zero goalkeepers.
+        """
+        gk_count = 0
+        for row in roster_view.roster.rows:
+            if not getattr(row, "player", None):
+                continue
+            pid = str(row.player.id)
+            if pid == drop_id:
+                continue
+            pos = _canonical_pos_from_row(row)
+            if pos == "G":
+                gk_count += 1
+        return gk_count >= min_gks
 
     def mark_rule_fired(self, rule: ConditionalSwapRule) -> None:
         self.fire_tracker.increment(rule)
@@ -810,14 +1074,17 @@ __all__ = [
     "RosterView",
     "RuleEvaluationResult",
     "RuleState",
+    "RuleActionType",
     "RuleStorage",
     "SwapCondition",
     "can_swap_in_period",
     "choose_backup_for_rule_preview",
+    "execute_rules",
     "generate_rule_id",
     "get_available_periods",
     "get_row_lock_flags",
     "_canonical_pos_from_row",
+    "_fa_is_starting",
     "test_swap_in_period",
     "would_break_mandatory_slots",
 ]

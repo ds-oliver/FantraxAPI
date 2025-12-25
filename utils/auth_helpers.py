@@ -485,31 +485,64 @@ def validate_cookies(artifacts: Dict, session: requests.Session) -> Dict[str, an
 
 def fetch_user_leagues(session: requests.Session) -> List[Dict[str, str]]:
 	"""Return active leagues with the user's team in each league."""
-	payload = {
-		"msgs": [{"method": "getAllLeagues", "data": {"view": "LEAGUES"}}],
-		"uiv": 3, "refUrl": "https://www.fantrax.com/fantasy/league",
-		"dt": 0, "at": 0, "av": "0.0", "tz": "America/Los_Angeles", "v": "167.0.1",
-	}
+	payloads = [
+		("minimal", {"msgs": [{"method": "getAllLeagues", "data": {"view": "LEAGUES"}}]}),
+		("legacy", {
+			"msgs": [{"method": "getAllLeagues", "data": {"view": "LEAGUES"}}],
+			"uiv": 3, "refUrl": "https://www.fantrax.com/fantasy/league",
+			"dt": 0, "at": 0, "av": "0.0", "tz": "America/Los_Angeles", "v": "167.0.1",
+		}),
+	]
 	logger = logging.getLogger(__name__)
 	api_logger = logging.getLogger('auth_api')
 	logger.info("Fetching user leagues via fxpa getAllLeagues")
 
-	try:
-		data = _fxpa_post(session, payload).json()
-		# Debug to API logger with truncation
+	data = {}
+	resp0 = {}
+	last_error = None
+
+	for label, payload in payloads:
 		try:
-			api_logger.debug("getAllLeagues response: %s", json_dumps_safe(data)[:4000])
+			data = _fxpa_post(session, payload).json()
+			# Debug to API logger with truncation
+			try:
+				api_logger.debug("getAllLeagues response (%s): %s", label, json_dumps_safe(data)[:4000])
+			except Exception:
+				pass
 		except Exception:
-			pass
-	except Exception:
-		logger.warning("getAllLeagues: non-JSON or request error", exc_info=True)
-		return []
+			logger.warning("getAllLeagues (%s): non-JSON or request error", label, exc_info=True)
+			last_error = "request error"
+			continue
 
-	if (data.get("pageError") or {}).get("code") == "WARNING_NOT_LOGGED_IN":
-		return []
+		page_error = (data.get("pageError") or {}).get("code")
+		if page_error == "WARNING_NOT_LOGGED_IN":
+			return []
+		if page_error == "STALE_CLIENT":
+			last_error = page_error
+			logger.warning("getAllLeagues (%s) returned STALE_CLIENT; retrying with alternate payload", label)
+			continue
+		if page_error:
+			last_error = page_error
+			logger.warning("getAllLeagues (%s) returned pageError=%s", label, page_error)
+			continue
 
-	resp0 = (data.get("responses") or [{}])[0]
-	if (resp0.get("pageError") or {}).get("code") == "WARNING_NOT_LOGGED_IN":
+		resp0 = (data.get("responses") or [{}])[0]
+		resp_error = (resp0.get("pageError") or {}).get("code")
+		if resp_error == "WARNING_NOT_LOGGED_IN":
+			return []
+		if resp_error == "STALE_CLIENT":
+			last_error = resp_error
+			logger.warning("getAllLeagues (%s) response[0] STALE_CLIENT; retrying with alternate payload", label)
+			continue
+		if resp_error:
+			last_error = resp_error
+			logger.warning("getAllLeagues (%s) response[0] pageError=%s", label, resp_error)
+			continue
+
+		# Success path
+		break
+	else:
+		logger.warning("getAllLeagues failed after trying all payloads (last_error=%s)", last_error)
 		return []
 
 	leagues: List[Dict[str, str]] = []

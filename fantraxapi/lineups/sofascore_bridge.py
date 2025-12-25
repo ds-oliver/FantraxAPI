@@ -259,6 +259,8 @@ def _map_snapshot_to_status(
     # predicted / not confirmed
     if role_normalized == "starters":
         return LineupStatus.STARTING
+    if role_normalized == "subs":
+        return LineupStatus.BENCH
     if role_normalized == "missing":
         return _missing_reason_to_status(reason)
     return LineupStatus.UNKNOWN
@@ -524,6 +526,8 @@ def _collect_player_lineup_context(
         kickoff=kickoff,
         status_source="sofascore",
         ss_status=LineupStatus.UNKNOWN,
+        ss_pred_status=None,
+        ss_conf_status=None,
         ss_kickoff=kickoff,
         event_id=schedule_event_id,
         team_name=team_display_raw,
@@ -576,12 +580,17 @@ def _collect_player_lineup_context(
         )
 
     if kickoff and snapshot:
-        info.ss_status = _map_snapshot_to_status(
+        mapped_status = _map_snapshot_to_status(
             confirmed=snapshot.confirmed,
             role=snapshot.role,
             reason=snapshot.reason,
         )
-        info.status = info.ss_status
+        if snapshot.confirmed:
+            info.ss_conf_status = mapped_status
+        else:
+            info.ss_pred_status = mapped_status
+        info.ss_status = mapped_status
+        info.status = mapped_status
     elif not kickoff:
         info.status = LineupStatus.UNKNOWN
         info.ss_status = LineupStatus.UNKNOWN
@@ -760,7 +769,13 @@ def build_lineup_info_by_player(
         if not collected:
             continue
         player_info, debug_ctx = collected
-        player_info.ss_status = player_info.status
+        player_info.ss_status = (
+            player_info.ss_conf_status
+            or player_info.ss_pred_status
+            or player_info.ss_status
+        )
+        if player_info.status == LineupStatus.UNKNOWN and player_info.ss_status:
+            player_info.status = player_info.ss_status
         player_info.ss_kickoff = player_info.kickoff
         fantrax_id = player_info.fantrax_player_id
         snapshot = debug_ctx.get("snapshot")

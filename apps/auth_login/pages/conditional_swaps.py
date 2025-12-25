@@ -17,10 +17,12 @@ from apps.auth_login.context import select_league_and_team_in_sidebar
 from fantraxapi.fantrax import FantraxAPI
 from fantraxapi.lineups.conditional_swaps import (
     BackupOption,
+    ConditionalSwapEngine,
     ConditionalSwapRule,
     LineupStatus,
     PlayerLineupInfo,
     RosterView,
+    RuleActionType,
     RuleState,
     RuleStorage,
     SwapCondition,
@@ -28,10 +30,10 @@ from fantraxapi.lineups.conditional_swaps import (
     get_available_periods,
     is_row_locked,
     get_row_lock_flags,
-    test_swap_in_period,
-    choose_backup_for_rule_preview,
     would_break_mandatory_slots,
 )
+from fantraxapi.waivers import WaiversService
+from fantraxapi.lineups.fantrax_lineup_bridge import fetch_fa_status_map
 from fantraxapi.lineups.lineup_resolver import LineupSourceStrategy, resolve_lineup_info
 from fantraxapi.lineups.fantrax_lineup_bridge import debug_fx_lineup_context
 try:
@@ -219,6 +221,7 @@ except Exception as exc:
     st.stop()
 
 subs_service = SubsService(session=session, league_id=league_id)
+waivers_service = WaiversService(request_callable=api._request, api=api)
 roster_view = RosterView(roster)
 player_lookup = {
     str(getattr(row.player, "id")): row
@@ -321,6 +324,7 @@ else:
     selected_period_id = None
     selected_period_label = ""
     detected_period = None
+    st.stop()
 
 # Decide which period to feed into lineup resolution
 if selected_period_id is not None:
@@ -657,7 +661,8 @@ else:
 
 with st.expander("What do these columns mean?"):
     st.markdown(
-        "- SS status / FX status: Source-specific lineup signals.\n"
+        "- SS predicted / SS confirmed: SofaScore signals split by predicted vs. confirmed lineups (confirmed shows N/A until a confirmed XI is scraped).\n"
+        "- SS status / FX status: Source-specific lineup signals; SS status prefers confirmed when present, otherwise predicted.\n"
         "- Effective status: The value used by the engine (SofaScore preferred unless missing).\n"
         "- Kickoff: Effective kickoff used for ordering and locking heuristics.\n"
         "- FX locked / markers: Fantrax disableLineupChange and visual markers that indicate player is locked and cannot be changed."
@@ -693,6 +698,8 @@ for pid in roster_view.active_player_ids():
             "Pos": getattr(row.pos, "short_name", ""),
             "Team": team_name,
             "Opponent": opponent,
+            "SS predicted": _format_status(getattr(info, "ss_pred_status", None)) if info and getattr(info, "ss_pred_status", None) else "N/A",
+            "SS confirmed": _format_status(getattr(info, "ss_conf_status", None)) if info and getattr(info, "ss_conf_status", None) else "N/A",
             "SS status": _format_status(getattr(info, "ss_status", None)) if info and getattr(info, "ss_status", None) else "Unknown",
             "FX status": _format_status(getattr(info, "fx_status", None)) if info and getattr(info, "fx_status", None) else "Unknown",
             "Effective status": _format_status(info.status) if info else "Unknown",
@@ -734,6 +741,8 @@ for pid in roster_view.reserve_player_ids():
             "Pos": getattr(row.pos, "short_name", ""),
             "Team": team_name,
             "Opponent": opponent,
+            "SS predicted": _format_status(getattr(info, "ss_pred_status", None)) if info and getattr(info, "ss_pred_status", None) else "N/A",
+            "SS confirmed": _format_status(getattr(info, "ss_conf_status", None)) if info and getattr(info, "ss_conf_status", None) else "N/A",
             "SS status": _format_status(getattr(info, "ss_status", None)) if info and getattr(info, "ss_status", None) else "Unknown",
             "FX status": _format_status(getattr(info, "fx_status", None)) if info and getattr(info, "fx_status", None) else "Unknown",
             "Effective status": _format_status(info.status) if info else "Unknown",
@@ -853,6 +862,18 @@ active_player_id = st.selectbox(
     key="conditional_active_select",
 )
 
+rule_action_label = st.radio(
+    "Rule action",
+    options=["Lineup swap (bench player)", "FA claim/drop (free agent)"],
+    index=0,
+    help="Choose whether this rule swaps to an existing bench player or submits a free-agent claim.",
+)
+selected_action_type = (
+    RuleActionType.LINEUP_SWAP
+    if rule_action_label.startswith("Lineup")
+    else RuleActionType.FA_CLAIM_DROP
+)
+
 active_row = player_lookup.get(active_player_id)
 active_lineup = lineup_info_by_player.get(active_player_id)
 
@@ -897,54 +918,101 @@ else:
 candidate_rows: List[Dict[str, str]] = []
 candidate_order: Dict[str, int] = {}
 debug_candidates: List[Dict[str, object]] = []
+selected_backup_ids: List[str] = []
+fa_candidate: Optional[Dict[str, str]] = None
+fa_bid_amount: float = 0.0
 
-if (
-    active_player_id
-    and active_lineup
-    and active_lineup.kickoff
-    and active_lineup.status != LineupStatus.UNKNOWN
-    and period_id
-):
-    bench_rows = [
-        row
-        for row in roster.rows
-        if getattr(row, "player", None) and getattr(row, "pos_id", "0") == "0"
-    ]
-    with st.spinner("Evaluating eligible backups..."):
-        for row in bench_rows:
-            bench_id = str(row.player.id)
-            locked = is_row_locked(
-                row,
-                now=now,
-                lineup_info_by_player=lineup_info_by_player,
-            )
-            info = lineup_info_by_player.get(bench_id)
-            status_known = bool(info and info.status != LineupStatus.UNKNOWN)
-            kickoff_ok = bool(
-                info
-                and info.kickoff
-                and info.kickoff >= now
-                and info.kickoff >= active_lineup.kickoff
-            )
-            can_swap_flag = False
-            swap_reason = ""
-            if locked:
-                swap_reason = "locked"
-            elif not info:
-                swap_reason = "no status"
-            elif info.status != LineupStatus.STARTING:
-                swap_reason = f"status={info.status.value}"
-            elif not kickoff_ok:
-                swap_reason = "kickoff earlier than active or missing"
-            else:
+if selected_action_type == RuleActionType.LINEUP_SWAP:
+    if (
+        active_player_id
+        and active_lineup
+        and active_lineup.kickoff
+        and active_lineup.status != LineupStatus.UNKNOWN
+        and period_id
+    ):
+        bench_rows = [
+            row
+            for row in roster.rows
+            if getattr(row, "player", None) and getattr(row, "pos_id", "0") == "0"
+        ]
+        with st.spinner("Evaluating eligible backups..."):
+            for row in bench_rows:
+                bench_id = str(row.player.id)
+                locked = is_row_locked(
+                    row,
+                    now=now,
+                    lineup_info_by_player=lineup_info_by_player,
+                )
+                info = lineup_info_by_player.get(bench_id)
+                status_known = bool(info and info.status != LineupStatus.UNKNOWN)
+                kickoff_ok = bool(
+                    info
+                    and info.kickoff
+                    and info.kickoff >= now
+                    and info.kickoff >= active_lineup.kickoff
+                )
+                can_swap_flag = False
+                swap_reason = ""
+                if locked:
+                    swap_reason = "locked"
+                elif not info:
+                    swap_reason = "no status"
+                elif info.status != LineupStatus.STARTING:
+                    swap_reason = f"status={info.status.value}"
+                elif not kickoff_ok:
+                    swap_reason = "kickoff earlier than active or missing"
+                else:
+                    if would_break_mandatory_slots(
+                        roster_view,
+                        active_player_id,
+                        bench_id,
+                        min_gks=1,
+                    ):
+                        swap_reason = "mandatory slot break"
+                    elif not can_swap_in_period(
+                        subs_service=subs_service,
+                        roster=roster,
+                        league_id=league_id,
+                        team_id=team_id,
+                        active_id=active_player_id,
+                        reserve_id=bench_id,
+                        period_id=period_id,
+                    ):
+                        swap_reason = "illegal by Fantrax/formation"
+                    else:
+                        can_swap_flag = True
+                        swap_reason = "ok"
+
+                debug_candidates.append(
+                    {
+                        "Player": row.player.name,
+                        "Status": info.status.value if info else "unknown",
+                        "Kickoff": _format_kickoff(info.kickoff) if info else "—",
+                        "Locked": locked,
+                        "Has lineup": status_known,
+                        "Future kickoff ok": kickoff_ok,
+                        "Swap legal": can_swap_flag,
+                        "Reason": swap_reason,
+                    }
+                )
+
+                if locked:
+                    continue
+                info = lineup_info_by_player.get(bench_id)
+                if not info or info.status != LineupStatus.STARTING:
+                    continue
+                if not info.kickoff or info.kickoff < now:
+                    continue
+                if info.kickoff < active_lineup.kickoff:
+                    continue
                 if would_break_mandatory_slots(
                     roster_view,
                     active_player_id,
                     bench_id,
                     min_gks=1,
                 ):
-                    swap_reason = "mandatory slot break"
-                elif not can_swap_in_period(
+                    continue
+                if not can_swap_in_period(
                     subs_service=subs_service,
                     roster=roster,
                     league_id=league_id,
@@ -953,138 +1021,203 @@ if (
                     reserve_id=bench_id,
                     period_id=period_id,
                 ):
-                    swap_reason = "illegal by Fantrax/formation"
-                else:
-                    can_swap_flag = True
-                    swap_reason = "ok"
+                    continue
+                pos = SubsService._pos_of_row(row)  # type: ignore[attr-defined]
+                candidate_rows.append(
+                    {
+                        "player_id": bench_id,
+                        "Player": f"{row.player.name} ({pos})",
+                        "Kickoff (UTC)": _format_kickoff(info.kickoff),
+                        "Status": _format_status(info.status),
+                        "Select": False,
+                        "Priority": len(candidate_rows) + 1,
+                    }
+                )
+                candidate_order[bench_id] = len(candidate_rows)
+    elif active_lineup and active_lineup.status == LineupStatus.UNKNOWN:
+        st.info("Waiting for confirmed SofaScore lineup before backups can be evaluated.")
+    else:
+        if active_lineup and not active_lineup.kickoff:
+            st.info("Active player has no upcoming kickoff; waiting for schedule/lineup data.")
 
-            debug_candidates.append(
-                {
-                    "Player": row.player.name,
-                    "Status": info.status.value if info else "unknown",
-                    "Kickoff": _format_kickoff(info.kickoff) if info else "—",
-                    "Locked": locked,
-                    "Has lineup": status_known,
-                    "Future kickoff ok": kickoff_ok,
-                    "Swap legal": can_swap_flag,
-                    "Reason": swap_reason,
-                }
+    if debug_candidates:
+        with st.expander("🔍 Debug: backup eligibility checks"):
+            st.dataframe(pd.DataFrame(debug_candidates))
+
+    if candidate_rows:
+        candidate_df = pd.DataFrame(candidate_rows)
+        edited_df = st.data_editor(
+            candidate_df,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "Select": st.column_config.CheckboxColumn(
+                    "Use as backup", help="Enable to include this reserve in the rule."
+                ),
+                "Priority": st.column_config.NumberColumn(
+                    "Priority",
+                    min_value=1,
+                    max_value=len(candidate_rows),
+                    step=1,
+                    help="Lower numbers fire first when multiple backups are eligible.",
+                ),
+                "Player": st.column_config.TextColumn("Player", disabled=True),
+                "Kickoff (UTC)": st.column_config.TextColumn("Kickoff (UTC)", disabled=True),
+                "Status": st.column_config.TextColumn("Status", disabled=True),
+            },
+            key="conditional_candidates_editor",
+        )
+        selected = edited_df[edited_df["Select"]].copy()
+        if not selected.empty:
+            selected["Priority"] = pd.to_numeric(selected["Priority"], errors="coerce")
+            ordering = []
+            for _, row in selected.iterrows():
+                pid = str(row["player_id"])
+                priority = row["Priority"]
+                if pd.isna(priority):
+                    priority = float("inf")
+                ordering.append((priority, candidate_order.get(pid, 0), pid))
+            ordering.sort(key=lambda item: (item[0], item[1]))
+            selected_backup_ids = [pid for _, _, pid in ordering]
+    else:
+        if selected_action_type == RuleActionType.LINEUP_SWAP:
+            st.info(
+                "No eligible reserve players meet the kickoff / lineup / legality requirements right now. "
+                "Once confirmed lineups or legal swaps become available, the list will populate automatically."
             )
 
-            if locked:
-                continue
-            info = lineup_info_by_player.get(bench_id)
-            if not info or info.status != LineupStatus.STARTING:
-                continue
-            if not info.kickoff or info.kickoff < now:
-                continue
-            if info.kickoff < active_lineup.kickoff:
-                continue
-            if would_break_mandatory_slots(
-                roster_view,
-                active_player_id,
-                bench_id,
-                min_gks=1,
-            ):
-                continue
-            if not can_swap_in_period(
-                subs_service=subs_service,
-                roster=roster,
-                league_id=league_id,
-                team_id=team_id,
-                active_id=active_player_id,
-                reserve_id=bench_id,
-                period_id=period_id,
-            ):
-                continue
-            pos = SubsService._pos_of_row(row)  # type: ignore[attr-defined]
-            candidate_rows.append(
-                {
-                    "player_id": bench_id,
-                    "Player": f"{row.player.name} ({pos})",
-                    "Kickoff (UTC)": _format_kickoff(info.kickoff),
-                    "Status": _format_status(info.status),
-                    "Select": False,
-                    "Priority": len(candidate_rows) + 1,
-                }
+if selected_action_type == RuleActionType.FA_CLAIM_DROP:
+    st.markdown("**Free agent candidate (conditional claim target)**")
+    if not active_lineup or not active_lineup.kickoff:
+        st.info("Waiting for active player's kickoff/time before evaluating FA candidates.")
+    else:
+        fa_candidate_rows: List[Dict[str, str]] = []
+        with st.spinner("Evaluating eligible free agents..."):
+            try:
+                fa_status_map = fetch_fa_status_map(session=session, league_id=league_id)
+                fa_pool = waivers_service.list_players_by_name(
+                    limit=150,
+                    status="ALL_AVAILABLE",
+                )
+            except Exception as exc:
+                st.error(f"Failed to load free agent pool: {exc}")
+                fa_pool = []
+                fa_status_map = {}
+
+            for p in fa_pool:
+                sid = str(p.get("id"))
+                snapshot = fa_status_map.get(sid) if fa_status_map else None
+                if not snapshot:
+                    continue
+                if snapshot.status != LineupStatus.STARTING:
+                    continue
+                if snapshot.kickoff:
+                    if snapshot.kickoff <= now:
+                        continue
+                    if active_lineup.kickoff and snapshot.kickoff < active_lineup.kickoff:
+                        continue
+                if not ConditionalSwapEngine._drop_would_keep_roster_legal(
+                    roster_view,
+                    drop_id=active_player_id,
+                    min_gks=1,
+                ):
+                    continue
+                fa_candidate_rows.append(
+                    {
+                        "id": sid,
+                        "Name": p.get("name") or "",
+                        "Team": p.get("team") or "",
+                        "Position": p.get("position") or "",
+                        "default_pos_id": p.get("default_pos_id"),
+                        "Kickoff (UTC)": _format_kickoff(snapshot.kickoff),
+                        "Select": False,
+                    }
+                )
+
+        if fa_candidate_rows:
+            fa_df = pd.DataFrame(fa_candidate_rows)
+            edited_fa_df = st.data_editor(
+                fa_df,
+                hide_index=True,
+                use_container_width=True,
+                column_config={
+                    "Select": st.column_config.CheckboxColumn("Use as FA target"),
+                    "Name": st.column_config.TextColumn("Name", disabled=True),
+                    "Team": st.column_config.TextColumn("Team", disabled=True),
+                    "Position": st.column_config.TextColumn("Pos", disabled=True),
+                    "Kickoff (UTC)": st.column_config.TextColumn("Kickoff (UTC)", disabled=True),
+                    "id": st.column_config.TextColumn("id", disabled=True),
+                    "default_pos_id": st.column_config.TextColumn("default_pos_id", disabled=True),
+                },
+                key="conditional_fa_candidates_editor",
             )
-            candidate_order[bench_id] = len(candidate_rows)
-elif active_lineup and active_lineup.status == LineupStatus.UNKNOWN:
-    st.info("Waiting for confirmed SofaScore lineup before backups can be evaluated.")
-else:
-    if active_lineup and not active_lineup.kickoff:
-        st.info("Active player has no upcoming kickoff; waiting for schedule/lineup data.")
+            selected = edited_fa_df[edited_fa_df["Select"]]
+            if len(selected) > 1:
+                st.warning("Select exactly one free agent for this rule.")
+            elif len(selected) == 1:
+                row = selected.iloc[0]
+                fa_candidate = {
+                    "id": str(row["id"]),
+                    "name": row["Name"],
+                    "team": row["Team"],
+                    "position": row["Position"],
+                    "default_pos_id": str(row["default_pos_id"]),
+                }
+                st.info(
+                    f"FA target selected: **{fa_candidate['name']}** ({fa_candidate['position']} – {fa_candidate['team']})"
+                )
+        else:
+            st.info("No eligible free agents currently meet the starting/legality requirements.")
 
-if debug_candidates:
-    with st.expander("🔍 Debug: backup eligibility checks"):
-        st.dataframe(pd.DataFrame(debug_candidates))
-
-selected_backup_ids: List[str] = []
-if candidate_rows:
-    candidate_df = pd.DataFrame(candidate_rows)
-    edited_df = st.data_editor(
-        candidate_df,
-        hide_index=True,
-        use_container_width=True,
-        column_config={
-            "Select": st.column_config.CheckboxColumn(
-                "Use as backup", help="Enable to include this reserve in the rule."
-            ),
-            "Priority": st.column_config.NumberColumn(
-                "Priority",
-                min_value=1,
-                max_value=len(candidate_rows),
-                step=1,
-                help="Lower numbers fire first when multiple backups are eligible.",
-            ),
-            "Player": st.column_config.TextColumn("Player", disabled=True),
-            "Kickoff (UTC)": st.column_config.TextColumn("Kickoff (UTC)", disabled=True),
-            "Status": st.column_config.TextColumn("Status", disabled=True),
-        },
-        key="conditional_candidates_editor",
+if selected_action_type == RuleActionType.LINEUP_SWAP:
+    submit_disabled = not (
+        active_player_id
+        and period_id
+        and selected_backup_ids
+        and active_lineup
+        and active_lineup.kickoff
     )
-    selected = edited_df[edited_df["Select"]].copy()
-    if not selected.empty:
-        selected["Priority"] = pd.to_numeric(selected["Priority"], errors="coerce")
-        ordering = []
-        for _, row in selected.iterrows():
-            pid = str(row["player_id"])
-            priority = row["Priority"]
-            if pd.isna(priority):
-                priority = float("inf")
-            ordering.append((priority, candidate_order.get(pid, 0), pid))
-        ordering.sort(key=lambda item: (item[0], item[1]))
-        selected_backup_ids = [pid for _, _, pid in ordering]
 else:
-    st.info(
-        "No eligible reserve players meet the kickoff / lineup / legality requirements right now. "
-        "Once confirmed lineups or legal swaps become available, the list will populate automatically."
+    submit_disabled = not (
+        active_player_id
+        and period_id
+        and fa_candidate
+        and active_lineup
     )
-
-submit_disabled = not (
-    active_player_id
-    and period_id
-    and selected_backup_ids
-    and active_lineup
-    and active_lineup.kickoff
-)
 
 submitted = st.button("Save Rule", disabled=submit_disabled, type="primary", key="save_rule_btn")
 
 if submitted and not submit_disabled:
     try:
-        rule = ConditionalSwapRule(
-            league_id=league_id,
-            team_id=team_id,
-            active_player_id=active_player_id,
-            backups=[
-                BackupOption(reserve_player_id=pid, priority=index + 1)
-                for index, pid in enumerate(selected_backup_ids)
-            ],
-            period_id=str(period_id),
-            period_label=period_label,
-            condition=SwapCondition.NOT_STARTING,
-        )
+        if selected_action_type == RuleActionType.LINEUP_SWAP:
+            rule = ConditionalSwapRule(
+                league_id=league_id,
+                team_id=team_id,
+                active_player_id=active_player_id,
+                backups=[
+                    BackupOption(reserve_player_id=pid, priority=index + 1)
+                    for index, pid in enumerate(selected_backup_ids)
+                ],
+                period_id=str(period_id),
+                period_label=period_label,
+                condition=SwapCondition.NOT_STARTING,
+                action_type=RuleActionType.LINEUP_SWAP,
+            )
+        else:
+            rule = ConditionalSwapRule(
+                league_id=league_id,
+                team_id=team_id,
+                active_player_id=active_player_id,
+                backups=[],
+                period_id=str(period_id),
+                period_label=period_label,
+                condition=SwapCondition.NOT_STARTING,
+                action_type=RuleActionType.FA_CLAIM_DROP,
+                fa_add_scorer_id=fa_candidate["id"] if fa_candidate else None,
+                fa_add_position_id=fa_candidate["default_pos_id"] if fa_candidate else None,
+                fa_claim_to_status_id="2",
+                fa_add_display_name=fa_candidate["name"] if fa_candidate else None,
+            )
         storage.save_rule(rule)
         st.success("Rule saved successfully.")
         st.rerun()
@@ -1110,25 +1243,37 @@ else:
             if player_lookup.get(rule.active_player_id)
             else rule.active_player_id
         )
-        backups_display = []
-        for backup in rule.sorted_backups():
-            row = player_lookup.get(backup.reserve_player_id)
-            backups_display.append(row.player.name if row else backup.reserve_player_id)  # type: ignore[union-attr]
-        backups_chain = " > ".join(backups_display) if backups_display else "(none)"
-
-        st.markdown(f"**{active_name}** ⇢ {backups_chain}")
+        if rule.action_type == RuleActionType.LINEUP_SWAP:
+            backups_display = []
+            for backup in rule.sorted_backups():
+                row = player_lookup.get(backup.reserve_player_id)
+                backups_display.append(row.player.name if row else backup.reserve_player_id)  # type: ignore[union-attr]
+            backups_chain = " > ".join(backups_display) if backups_display else "(none)"
+            st.markdown(
+                f"**Lineup swap rule:** When **{active_name}** is *not starting*, try backups in order: {backups_chain}."
+            )
+        else:
+            fa_label = (
+                getattr(rule, "fa_add_display_name", None)
+                or getattr(rule, "fa_add_scorer_id", None)
+                or "unknown FA"
+            )
+            st.markdown(
+                f"**FA claim/drop rule:** When **{active_name}** is *not starting* and **{fa_label}** is *starting*, "
+                f"submit FA claim to add **{fa_label}** and drop **{active_name}** during **{rule.period_label}**."
+            )
         info_line = lineup_info_by_player.get(rule.active_player_id)
         status_text = _format_status(info_line.status) if info_line else "Unknown"
         kickoff_text = _format_kickoff(info_line.kickoff if info_line else None)
         condition_text = getattr(rule.condition, "value", str(rule.condition)).replace("_", " ")
         state_text = getattr(rule.state, "value", str(rule.state))
         st.caption(
-            f"Period: {rule.period_label} | Condition: {condition_text} "
+            f"Period: {rule.period_label} | Type: {getattr(rule.action_type, 'value', str(rule.action_type))} | Condition: {condition_text} "
             f"| Max fires: {rule.max_fires_per_period} | State: {state_text} "
             f"| Current lineup: {status_text} ({kickoff_text})"
         )
 
-        action_cols = st.columns(3)
+        action_cols = st.columns(2)
         toggle_label = "Disable" if rule.state == RuleState.ACTIVE else "Enable"
         if action_cols[0].button(
             f"{toggle_label} Rule",
@@ -1148,101 +1293,6 @@ else:
         ):
             storage.delete_rule(rule.id)
             st.rerun()
-
-        if action_cols[2].button(
-            "Test rule (no changes)",
-            key=f"test_{rule.id}",
-            use_container_width=True,
-        ):
-            with st.spinner("Testing rule against Fantrax (dry run)..."):
-                try:
-                    fresh_roster = api.roster_info(team_id)
-                    fresh_roster_view = RosterView(fresh_roster)
-
-                    mapping_manager = PlayerMappingManager()
-                    try:
-                        detected_period = api.resolve_active_period(team_id)
-                    except Exception:
-                        detected_period = None
-
-                    fresh_lineup_info = resolve_lineup_info(
-                        fresh_roster,
-                        session=session,
-                        league_id=league_id,
-                        period=detected_period,
-                        strategy=strategy,
-                        mapping_manager=mapping_manager,
-                        round_hint=inferred_round,
-                    )
-
-                    now_ts = datetime.now(timezone.utc)
-                    candidate_id, reason = choose_backup_for_rule_preview(
-                        rule,
-                        fresh_roster_view,
-                        fresh_lineup_info,
-                        now=now_ts,
-                    )
-
-                    if not candidate_id:
-                        st.error(f"🚫 Cannot test rule: {reason}")
-                    else:
-                        active_row = fresh_roster_view.get_row(rule.active_player_id)
-                        backup_row = fresh_roster_view.get_row(candidate_id)
-
-                        active_label = getattr(
-                            getattr(active_row, "player", None),
-                            "name",
-                            rule.active_player_id,
-                        )
-                        backup_label = getattr(
-                            getattr(backup_row, "player", None),
-                            "name",
-                            candidate_id,
-                        )
-
-                        scenario_text = (
-                            f"Testing scenario: {active_label} confirmed as non-starter, "
-                            f"{backup_label} moving to active slot."
-                        )
-                        st.info(scenario_text)
-
-                        test_result = test_swap_in_period(
-                            subs_service=subs_service,
-                            roster=fresh_roster,
-                            league_id=league_id,
-                            team_id=team_id,
-                            active_id=rule.active_player_id,
-                            reserve_id=candidate_id,
-                            period_id=rule.period_id,
-                            enforce_invariants=True,
-                        )
-
-                        if test_result["ok"]:
-                            st.success(
-                                "✅ Fantrax confirms this rule's swap would be legal for the selected period. "
-                                "(No changes applied.)"
-                            )
-                        else:
-                            reason = test_result.get("reason") or "unknown"
-                            st.error(
-                                f"🚫 Rule swap would be illegal or rejected. Reason: {reason}"
-                            )
-                            msgs = test_result.get("illegal_msgs") or []
-                            if msgs:
-                                st.write("Fantrax illegal roster messages:")
-                                for m in msgs:
-                                    st.write(f"- {m}")
-                            with st.expander("Raw Fantrax confirm payload"):
-                                st.code(
-                                    json.dumps(
-                                        test_result.get("confirm") or {},
-                                        indent=2,
-                                        default=str,
-                                    )
-                                )
-                except Exception as exc:
-                    logger.exception("Rule test failed")
-                    st.error(f"Rule test failed: {exc}")
 
         st.caption(f"Rule ID: {rule.id}")
         st.markdown("---")

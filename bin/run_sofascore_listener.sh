@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Helper wrapper for sofascore_lineup_listener.py
-# Honors PYTHON_BIN if you want to point at a venv, otherwise uses python.
-PYTHON_BIN="${PYTHON_BIN:-python}"
+# Honors PYTHON_BIN if you want to point at a venv, otherwise uses python3.
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 cd "$ROOT_DIR"

@@ -2,15 +2,232 @@
   "event_id": 14025168,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "3-5-2",
+    "starters": [
+      {
+        "id": 871290,
+        "name": "Lucas Perri",
+        "position": "G",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 828640,
+        "name": "Joe Rodon",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 886930,
+        "name": "Jaka Bijol",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836675,
+        "name": "Pascal Struijk",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 929132,
+        "name": "Jayden Bogle",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 871886,
+        "name": "Ao Tanaka",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 847097,
+        "name": "Ethan Ampadu",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 889861,
+        "name": "Anton Stach",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 834308,
+        "name": "Gabriel Gudmundsson",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 372344,
+        "name": "Dominic Calvert-Lewin",
+        "position": "F",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 803185,
+        "name": "Lukas Nmecha",
+        "position": "F",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 866191,
+        "name": "Sean Longstaff",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 828639,
+        "name": "Daniel James",
+        "position": "M",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 243609,
+        "name": "Alisson",
+        "position": "G",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 318927,
+        "name": "Joe Gomez",
+        "position": "D",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 826215,
+        "name": "Ibrahima Konaté",
+        "position": "D",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 151545,
+        "name": "Virgil van Dijk",
+        "position": "D",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 262911,
+        "name": "Andrew Robertson",
+        "position": "D",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 904897,
+        "name": "Ryan Gravenberch",
+        "position": "M",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 895324,
+        "name": "Alexis Mac Allister",
+        "position": "M",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 869856,
+        "name": "Dominik Szoboszlai",
+        "position": "M",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1019322,
+        "name": "Florian Wirtz",
+        "position": "F",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 862967,
+        "name": "Cody Gakpo",
+        "position": "M",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1048422,
+        "name": "Hugo Ekitiké",
+        "position": "F",
+        "team_id": 44,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 970361,
+        "name": "Jeremie Frimpong",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1142636,
+        "name": "Stefan Bajčetić",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1008402,
+        "name": "Conor Bradley",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1473137,
+        "name": "Giovanni Leoni",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2025-12-05 04:00:40+0000"
 }
