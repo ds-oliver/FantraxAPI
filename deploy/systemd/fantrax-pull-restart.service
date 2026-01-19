@@ -1,0 +1,15 @@
+[Unit]
+Description=FantraxAPI auto pull & streamlit restart
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/FantraxAPI
+ExecStart=/opt/FantraxAPI/bin/pull_restart.sh
+StandardOutput=journal
+StandardError=journal
+Environment=PATH=/opt/FantraxAPI/.venv/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target

@@ -136,3 +136,6 @@ fantraxloggedin.cookie
 private_examples/**
 # Service account credentials (do not commit)
 config/service_account.json
+
+# SofaScore runtime files
+data/sofascore/*.lock
