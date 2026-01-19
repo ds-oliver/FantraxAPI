@@ -1,0 +1,59 @@
+{
+  "fetched_at": "2026-01-13T06:40:42.985130+00:00",
+  "data": {
+    "2026-01-13": {
+      "get": "odds",
+      "parameters": {
+        "league": "39",
+        "season": "2025",
+        "date": "2026-01-13",
+        "bookmaker": "1"
+      },
+      "errors": {
+        "plan": "Free plans do not have access to this season, try from 2022 to 2024."
+      },
+      "results": 0,
+      "paging": {
+        "current": 1,
+        "total": 1
+      },
+      "response": []
+    },
+    "2026-01-14": {
+      "get": "odds",
+      "parameters": {
+        "league": "39",
+        "season": "2025",
+        "date": "2026-01-14",
+        "bookmaker": "1"
+      },
+      "errors": {
+        "plan": "Free plans do not have access to this season, try from 2022 to 2024."
+      },
+      "results": 0,
+      "paging": {
+        "current": 1,
+        "total": 1
+      },
+      "response": []
+    },
+    "2026-01-15": {
+      "get": "odds",
+      "parameters": {
+        "league": "39",
+        "season": "2025",
+        "date": "2026-01-15",
+        "bookmaker": "1"
+      },
+      "errors": {
+        "plan": "Free plans do not have access to this season, try from 2022 to 2024."
+      },
+      "results": 0,
+      "paging": {
+        "current": 1,
+        "total": 1
+      },
+      "response": []
+    }
+  }
+}

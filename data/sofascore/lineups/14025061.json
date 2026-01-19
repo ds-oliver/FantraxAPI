@@ -2,15 +2,292 @@
   "event_id": 14025061,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-1-4-1",
+    "starters": [
+      {
+        "id": 824509,
+        "name": "Gianluigi Donnarumma",
+        "position": "G",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 945122,
+        "name": "Matheus Nunes",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1194333,
+        "name": "Abdukodir Khusanov",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 149663,
+        "name": "Nathan Aké",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142703,
+        "name": "Nico O'Reilly",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 827606,
+        "name": "Rodri",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 331209,
+        "name": "Bernardo Silva",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 979128,
+        "name": "Rayan Cherki",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 893549,
+        "name": "Tijjani Reijnders",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 859765,
+        "name": "Phil Foden",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 839956,
+        "name": "Erling Haaland",
+        "position": "F",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 136710,
+        "name": "Mateo Kovačić",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1065216,
+        "name": "Oscar Bobb",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1046795,
+        "name": "Savinho",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 152077,
+        "name": "John Stones",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 954056,
+        "name": "Nico González",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 964994,
+        "name": "Joško Gvardiol",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 318941,
+        "name": "Rúben Dias",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 873554,
+        "name": "Omar Marmoush",
+        "position": "F",
+        "reason": 0
+      },
+      {
+        "id": 931278,
+        "name": "Rayan Aït-Nouri",
+        "position": "M",
+        "reason": 0
+      },
+      {
+        "id": 827606,
+        "name": "Rodri",
+        "position": "M",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 994363,
+        "name": "Bart Verbruggen",
+        "position": "G",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 219572,
+        "name": "Joël Veltman",
+        "position": "D",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 962012,
+        "name": "Jan Paul van Hecke",
+        "position": "D",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 115365,
+        "name": "Lewis Dunk",
+        "position": "D",
+        "team_id": 30,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 825844,
+        "name": "Ferdi Kadıoğlu",
+        "position": "D",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1036269,
+        "name": "Yasin Ayari",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1065588,
+        "name": "Diego Gómez",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1198075,
+        "name": "Brajan Gruda",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 946695,
+        "name": "Georginio Rutter",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 936849,
+        "name": "Kaoru Mitoma",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1416535,
+        "name": "Charalampos Kostoulas",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 216308,
+        "name": "Adam Webster",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1155321,
+        "name": "Stefanos Tzimas",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 301288,
+        "name": "Solly March",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 959628,
+        "name": "Mats Wieffer",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1400106,
+        "name": "Yankuba Minteh",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1199043,
+        "name": "Carlos Baleba",
+        "position": "M",
+        "reason": 0
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-01-06 04:13:15+0000"
 }

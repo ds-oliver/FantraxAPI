@@ -2,15 +2,286 @@
   "event_id": 14025049,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "3-4-2-1",
+    "starters": [
+      {
+        "id": 103335,
+        "name": "Bernd Leno",
+        "position": "G",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 825719,
+        "name": "Issa Diop",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 362682,
+        "name": "Joachim Andersen",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 868715,
+        "name": "Jorge Cuenca",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 329417,
+        "name": "Timothy Castagne",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 371222,
+        "name": "Saša Lukić",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 82566,
+        "name": "Tom Cairney",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 803174,
+        "name": "Antonee Robinson",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 355528,
+        "name": "Harry Wilson",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 867445,
+        "name": "Emile Smith Rowe",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 192442,
+        "name": "Raúl Jiménez",
+        "position": "F",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 190877,
+        "name": "Kenny Tete",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 868715,
+        "name": "Jorge Cuenca",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1546231,
+        "name": "Joshua King",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 836698,
+        "name": "Ryan Sessegnon",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 861972,
+        "name": "Calvin Bassey",
+        "position": "D",
+        "reason": 0
+      },
+      {
+        "id": 352770,
+        "name": "Alex Iwobi",
+        "position": "M",
+        "reason": 0
+      },
+      {
+        "id": 822470,
+        "name": "Samuel Chukwueze",
+        "position": "F",
+        "reason": 0
+      },
+      {
+        "id": 1015256,
+        "name": "Rodrigo Muniz",
+        "position": "F",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 962053,
+        "name": "Filip Jørgensen",
+        "position": "G",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1403050,
+        "name": "Josh Acheampong",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 826134,
+        "name": "Trevoh Chalobah",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 904827,
+        "name": "Benoît Badiashile",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 996958,
+        "name": "Malo Gusto",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 885908,
+        "name": "Reece James",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 974505,
+        "name": "Enzo Fernández",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1597265,
+        "name": "Estêvão",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 982780,
+        "name": "Cole Palmer",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 879349,
+        "name": "Pedro Neto",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 975079,
+        "name": "João Pedro",
+        "position": "F",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 958966,
+        "name": "Mykhaylo Mudryk",
+        "position": "M",
+        "reason": 3
+      },
+      {
+        "id": 996911,
+        "name": "Levi Colwill",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1110006,
+        "name": "Dário Essugo",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 794939,
+        "name": "Marc Cucurella",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1069488,
+        "name": "Roméo Lavia",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 920546,
+        "name": "Robert Sánchez",
+        "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 923894,
+        "name": "Wesley Fofana",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-01-06 04:13:16+0000"
 }

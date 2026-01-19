@@ -6,13 +6,16 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
+from pathlib import Path
 from typing import Dict, Optional
 
 import requests
 
 from fantraxapi.lineups.conditional_swaps import LineupStatus, PlayerLineupInfo
 from fantraxapi.lineups.fantrax_lineup_bridge import (
+    DEFAULT_GLOBAL_STATUS_PATH,
     build_lineup_info_by_player_fantrax,
+    load_global_status_snapshot,
 )
 from fantraxapi.lineups.sofascore_bridge import build_lineup_info_by_player
 from fantraxapi.objs import Roster
@@ -35,6 +38,7 @@ def resolve_lineup_info(
     strategy: LineupSourceStrategy,
     mapping_manager: Optional[PlayerMappingManager] = None,
     round_hint: Optional[str] = None,
+    global_status_path: Optional[Path] = None,
 ) -> Dict[str, PlayerLineupInfo]:
     mapping_manager = mapping_manager or PlayerMappingManager()
     try:
@@ -46,6 +50,14 @@ def resolve_lineup_info(
     except Exception as exc:
         logger.warning("SofaScore lineup fetch failed: %s", exc)
         sofa_map = {}
+
+    # Optional global Fantrax snapshot (icon/typeId based) cached on disk.
+    try:
+        snapshot_path = global_status_path or DEFAULT_GLOBAL_STATUS_PATH
+        global_fx_map = load_global_status_snapshot(snapshot_path)
+    except Exception as exc:
+        logger.warning("Fantrax global snapshot load failed: %s", exc)
+        global_fx_map = {}
 
     try:
         fantrax_map = build_lineup_info_by_player_fantrax(
@@ -66,11 +78,25 @@ def resolve_lineup_info(
         pid = str(player.id)
         sofa_info = sofa_map.get(pid)
         fantrax_info = fantrax_map.get(pid)
+        global_fx = global_fx_map.get(pid)
 
         base = sofa_info or fantrax_info or PlayerLineupInfo(
             fantrax_player_id=pid,
             sofascore_player_id=getattr(sofa_info, "sofascore_player_id", None),
         )
+
+        # Apply global fantrax snapshot first if available
+        if global_fx:
+            if getattr(base, "fx_status", None) in (None, LineupStatus.UNKNOWN):
+                base.fx_status = global_fx.status
+            if getattr(base, "fx_kickoff", None) is None and global_fx.kickoff:
+                base.fx_kickoff = global_fx.kickoff
+            if getattr(base, "team_name", None) is None and global_fx.team_name:
+                base.team_name = global_fx.team_name
+            if getattr(base, "opponent_name", None) is None and global_fx.opponent_name:
+                base.opponent_name = global_fx.opponent_name
+            if getattr(base, "is_home", None) is None and global_fx.is_home is not None:
+                base.is_home = global_fx.is_home
 
         # carry fx fields
         base.fx_status = (

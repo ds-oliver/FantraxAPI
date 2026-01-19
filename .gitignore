@@ -134,3 +134,5 @@ dmypy.json
 fantraxloggedin.cookie
 # Private example responses
 private_examples/**
+# Service account credentials (do not commit)
+config/service_account.json

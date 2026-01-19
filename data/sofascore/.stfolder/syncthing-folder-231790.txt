@@ -1,0 +1,5 @@
+# This directory is a Syncthing folder marker.
+# Do not delete.
+
+folderID: sofascore
+created: 2026-01-18T20:54:50-08:00

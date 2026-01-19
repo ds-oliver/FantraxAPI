@@ -53,6 +53,7 @@ class PlayerLineupInfo:
     status: LineupStatus = LineupStatus.UNKNOWN
     kickoff: Optional[datetime] = None  # UTC
     status_source: Optional[str] = None  # "sofascore", "fantrax", or None
+    note: Optional[str] = None
 
     # Source-specific views
     ss_status: Optional[LineupStatus] = None
@@ -1027,11 +1028,35 @@ def test_swap_in_period(
     fantasy_response = confirm.get("fantasyResponse") or {}
     illegal_msgs = fantasy_response.get("illegalRosterMsgs") or []
     ok = bool(confirm.get("ok", False)) and not illegal_msgs
+    warnings: List[str] = []
+
+    if illegal_msgs:
+        model = confirm.get("model") or {}
+        try:
+            first_illegal = (
+                int(model.get("firstIllegalRosterPeriod"))
+                if model.get("firstIllegalRosterPeriod") is not None
+                else None
+            )
+        except Exception:
+            first_illegal = None
+        change_allowed = bool(model.get("changeAllowed", True))
+        resource_map = fantasy_response.get("resourceMap") or {}
+        future_warning = False
+        if change_allowed and first_illegal and first_illegal > period_int:
+            future_warning = True
+        elif change_allowed and resource_map.get("illegalRosterHeadingMsg"):
+            future_warning = True
+        if future_warning:
+            ok = True
+            warnings = list(illegal_msgs)
+            illegal_msgs = []
 
     return {
         "ok": ok,
         "reason": "ok" if ok else "illegal",
         "illegal_msgs": illegal_msgs,
+        "warnings": warnings,
         "confirm": confirm,
     }
 

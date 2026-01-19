@@ -211,17 +211,25 @@ class SubsService:
 
         # Raw fields often carry posShortNames/defaultPosId even on bench
         raw = getattr(row, "_raw", {}) or {}
-        codes |= SubsService._map_slot_ids_to_codes(
+        raw_codes = SubsService._map_slot_ids_to_codes(
             raw.get("defaultPosId")
             or raw.get("posId")
             or raw.get("posIds")
             or raw.get("posIdsNoFlex"),
             hint=raw.get("posShortNames") or raw.get("posShortName"),
         )
+        if raw_codes:
+            codes |= raw_codes
+            return {c for c in codes if c in {"G", "D", "M", "F"}}
 
         # Cache from earlier warmers / stats page lookups
         if pid and pid in _ELIG_CACHE:
             codes |= set(_ELIG_CACHE[pid])
+            if codes:
+                return {c for c in codes if c in {"G", "D", "M", "F"}}
+
+        if codes:
+            return {c for c in codes if c in {"G", "D", "M", "F"}}
 
         # Player object fallbacks
         pl = getattr(row, "player", None)
@@ -1981,14 +1989,14 @@ class SubsService:
             ),
         }
 
-        log.info(
+        log.debug(
             "[lineup] finalize=%s type=%s confirmWindow=%s illegal=%s",
             do_finalize,
             out["msgType"],
             fr.get("showConfirmWindow"),
             len(fr.get("illegalRosterMsgs") or []),
         )
-        log.info(
+        log.debug(
             "[lineup] changeAllowed=%s firstIllegalPeriod=%s pickDeadlinePassed=%s",
             model.get("changeAllowed") if isinstance(model, dict) else None,
             (model.get("firstIllegalRosterPeriod") if isinstance(model, dict) else None),

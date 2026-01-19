@@ -390,8 +390,11 @@ class FantraxAPI:
 
 		return playoff_periods
 
-	def roster_info(self, team_id):
-		return Roster(self, self._request("getTeamRosterInfo", teamId=team_id), team_id)
+	def roster_info(self, team_id, period: Optional[int] = None):
+		params = {"teamId": team_id}
+		if period is not None:
+			params["period"] = str(period)
+		return Roster(self, self._request("getTeamRosterInfo", **params), team_id)
 		
 	def _extract_rows(self, stats_table):
 		"""Helper method to extract rows from statsTable, handling both dict and list shapes."""

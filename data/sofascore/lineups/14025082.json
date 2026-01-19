@@ -1,16 +1,379 @@
 {
   "event_id": 14025082,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
-    "formation": "",
-    "starters": [],
-    "subs": [],
-    "missing": []
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 78152,
+        "name": "Matz Sels",
+        "position": "G",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 800417,
+        "name": "Ola Aina",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836168,
+        "name": "Nikola Milenković",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1199282,
+        "name": "Murillo",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927356,
+        "name": "Neco Williams",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 843754,
+        "name": "Ibrahim Sangaré",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 994546,
+        "name": "Elliot Anderson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 867442,
+        "name": "Callum Hudson-Odoi",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 865912,
+        "name": "Morgan Gibbs-White",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 871765,
+        "name": "Nicolás Domínguez",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 981619,
+        "name": "Igor Jesus",
+        "position": "F",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [
+      {
+        "id": 944327,
+        "name": "Dan Ndoye",
+        "position": "M",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1090963,
+        "name": "Omari Hutchinson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 227946,
+        "name": "Angus Gunn",
+        "position": "G",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 985086,
+        "name": "Morato",
+        "position": "D",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1010220,
+        "name": "Nicolò Savona",
+        "position": "D",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 867887,
+        "name": "Douglas Luiz",
+        "position": "M",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1003334,
+        "name": "James McAtee",
+        "position": "M",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 846252,
+        "name": "Ryan Yates",
+        "position": "M",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 359664,
+        "name": "Taiwo Awoniyi",
+        "position": "F",
+        "team_id": 14,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 840103,
+        "name": "John Victor",
+        "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 50480,
+        "name": "Chris Wood",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 287643,
+        "name": "Oleksandr Zinchenko",
+        "position": "D",
+        "reason": 21
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
-    "subs": [],
-    "missing": []
-  }
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 581310,
+        "name": "David Raya",
+        "position": "G",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 846036,
+        "name": "Ben White",
+        "position": "D",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 941168,
+        "name": "William Saliba",
+        "position": "D",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 869792,
+        "name": "Gabriel Magalhães",
+        "position": "D",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 958959,
+        "name": "Jurriën Timber",
+        "position": "D",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 547410,
+        "name": "Martin Ødegaard",
+        "position": "M",
+        "team_id": 42,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 966837,
+        "name": "Martín Zubimendi",
+        "position": "M",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 856714,
+        "name": "Declan Rice",
+        "position": "M",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 966547,
+        "name": "Noni Madueke",
+        "position": "M",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 804508,
+        "name": "Viktor Gyökeres",
+        "position": "F",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 922573,
+        "name": "Gabriel Martinelli",
+        "position": "F",
+        "team_id": 42,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [
+      {
+        "id": 135666,
+        "name": "Leandro Trossard",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 592010,
+        "name": "Mikel Merino",
+        "position": "M",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 934235,
+        "name": "Bukayo Saka",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 794839,
+        "name": "Gabriel Jesus",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 864921,
+        "name": "Eberechi Eze",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 232422,
+        "name": "Kepa Arrizabalaga",
+        "position": "G",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1423711,
+        "name": "Myles Lewis-Skelly",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1144630,
+        "name": "Cristhian Mosquera",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 836705,
+        "name": "Kai Havertz",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 1917626,
+        "name": "Max Dowman",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1002837,
+        "name": "Piero Hincapié",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 957602,
+        "name": "Riccardo Calafiori",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-01-18 04:16:51+0000"
 }

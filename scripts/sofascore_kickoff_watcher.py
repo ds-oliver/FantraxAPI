@@ -63,6 +63,12 @@ def parse_args() -> argparse.Namespace:
         help="Maximum watch duration per invocation",
     )
     parser.add_argument(
+        "--post-kickoff-minutes",
+        type=int,
+        default=120,
+        help="Continue polling this many minutes after kickoff for confirmed lineups",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=None,
@@ -103,18 +109,34 @@ def _acquire_lock(lock_path: Path):
                 pass
 
 
+def _merge_schedule_rows(primary: list[dict], extra: list[dict]) -> list[dict]:
+    seen = {str(row.get("event_id")) for row in primary if row.get("event_id") is not None}
+    merged = list(primary)
+    for row in extra or []:
+        event_id = row.get("event_id")
+        if event_id is None:
+            continue
+        key = str(event_id)
+        if key in seen:
+            continue
+        merged.append(row)
+        seen.add(key)
+    return merged
+
+
 def main() -> None:
     args = parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     log = logging.getLogger("sofascore_kickoff_watcher")
     log.info(
-        "Config: tournament_id=%s season=%s season_id=%s output_dir=%s window_minutes=%s min_window_minutes=%s poll_interval_seconds=%s max_watch_minutes=%s limit=%s disable_raw=%s",
+        "Config: tournament_id=%s season=%s season_id=%s output_dir=%s window_minutes=%s min_window_minutes=%s post_kickoff_minutes=%s poll_interval_seconds=%s max_watch_minutes=%s limit=%s disable_raw=%s",
         args.tournament_id,
         args.season,
         args.season_id,
         args.output_dir,
         args.window_minutes,
         args.min_window_minutes,
+        args.post_kickoff_minutes,
         args.poll_interval_seconds,
         args.max_watch_minutes,
         args.limit,
@@ -133,15 +155,21 @@ def main() -> None:
                 disable_raw=args.disable_raw,
             )
 
-            schedule = service.load_upcoming_schedule_from_csv()
+            schedule = service.load_schedule_from_csv(mode="upcoming")
             if not schedule:
                 log.info("Kickoff watcher: no cached schedule available; exiting")
                 return
+            if args.post_kickoff_minutes and args.post_kickoff_minutes > 0:
+                last_schedule = service.load_schedule_from_csv(mode="last")
+                if not last_schedule:
+                    last_schedule = service.fetch_schedule(upcoming=False)
+                schedule = _merge_schedule_rows(schedule, last_schedule)
 
             stats = service._listen_for_confirmed_from_rows(
                 schedule,
                 window_minutes=args.window_minutes,
                 min_minutes_before=args.min_window_minutes,
+                post_kickoff_minutes=args.post_kickoff_minutes,
                 limit=args.limit,
             )
             log.info(
@@ -179,6 +207,7 @@ def main() -> None:
                     schedule,
                     window_minutes=args.window_minutes,
                     min_minutes_before=args.min_window_minutes,
+                    post_kickoff_minutes=args.post_kickoff_minutes,
                     limit=args.limit,
                 )
                 log.info(

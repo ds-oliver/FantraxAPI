@@ -261,7 +261,7 @@ def main():
 			"M": p.position_counts.get("M", 0),
 			"F": p.position_counts.get("F", 0),
 			"Total": p.total_players,
-			"FAAB": f"${p.faab_budget:.0f}" if p.faab_budget > 0 else "-",
+			"FAAB": float(p.faab_budget) if p.faab_budget is not None else 0.0,
 			"Surplus": ", ".join(p.surplus_positions) if p.surplus_positions else "-",
 			"Needs": ", ".join(p.need_positions) if p.need_positions else "-",
 		})
@@ -278,6 +278,9 @@ def main():
 			df.style.apply(highlight_your_team, axis=1),
 			use_container_width=True,
 			hide_index=True,
+			column_config={
+				"FAAB": st.column_config.NumberColumn("FAAB", format="%.0f"),
+			},
 		)
 	else:
 		st.info("No teams found in this division.")

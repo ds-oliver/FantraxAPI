@@ -12,6 +12,7 @@ import argparse
 import csv
 import json
 import logging
+import os
 import random
 import time
 from datetime import datetime, timedelta, timezone
@@ -19,7 +20,10 @@ from pathlib import Path
 from typing import Any, Iterable, Optional
 
 import esd
-import httpx
+try:
+    from curl_cffi import requests as cf_requests
+except ImportError:  # pragma: no cover - runtime dependency
+    cf_requests = None
 
 log = logging.getLogger(__name__)
 
@@ -35,10 +39,42 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
     "Origin": "https://www.sofascore.com",
     "Referer": "https://www.sofascore.com/",
+    # Extra browser-like headers to reduce 403s
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-CH-UA": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+    "Sec-CH-UA-Mobile": "?0",
+    "Sec-CH-UA-Platform": '"macOS"',
     "Cache-Control": "no-cache",
     "Pragma": "no-cache",
     "Connection": "keep-alive",
 }
+
+SOFASCORE_COOKIES_PATH = Path(
+    os.environ.get("SOFASCORE_COOKIES_PATH", "data/sofascore/cookies.json")
+)
+
+
+def _load_sofascore_cookies() -> dict:
+    """
+    Optional: load cookies (e.g., cf_clearance) to reduce 403s.
+    File format:
+      {"cookies": {"name": "value", ...}}
+    or
+      [{"name": "...", "value": "..."}, ...]
+    """
+    if not SOFASCORE_COOKIES_PATH.exists():
+        return {}
+    try:
+        data = json.loads(SOFASCORE_COOKIES_PATH.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and "cookies" in data and isinstance(data["cookies"], dict):
+            return data["cookies"]
+        if isinstance(data, list):
+            return {c.get("name"): c.get("value") for c in data if isinstance(c, dict) and c.get("name")}
+    except Exception as exc:
+        log.warning("Failed to load SofaScore cookies: %s", exc)
+    return {}
 
 
 # --------------------------- helpers ---------------------------
@@ -57,14 +93,24 @@ def is_mapping(x) -> bool:
 
 
 def raw_get_json(url: str, referer: Optional[str] = None) -> dict:
+    if cf_requests is None:
+        raise RuntimeError("curl_cffi is required for SofaScore fetches. Install with: pip install curl_cffi")
     headers = HEADERS.copy()
     if referer:
         headers["Referer"] = referer
-    with httpx.Client(follow_redirects=True, headers=headers, timeout=30) as s:
-        time.sleep(0.3 + random.random() * 0.3)
-        r = s.get(url, params={"_": int(datetime.now().timestamp() * 1000)})
-        r.raise_for_status()
-        return r.json()
+    cookies = _load_sofascore_cookies()
+    time.sleep(0.3 + random.random() * 0.3)
+    r = cf_requests.get(
+        url,
+        params={"_": int(datetime.now().timestamp() * 1000)},
+        headers=headers,
+        cookies=cookies,
+        impersonate="chrome",
+        timeout=30,
+        allow_redirects=True,
+    )
+    r.raise_for_status()
+    return r.json()
 
 
 def raw_get_seasons(tournament_id: int) -> list[dict]:
@@ -460,23 +506,30 @@ class SofaScoreLineupService:
         *,
         window_minutes: int = 90,
         min_minutes_before: int | None = None,
+        post_kickoff_minutes: int | None = None,
         limit: Optional[int] = None,
     ) -> dict:
         """
         Poll fixtures whose kickoff is within window_minutes and store confirmed lineups.
         If min_minutes_before is provided, only include fixtures at or above that lower bound.
+        If post_kickoff_minutes is provided, continue polling for that many minutes after kickoff.
         """
         schedule = self.fetch_schedule(upcoming=True)
+        if post_kickoff_minutes and post_kickoff_minutes > 0:
+            schedule_last = self.fetch_schedule(upcoming=False)
+            schedule = self._merge_schedule_rows(schedule, schedule_last)
         stats = self._listen_for_confirmed_from_rows(
             schedule,
             window_minutes=window_minutes,
             min_minutes_before=min_minutes_before,
+            post_kickoff_minutes=post_kickoff_minutes,
             limit=limit,
         )
         log.info(
-            "Confirmed listener window: min=%s max=%s in_window=%s candidates=%s processed=%s saved=%s skipped_confirmed=%s",
+            "Confirmed listener window: min=%s max=%s post=%s in_window=%s candidates=%s processed=%s saved=%s skipped_confirmed=%s",
             min_minutes_before,
             window_minutes,
+            post_kickoff_minutes,
             stats.get("in_window"),
             stats.get("candidate_fixtures"),
             stats.get("processed"),
@@ -491,20 +544,26 @@ class SofaScoreLineupService:
         *,
         window_minutes: int,
         min_minutes_before: int | None,
+        post_kickoff_minutes: int | None,
         limit: Optional[int],
     ) -> dict:
         now = datetime.now(timezone.utc)
-        processed = saved = skipped_confirmed = candidate_fixtures = in_window = 0
+        processed = saved = skipped_confirmed = candidate_fixtures = in_window = post_window = 0
         for row in sorted(rows, key=lambda r: r.get("kickoff_utc", "")):
             kickoff_dt = parse_kickoff_dt(row.get("kickoff_utc"))
             if not kickoff_dt:
                 continue
             minutes_before_kickoff = (kickoff_dt - now).total_seconds() / 60
-            if minutes_before_kickoff < 0 or minutes_before_kickoff > window_minutes:
+            if minutes_before_kickoff > window_minutes:
                 continue
-            in_window += 1
-            if min_minutes_before is not None and minutes_before_kickoff < min_minutes_before:
-                continue
+            if minutes_before_kickoff < 0:
+                if post_kickoff_minutes is None or abs(minutes_before_kickoff) > post_kickoff_minutes:
+                    continue
+                post_window += 1
+            else:
+                in_window += 1
+                if min_minutes_before is not None and minutes_before_kickoff < min_minutes_before:
+                    continue
             candidate_fixtures += 1
             event_id = int(row["event_id"])
             if limit and processed >= limit:
@@ -523,8 +582,46 @@ class SofaScoreLineupService:
             "saved": saved,
             "skipped_confirmed": skipped_confirmed,
             "in_window": in_window,
+            "post_window": post_window,
             "candidate_fixtures": candidate_fixtures,
         }
+
+    def load_schedule_from_csv(self, *, mode: str) -> list[dict]:
+        """
+        Load cached schedule CSV ("upcoming" or "last") from disk.
+        """
+        if mode not in {"upcoming", "last"}:
+            raise ValueError(f"Unsupported schedule mode: {mode}")
+        season_id = self.season_id()
+        path = self.schedules_dir / f"{self.tournament_id}_{season_id}_{mode}.csv"
+        if not path.exists():
+            log.warning("[schedule] cached %s schedule %s not found on disk", mode, path)
+            return []
+        rows: list[dict] = []
+        try:
+            with path.open("r", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    rows.append(row)
+            log.info("[schedule] loaded %s rows from cached %s", len(rows), path)
+        except Exception as e:
+            log.warning("[schedule] failed to load cached %s: %s", path, e)
+        return rows
+
+    @staticmethod
+    def _merge_schedule_rows(primary: list[dict], extra: list[dict]) -> list[dict]:
+        seen = {str(row.get("event_id")) for row in primary if row.get("event_id") is not None}
+        merged = list(primary)
+        for row in extra or []:
+            event_id = row.get("event_id")
+            if event_id is None:
+                continue
+            key = str(event_id)
+            if key in seen:
+                continue
+            merged.append(row)
+            seen.add(key)
+        return merged
 
     def refresh_next_round_predictions(
         self, *, expected_matches: int = 10
@@ -615,6 +712,28 @@ class SofaScoreLineupService:
     def _store_lineup(self, lineup: dict, *, source: str) -> None:
         event_id = lineup.get("event_id")
         out_path = self.lineups_dir / f"{event_id}.json"
+        confirmed = bool(lineup.get("confirmed"))
+        existing = None
+        existing_confirmed = False
+        if out_path.exists():
+            try:
+                with out_path.open("r", encoding="utf-8") as f:
+                    existing = json.load(f)
+                existing_confirmed = bool(existing.get("confirmed"))
+            except Exception:
+                existing = None
+                existing_confirmed = False
+
+        if existing_confirmed and not confirmed:
+            self._archive_lineup_snapshot(lineup, event_id=event_id, label="predicted")
+            log.info(
+                "[lineup] skip unconfirmed overwrite for event=%s (confirmed exists)",
+                event_id,
+            )
+            return
+
+        if confirmed and existing and not existing_confirmed:
+            self._archive_lineup_snapshot(existing, event_id=event_id, label="predicted")
         with out_path.open("w", encoding="utf-8") as f:
             json.dump(lineup, f, ensure_ascii=False, indent=2)
         log.info(
@@ -629,6 +748,28 @@ class SofaScoreLineupService:
             "source": source,
         }
         append_lineups_index(self.index_path, [entry])
+
+    def _archive_lineup_snapshot(self, snapshot: dict, *, event_id: int, label: str) -> None:
+        archive_dir = self.lineups_dir / "archive"
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        fetched = snapshot.get("fetched_at_utc")
+        if fetched:
+            safe_ts = (
+                str(fetched)
+                .replace(":", "")
+                .replace("-", "")
+                .replace(" ", "_")
+                .replace("+0000", "Z")
+            )
+        else:
+            safe_ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%SZ")
+        out_path = archive_dir / f"{event_id}_{label}_{safe_ts}.json"
+        try:
+            with out_path.open("w", encoding="utf-8") as f:
+                json.dump(snapshot, f, ensure_ascii=False, indent=2)
+            log.info("[lineup] archived event=%s label=%s -> %s", event_id, label, out_path)
+        except Exception as e:
+            log.warning("[lineup] failed to archive event=%s: %s", event_id, e)
 
     def _is_snapshot_confirmed(self, path: Path) -> bool:
         """Return True if snapshot is marked confirmed; on read/parse errors treat as not confirmed so a fresh fetch can overwrite."""

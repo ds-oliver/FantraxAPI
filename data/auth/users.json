@@ -13,15 +13,53 @@
       "email": "hmarhoefer@gmail.com",
       "created_at": "2025-11-16T21:57:43.941603",
       "auth_status": "connected",
-      "last_login": "2025-11-16T22:07:20.654190",
-      "last_updated": "2025-11-16T22:07:20.654182",
+      "last_login": "2026-01-05T04:19:21.944639",
+      "last_updated": "2026-01-05T04:19:21.944616",
       "password_hash": "$2b$12$WCbiF5kYDBb5.gFSv50if.JVtwR4CMefh9vTKd3hkh3S.LIX0fxqm",
       "password_set_at": "2025-11-17T17:10:21.119053",
       "default_league_id": "o90qdw15mc719reh",
       "default_team_id": "3uxxpgpemc719rep",
       "default_league_name": "Intl. Friendship League",
       "default_team_name": "1 - Yoro wizard, Harry! (hogan_m)",
-      "default_league_updated_at": "2025-11-24T00:26:30.578285"
+      "default_league_updated_at": "2025-11-24T00:26:30.578285",
+      "auto_rules": {
+        "o90qdw15mc719reh": {
+          "features": {
+            "lineup_swaps": true
+          },
+          "team_id": "3uxxpgpemc719rep",
+          "updated_at": "2026-01-17T23:42:01.861535",
+          "enabled": true
+        },
+        "2n2fdfaxmcm64shc": {
+          "features": {
+            "lineup_swaps": true
+          },
+          "team_id": "ekzha63dmcm8fxhp",
+          "updated_at": "2026-01-17T06:40:00.054118",
+          "enabled": true
+        }
+      },
+      "period_prefs": {
+        "o90qdw15mc719reh": {
+          "period_id": "22",
+          "period_label": "Gameweek 22",
+          "updated_at": "2026-01-16T19:44:37.288392",
+          "team_id": "3uxxpgpemc719rep"
+        },
+        "mh7e70u9md30tdww": {
+          "period_id": "22",
+          "period_label": "Gameweek 22",
+          "updated_at": "2026-01-17T06:37:28.808276",
+          "team_id": "vxgqu675mdd9h11h"
+        },
+        "2n2fdfaxmcm64shc": {
+          "period_id": "22",
+          "period_label": "Gameweek 22",
+          "updated_at": "2026-01-17T06:38:48.118821",
+          "team_id": "ekzha63dmcm8fxhp"
+        }
+      }
     },
     "40aa0bf13ddf3ac1": {
       "user_id": "40aa0bf13ddf3ac1",
@@ -36,6 +74,18 @@
       "created_at": "2025-11-16T23:54:05.521126",
       "auth_status": "not_connected",
       "last_login": null
+    },
+    "898f981df5180141": {
+      "user_id": "898f981df5180141",
+      "email": "hmarhoefer+1@gmail.com",
+      "username": "hogan",
+      "created_at": "2026-01-06T06:43:40.276080",
+      "auth_status": "connected",
+      "last_login": "2026-01-06T06:45:44.409309",
+      "password_hash": "$2b$12$jRt.wC5IekQvOVu/Ybs7d.jZp4yAjno7vm4hH0KKJiGt9qLvVYCky",
+      "password_set_at": "2026-01-06T06:43:40.281567",
+      "username_set_at": "2026-01-06T06:43:40.283208",
+      "last_updated": "2026-01-06T06:45:44.409293"
     }
   }
 }

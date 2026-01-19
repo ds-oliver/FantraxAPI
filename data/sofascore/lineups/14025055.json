@@ -2,15 +2,268 @@
   "event_id": 14025055,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 96531,
+        "name": "Alphonse Aréola",
+        "position": "G",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 823085,
+        "name": "Kyle Walker-Peters",
+        "position": "D",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 829022,
+        "name": "Konstantinos Mavropanos",
+        "position": "D",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 894474,
+        "name": "Max Kilman",
+        "position": "D",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1150952,
+        "name": "Oliver Scarles",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1170560,
+        "name": "Soungoutou Magassa",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1089582,
+        "name": "Freddie Potts",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 552884,
+        "name": "Jarrod Bowen",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142562,
+        "name": "Mateus Fernandes",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 917005,
+        "name": "Crysencio Summerville",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1101174,
+        "name": "Pablo Felipe",
+        "position": "F",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 15479,
+        "name": "Łukasz Fabiański",
+        "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 839981,
+        "name": "Lucas Paquetá",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 863653,
+        "name": "Aaron Wan-Bissaka",
+        "position": "D",
+        "reason": 0
+      },
+      {
+        "id": 945217,
+        "name": "Jean-Clair Todibo",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1471764,
+        "name": "El Hadji Malick Diouf",
+        "position": "M",
+        "reason": 0
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 78152,
+        "name": "Matz Sels",
+        "position": "G",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 800417,
+        "name": "Ola Aina",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836168,
+        "name": "Nikola Milenković",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1199282,
+        "name": "Murillo",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927356,
+        "name": "Neco Williams",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 994546,
+        "name": "Elliot Anderson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 867887,
+        "name": "Douglas Luiz",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1090963,
+        "name": "Omari Hutchinson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 865912,
+        "name": "Morgan Gibbs-White",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 963298,
+        "name": "Dilane Bakwa",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 981619,
+        "name": "Igor Jesus",
+        "position": "F",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 846252,
+        "name": "Ryan Yates",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 50480,
+        "name": "Chris Wood",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 944327,
+        "name": "Dan Ndoye",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 867442,
+        "name": "Callum Hudson-Odoi",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 840103,
+        "name": "John Victor",
+        "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 843754,
+        "name": "Ibrahim Sangaré",
+        "position": "M",
+        "reason": 0
+      },
+      {
+        "id": 139310,
+        "name": "Willy Boly",
+        "position": "D",
+        "reason": 0
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-01-06 04:13:14+0000"
 }

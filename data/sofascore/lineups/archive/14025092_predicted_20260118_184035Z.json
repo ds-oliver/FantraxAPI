@@ -1,0 +1,262 @@
+{
+  "event_id": 14025092,
+  "confirmed": false,
+  "home": {
+    "formation": "3-5-2",
+    "starters": [
+      {
+        "id": 252669,
+        "name": "José Sá",
+        "position": "G",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1014835,
+        "name": "Yerson Mosquera",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 846308,
+        "name": "Santiago Bueno",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 856250,
+        "name": "Ladislav Krejčí",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1096210,
+        "name": "Jackson Tchatchoua",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1006073,
+        "name": "Rodrigo Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1015267,
+        "name": "João Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1899647,
+        "name": "Mateus Mané",
+        "position": "F",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1013928,
+        "name": "Hugo Bueno",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 987734,
+        "name": "Tolu Arokodare",
+        "position": "F",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 786186,
+        "name": "Hee-Chan Hwang",
+        "position": "F",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [],
+    "missing": [
+      {
+        "id": 845273,
+        "name": "Jean-Ricner Bellegarde",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 973418,
+        "name": "Toti Gomes",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1005725,
+        "name": "Tawanda Chirewa",
+        "position": "M",
+        "reason": 2
+      }
+    ]
+  },
+  "away": {
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 162653,
+        "name": "Nick Pope",
+        "position": "G",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1400650,
+        "name": "Lewis Miley",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1014286,
+        "name": "Malick Thiaw",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 910046,
+        "name": "Sven Botman",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1136730,
+        "name": "Lewis Hall",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 866469,
+        "name": "Bruno Guimarães",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 892673,
+        "name": "Sandro Tonali",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 560128,
+        "name": "Joelinton",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 855647,
+        "name": "Harvey Barnes",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 805123,
+        "name": "Yoane Wissa",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 914902,
+        "name": "Anthony Gordon",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [],
+    "missing": [
+      {
+        "id": 99090,
+        "name": "Dan Burn",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 150396,
+        "name": "Emil Krafth",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1122603,
+        "name": "William Osula",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 372336,
+        "name": "Jacob Murphy",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 101882,
+        "name": "Fabian Schär",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 153444,
+        "name": "Jamaal Lascelles",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 980634,
+        "name": "Valentino Livramento",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1125214,
+        "name": "Alex Murphy",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  }
+}

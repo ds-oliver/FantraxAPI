@@ -193,9 +193,9 @@ NEW:
     - The Magpies
     - The Toon
 
-NFO:
+NOT:
   long_name: Nottingham Forest
-  short_name: NFO
+  short_name: NOT
   long_name_variations:
     - Nottingham Forest Football Club
     - Nottingham Forest FC
@@ -203,6 +203,7 @@ NFO:
     - Forest
     - Nott'm Forest
     - NOT
+    - NFO
   nicknames:
     - The Tricky Trees
     - The Garibaldi

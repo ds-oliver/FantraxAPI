@@ -325,6 +325,189 @@ class UserManager:
 		except Exception as e:
 			logger.error(f"Failed to save default league for user {user_id}: {e}")
 			return False
+
+	def get_auto_rules_pref(self, user_id: str, league_id: str) -> Optional[Dict[str, Any]]:
+		"""Return the auto-rules preference for a user/league."""
+		user = self.get_user_by_id(user_id)
+		if not user:
+			return None
+		auto_rules = user.get("auto_rules") or {}
+		return auto_rules.get(str(league_id))
+
+	def is_auto_rules_enabled(
+		self,
+		user_id: str,
+		league_id: str,
+		feature: str = "lineup_swaps",
+	) -> bool:
+		"""Check if a specific auto feature is enabled for this user/league."""
+		pref = self.get_auto_rules_pref(user_id, league_id)
+		if not pref:
+			return False
+		# Backward compatibility: treat "enabled" as lineup swap opt-in
+		if feature == "lineup_swaps" and "enabled" in pref:
+			return bool(pref.get("enabled"))
+		features = pref.get("features") or {}
+		return bool(features.get(feature))
+
+	def set_auto_rules_enabled(
+		self,
+		user_id: str,
+		league_id: str,
+		team_id: Optional[str],
+		enabled: bool,
+		feature: str = "lineup_swaps",
+	) -> bool:
+		"""Enable/disable a specific auto feature for a user/league."""
+		try:
+			data = self._load_users()
+			users = data.get("users", {})
+			if user_id not in users:
+				logger.error(f"User {user_id} not found")
+				return False
+
+			auto_rules = users[user_id].get("auto_rules") or {}
+			entry = auto_rules.get(str(league_id)) or {}
+			features = entry.get("features") or {}
+			features[feature] = bool(enabled)
+			entry.update(
+				{
+					"features": features,
+					"team_id": str(team_id) if team_id else entry.get("team_id"),
+					"updated_at": datetime.utcnow().isoformat(),
+				}
+			)
+			# Preserve legacy "enabled" for lineup swaps
+			if feature == "lineup_swaps":
+				entry["enabled"] = bool(enabled)
+			auto_rules[str(league_id)] = entry
+			users[user_id]["auto_rules"] = auto_rules
+			data["users"] = users
+			self._save_users(data)
+			logger.info(
+				"Set auto feature=%s enabled=%s for user=%s league=%s",
+				feature,
+				enabled,
+				user_id,
+				league_id,
+			)
+			return True
+		except Exception as e:
+			logger.error(f"Failed to set auto rules for user {user_id}: {e}")
+			return False
+
+	def get_do_not_move(self, user_id: str, league_id: str) -> list[str]:
+		"""Return list of player ids that should not move unless confirmed out."""
+		user = self.get_user_by_id(user_id) or {}
+		do_not_move = user.get("do_not_move") or {}
+		return list(do_not_move.get(str(league_id)) or [])
+
+	def set_do_not_move(
+		self,
+		user_id: str,
+		league_id: str,
+		player_ids: list[str],
+		team_id: Optional[str] = None,
+	) -> bool:
+		"""Set the do-not-move list for a user/league."""
+		try:
+			data = self._load_users()
+			users = data.get("users", {})
+			if user_id not in users:
+				logger.error(f"User {user_id} not found")
+				return False
+			do_not_move = users[user_id].get("do_not_move") or {}
+			do_not_move[str(league_id)] = [str(pid) for pid in player_ids]
+			users[user_id]["do_not_move"] = do_not_move
+			users[user_id]["do_not_move_updated_at"] = datetime.utcnow().isoformat()
+			if team_id:
+				users[user_id]["do_not_move_team_id"] = str(team_id)
+			data["users"] = users
+			self._save_users(data)
+			logger.info("Updated do-not-move list for user=%s league=%s", user_id, league_id)
+			return True
+		except Exception as e:
+			logger.error(f"Failed to set do-not-move for user {user_id}: {e}")
+			return False
+
+	def get_late_kos_policy(self, user_id: str, league_id: str) -> str:
+		"""Return late KOS policy for this user/league."""
+		user = self.get_user_by_id(user_id) or {}
+		policies = user.get("late_kos_policy") or {}
+		entry = policies.get(str(league_id)) or {}
+		return entry.get("mode") or "trust"
+
+	def set_late_kos_policy(
+		self,
+		user_id: str,
+		league_id: str,
+		mode: str,
+		team_id: Optional[str] = None,
+	) -> bool:
+		"""Set late KOS coverage policy for this user/league."""
+		try:
+			data = self._load_users()
+			users = data.get("users", {})
+			if user_id not in users:
+				logger.error(f"User {user_id} not found")
+				return False
+			policies = users[user_id].get("late_kos_policy") or {}
+			policies[str(league_id)] = {
+				"mode": str(mode),
+				"updated_at": datetime.utcnow().isoformat(),
+				"team_id": str(team_id) if team_id else None,
+			}
+			users[user_id]["late_kos_policy"] = policies
+			data["users"] = users
+			self._save_users(data)
+			logger.info("Set late KOS policy=%s for user=%s league=%s", mode, user_id, league_id)
+			return True
+		except Exception as e:
+			logger.error(f"Failed to set late KOS policy for user {user_id}: {e}")
+			return False
+
+	def get_preferred_period(self, user_id: str, league_id: str) -> Optional[str]:
+		"""Return preferred period id for a user/league if stored."""
+		user = self.get_user_by_id(user_id) or {}
+		period_prefs = user.get("period_prefs") or {}
+		entry = period_prefs.get(str(league_id)) or {}
+		return entry.get("period_id")
+
+	def set_preferred_period(
+		self,
+		user_id: str,
+		league_id: str,
+		period_id: str,
+		period_label: str = "",
+		team_id: Optional[str] = None,
+	) -> bool:
+		"""Persist preferred period for a user/league."""
+		try:
+			data = self._load_users()
+			users = data.get("users", {})
+			if user_id not in users:
+				logger.error(f"User {user_id} not found")
+				return False
+			period_prefs = users[user_id].get("period_prefs") or {}
+			period_prefs[str(league_id)] = {
+				"period_id": str(period_id),
+				"period_label": period_label or "",
+				"updated_at": datetime.utcnow().isoformat(),
+				"team_id": str(team_id) if team_id else None,
+			}
+			users[user_id]["period_prefs"] = period_prefs
+			data["users"] = users
+			self._save_users(data)
+			logger.info(
+				"Set preferred period=%s for user=%s league=%s",
+				period_id,
+				user_id,
+				league_id,
+			)
+			return True
+		except Exception as e:
+			logger.error(f"Failed to set preferred period for user {user_id}: {e}")
+			return False
 	
 	def list_all_users(self) -> list[Dict[str, Any]]:
 		"""Get list of all users."""

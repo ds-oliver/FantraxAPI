@@ -74,6 +74,12 @@ def parse_args() -> argparse.Namespace:
         help="Optional lower bound of minutes before kickoff for confirmed listener",
     )
     parser.add_argument(
+        "--post-kickoff-minutes",
+        type=int,
+        default=None,
+        help="Optional minutes after kickoff to continue polling for confirmed lineups",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=None,
@@ -137,7 +143,7 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     log = logging.getLogger("sofascore_lineup_v3")
     log.info(
-        "Config: mode=%s tournament_id=%s season=%s season_id=%s output_dir=%s horizon_days=%s window_minutes=%s min_window_minutes=%s limit=%s with_mappings=%s disable_raw=%s",
+        "Config: mode=%s tournament_id=%s season=%s season_id=%s output_dir=%s horizon_days=%s window_minutes=%s min_window_minutes=%s post_kickoff_minutes=%s limit=%s with_mappings=%s disable_raw=%s",
         args.mode,
         args.tournament_id,
         args.season,
@@ -146,6 +152,7 @@ def main() -> None:
         args.horizon_days,
         args.window_minutes,
         args.min_window_minutes,
+        args.post_kickoff_minutes,
         args.limit,
         args.with_mappings,
         args.disable_raw,
@@ -171,6 +178,7 @@ def main() -> None:
                 stats = service.listen_for_confirmed(
                     window_minutes=args.window_minutes,
                     min_minutes_before=args.min_window_minutes,
+                    post_kickoff_minutes=args.post_kickoff_minutes,
                     limit=args.limit,
                 )
                 processed = stats.get("processed", 0)

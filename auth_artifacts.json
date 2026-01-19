@@ -1,1 +1,40 @@
-{"session": "dummy"}
+[
+    {
+        "domain": ".fantrax.com",
+        "hostOnly": false,
+        "httpOnly": true,
+        "name": "_cfuvid",
+        "path": "/",
+        "sameSite": "no_restriction",
+        "secure": true,
+        "session": true,
+        "storeId": null,
+        "value": "2YdZshCrob1iOGtdmT2imNtasZcCkhIMcMwtZxW3ohI-1759196318322-0.0.1.1-604800000"
+    },
+    {
+        "domain": ".fantrax.com",
+        "expirationDate": 1802145354.231946,
+        "hostOnly": false,
+        "httpOnly": true,
+        "name": "FX_RM",
+        "path": "/",
+        "sameSite": "lax",
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "_qpxzCB4SVBMWUxIOERFXQEdLUx0OFF4KCwcWBxxVHwpfAgE="
+    },
+    {
+        "domain": ".fantrax.com",
+        "expirationDate": 1767683668.665173,
+        "hostOnly": false,
+        "httpOnly": true,
+        "name": "__cf_bm",
+        "path": "/",
+        "sameSite": "no_restriction",
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "r6u4V5NnUrUN1.4opn1vZWE_EH_61vHaQ8WdQ93a48I-1767681868-1.0.1.1-uFpO1mdN8b2T3zyA6IyNnqaoG4iswbULMD.iZ1Stp3iUxqF5JOKg5DiMk6vxUTcyuezoUvbn2pGqrmKG2NLds08ajGJxx6k1qyd7BJbtFOw"
+    }
+]

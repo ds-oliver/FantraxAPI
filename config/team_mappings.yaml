@@ -31,7 +31,7 @@ MUN:
   variations: [manchester_united, mun, man_utd]
 NEW:
   variations: [newcastle, new, nufc]
-NFO:
+NOT:
   variations: [nottingham_forest, nfo, not, forest]
 SHU:
   variations: [sheffield_united, shu, suf]

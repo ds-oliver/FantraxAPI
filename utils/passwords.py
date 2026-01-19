@@ -1,11 +1,31 @@
 # utils/passwords.py
-from passlib.context import CryptContext
+import os
+import logging
 
-# Use bcrypt as the main scheme
+# Enable passlib's builtin bcrypt backend as a safe fallback.
+os.environ.setdefault("PASSLIB_BUILTIN_BCRYPT", "1")
+
+from passlib.context import CryptContext
+from passlib.hash import bcrypt as passlib_bcrypt
+
+# Use bcrypt_sha256 to avoid bcrypt's 72-byte input limit while staying bcrypt-based.
 _pwd_ctx = CryptContext(
-	schemes=["bcrypt"],
+	schemes=["bcrypt_sha256", "bcrypt"],
 	deprecated="auto",
 )
+
+_log = logging.getLogger(__name__)
+
+# Prefer builtin backend if the installed bcrypt module rejects long passwords.
+try:
+	passlib_bcrypt.set_backend("bcrypt", dryrun=True)
+except Exception:
+	try:
+		passlib_bcrypt.set_backend("builtin")
+		_log.warning("bcrypt backend unavailable; using passlib builtin backend.")
+	except Exception:
+		# Last resort: keep default backend selection.
+		pass
 
 
 def hash_password(raw: str) -> str:

@@ -101,7 +101,7 @@ TEAM_SHORTCODES: dict[str, str] = {
     "brighton & hove": "BHA",
     "brighton & hove albion": "BHA",
     "brighton and hove albion": "BHA",
-    "nottingham f.": "NFO",
+    "nottingham f.": "NOT",
     "wolves": "WOL",
     "wolverhampton": "WOL",
     "wolverhampton wanderers": "WOL",
@@ -126,6 +126,7 @@ TEAM_SHORTCODES: dict[str, str] = {
     "leeds utd": "LEE",
     "leeds united": "LEE",
 }
+TEAM_CODE_ALIASES: dict[str, str] = {code.lower(): name for name, code in TEAM_SHORTCODES.items()}
 
 
 def _normalize_team_name(raw: str) -> str:
@@ -133,7 +134,7 @@ def _normalize_team_name(raw: str) -> str:
     Normalize a team name to the canonical key used in schedule_by_team.
     """
     key = (raw or "").strip().lower()
-    return TEAM_NAME_ALIASES.get(key, key)
+    return TEAM_NAME_ALIASES.get(key, TEAM_CODE_ALIASES.get(key, key))
 
 
 def _team_code(raw: Optional[str]) -> Optional[str]:
@@ -266,6 +267,13 @@ def _map_snapshot_to_status(
     return LineupStatus.UNKNOWN
 
 
+def _reason_label(reason: Optional[int]) -> Optional[str]:
+    if reason is None:
+        return None
+    # SofaScore does not expose full reason text here; keep a descriptive code label.
+    return f"SofaScore missing reason code={reason}"
+
+
 def _prefer_snapshot_by_kickoff(
     existing: Optional[_SofaPlayerSnapshot],
     candidate: _SofaPlayerSnapshot,
@@ -345,7 +353,7 @@ def _kickoff_from_fantrax_row(row: RosterRow) -> Optional[datetime]:
                         meta[key] = scorer.get(key)
                     elif key in scorer_raw:
                         meta[key] = scorer_raw.get(key)
-                logger.info(
+                logger.debug(
                     "Missing Fantrax nextKickoff for %s | extracted_meta=%s",
                     getattr(player, "name", player.id),
                     meta or list(scorer_raw.keys()),
@@ -457,6 +465,10 @@ def _collect_player_lineup_context(
         or getattr(player, "team_short_name", None)
         or ""
     )
+    if not raw_team_name:
+        scorer_raw = getattr(row, "_raw", {}) or {}
+        scorer = scorer_raw.get("scorer") or {}
+        raw_team_name = scorer.get("teamShortName") or scorer.get("teamName") or ""
     team_name = _normalize_team_name(raw_team_name)
 
     schedule_hit: Optional[tuple[int, datetime]] = None
@@ -468,10 +480,7 @@ def _collect_player_lineup_context(
     if team_name and team_name in schedule_by_team:
         schedule_hit = schedule_by_team[team_name]
         schedule_event_id, kickoff_candidate = schedule_hit
-        if kickoff_candidate and kickoff_candidate > now:
-            schedule_kickoff = kickoff_candidate
-        else:
-            schedule_kickoff = None
+        schedule_kickoff = kickoff_candidate
         if schedule_event_id in event_team_map:
             home_raw, away_raw = event_team_map[schedule_event_id]
             home_norm = _normalize_team_name(home_raw)
@@ -525,6 +534,7 @@ def _collect_player_lineup_context(
         status=LineupStatus.UNKNOWN,
         kickoff=kickoff,
         status_source="sofascore",
+        note=_reason_label(snapshot.reason) if snapshot else None,
         ss_status=LineupStatus.UNKNOWN,
         ss_pred_status=None,
         ss_conf_status=None,
@@ -649,6 +659,10 @@ def debug_player_lineup_context(
         schedule_map=schedule_map,
         allowed_event_ids=allowed_event_ids,
     )
+    event_confirmed_map = {
+        event_id: any(snapshot.confirmed for snapshot in snapshots.values())
+        for event_id, snapshots in event_index.items()
+    }
 
     target_row = None
     for row in roster.rows:
@@ -746,6 +760,10 @@ def build_lineup_info_by_player(
         schedule_map=schedule_map,
         allowed_event_ids=allowed_event_ids,
     )
+    event_confirmed_map = {
+        event_id: any(snapshot.confirmed for snapshot in snapshots.values())
+        for event_id, snapshots in event_index.items()
+    }
 
     info: Dict[str, PlayerLineupInfo] = {}
     now = datetime.now(timezone.utc)
@@ -769,6 +787,34 @@ def build_lineup_info_by_player(
         if not collected:
             continue
         player_info, debug_ctx = collected
+        event_id = player_info.event_id
+        team_norm = debug_ctx.get("team_name")
+        if isinstance(team_norm, str):
+            team_norm = team_norm.strip().lower()
+
+        if event_id is not None:
+            schedule_kickoff = schedule_map.get(event_id)
+            if schedule_kickoff and not player_info.kickoff:
+                player_info.kickoff = schedule_kickoff
+            if schedule_kickoff and getattr(player_info, "ss_kickoff", None) is None:
+                player_info.ss_kickoff = schedule_kickoff
+
+            event_teams = event_team_map.get(event_id)
+            if event_teams and team_norm:
+                home_raw, away_raw = event_teams
+                home_norm = _normalize_team_name(home_raw)
+                away_norm = _normalize_team_name(away_raw)
+                if team_norm == home_norm:
+                    player_info.team_name = _team_code(home_raw) or home_raw
+                    player_info.opponent_name = _team_code(away_raw) or away_raw
+                    if player_info.is_home is None:
+                        player_info.is_home = True
+                elif team_norm == away_norm:
+                    player_info.team_name = _team_code(away_raw) or away_raw
+                    player_info.opponent_name = _team_code(home_raw) or home_raw
+                    if player_info.is_home is None:
+                        player_info.is_home = False
+
         player_info.ss_status = (
             player_info.ss_conf_status
             or player_info.ss_pred_status
@@ -809,6 +855,22 @@ def build_lineup_info_by_player(
                 getattr(snapshot, "source_path", None),
                 kickoff,
             )
+        # If we have a scheduled event and still no SofaScore status (not in starters/subs/missing),
+        # treat as bench rather than unknown so downstream displays stay consistent.
+        if event_id and player_info.ss_status == LineupStatus.UNKNOWN:
+            player_info.ss_status = LineupStatus.BENCH
+            if player_info.status == LineupStatus.UNKNOWN:
+                player_info.status = LineupStatus.BENCH
+
+        if event_id and event_confirmed_map.get(event_id):
+            if player_info.ss_conf_status is None:
+                if player_info.ss_pred_status is not None:
+                    player_info.ss_status = LineupStatus.BENCH
+                    if player_info.status == player_info.ss_pred_status:
+                        player_info.status = LineupStatus.BENCH
+                if player_info.ss_status is None or player_info.ss_status == LineupStatus.UNKNOWN:
+                    player_info.ss_status = LineupStatus.BENCH
+                player_info.ss_conf_status = player_info.ss_status
 
         info[fantrax_id] = player_info
         stats["total"] += 1

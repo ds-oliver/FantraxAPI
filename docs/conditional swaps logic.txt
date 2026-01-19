@@ -1,0 +1,38 @@
+Conditional swaps rules scenarios:
+
+KOS: kickoff datetime slot (categorical value, n=number of unique kickoff times in one gameweek (GW), (1=earlier, n=latest)). For these scenarios we will use 10 as the last KOS but generally there are ~8 KOS per GW, so this is just to illustrate the point.
+
+We should also have a list of players the user can set that will not be moved to reserve unless they are confirmed not starting.
+
+We should also factor in when an active player is a KOS on the final day of GW or even worse the final KOS of a GW it would make sense in most cases to swap in a reserve player that is CONFIRMED starting instead of waiting on the predicted start. However in some cases, for example if you have 1 or more players also in this late KOS, then this is less risky
+
+This is a fine balance of trusting the optimization and rules setting to get the projFPts correct and also ensuring that we are not left high and dry when a player is confirmed not starting and we do not have cover for them in the form of another player in the same KOS.
+
+Scenario 1: 
+Conditions: Time: T-1hr to KOS 1 (meaning we have lineups for all players on teams in KOS 1), Player1 (active) is CONFIRMED not starting (KOS 1), Player2 (reserve) is CONFIRMED starting (KOS 1)
+Execution: Player2 -> "active", Player1 -> "reserve"
+
+Scenario 2: 
+Conditions: Time: T-1hr to KOS 1 (meaning we have lineups for all players on teams in KOS 1), Player1 (active) is CONFIRMED starting (KOS 1), Player2 (reserve) is UNCONFIRMED (KOS 2)
+Execution: No change, confirmed starter in active slot.
+
+Scenario 3: 
+Conditions: Time: T-1hr to KOS 1 (meaning we have lineups for all players on teams in KOS 1), Player1 (active) is CONFIRMED not starting (KOS 1), Player2 (reserve) is UNCONFIRMED (KOS 2)
+Execution: Player2 -> "active", Player1 -> "reserve"
+
+Scenario 4: 
+Conditions: Time: T-1hr to KOS 1 (meaning we have lineups for all players on teams in KOS 1), Player1 (active) is CONFIRMED not starting (KOS 1), Player2 (reserve) is UNCONFIRMED (KOS 2), Player3 (reserve) is UNCONFIRMED (KOS 3)
+Execution: Player2 -> "active" & Player1 -> "reserve", Player3 sits in reserve for potential swap if Player2 is CONFIRMED not starting in KOS 2
+
+Scenario 5: 
+Conditions: Time: T-1hr to KOS 1 (meaning we have lineups for all players on teams in KOS 1), Player1 (active) is CONFIRMED starting (KOS 1), Player2 (reserve) is CONFIRMED starting (KOS 1)
+Execution: Player2 -> "active" & Player1 -> "reserve" if Player2 ProjFPts > Player1 ProjFPts else no change
+Notes: This is a guardrail in case any high scoring players are on the reserve due to projGS but should be active on a confirmed start
+
+Scenario 6: 
+Conditions: Time: T-1hr to KOS 1 (meaning we have lineups for all players on teams in KOS 1), Player1 (active) is CONFIRMED not starting (KOS 1), Player2 (reserve) is CONFIRMED not starting (KOS 1), Player3 (reserve) is CONFIRMED starting (KOS 1)
+Execution: Player3 -> "active" & Player1 -> "reserve"
+
+Scenario 7: 
+Conditions: Time: T-1hr to KOS 1 (meaning we have lineups for all players on teams in KOS 1), Player1 (active) is UNCONFIRMED (KOS 10), Player2 (reserve) is CONFIRMED starting (KOS 1), Player3 (reserve) is UNCONFIRMED (KOS 10)
+Execution: No change at T-1hr to KOS 1, but at T-1hr to KOS 10 when we have confirmed lineups for KOS 10, if player3 (reserve) is confirmed starting and player1 (active) is confirmed not starting, then Player3 -> "active" & Player1 -> "reserve"

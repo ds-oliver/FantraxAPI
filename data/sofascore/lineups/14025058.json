@@ -2,15 +2,298 @@
   "event_id": 14025058,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "3-4-2-1",
+    "starters": [
+      {
+        "id": 788134,
+        "name": "Dean Henderson",
+        "position": "G",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1471671,
+        "name": "Jaydee Canvot",
+        "position": "D",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 879674,
+        "name": "Maxence Lacroix",
+        "position": "D",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 877994,
+        "name": "Marc Guéhi",
+        "position": "D",
+        "team_id": 7,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 43215,
+        "name": "Nathaniel Clyne",
+        "position": "D",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1109771,
+        "name": "Adam Wharton",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 193554,
+        "name": "Will Hughes",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 988275,
+        "name": "Tyrick Mitchell",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1085180,
+        "name": "Brennan Johnson",
+        "position": "F",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 984624,
+        "name": "Yéremy Pino",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 848276,
+        "name": "Jean-Philippe Mateta",
+        "position": "F",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 1064218,
+        "name": "Chadi Riad",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 906047,
+        "name": "Cheick Doucouré",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 858194,
+        "name": "Edward Nketiah",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 845286,
+        "name": "Ismaïla Sarr",
+        "position": "F",
+        "reason": 0
+      },
+      {
+        "id": 355796,
+        "name": "Jefferson Lerma",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 43215,
+        "name": "Nathaniel Clyne",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 794338,
+        "name": "Daichi Kamada",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 870360,
+        "name": "Daniel Muñoz",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1469007,
+        "name": "Rio Cardines",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1465401,
+        "name": "Caleb Kporha",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 931844,
+        "name": "Chris Richards",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 158263,
+        "name": "Emiliano Martínez",
+        "position": "G",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 833956,
+        "name": "Matty Cash",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 827679,
+        "name": "Ezri Konsa",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 143334,
+        "name": "Victor Lindelöf",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 96538,
+        "name": "Lucas Digne",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 826204,
+        "name": "Boubacar Kamara",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 331737,
+        "name": "Youri Tielemans",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 250223,
+        "name": "John McGinn",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 948261,
+        "name": "Morgan Rogers",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 783126,
+        "name": "Emiliano Buendía",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 555386,
+        "name": "Ollie Watkins",
+        "position": "F",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 98435,
+        "name": "Ross Barkley",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 923973,
+        "name": "Amadou Onana",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 930245,
+        "name": "Evann Guessand",
+        "position": "F",
+        "reason": 0
+      },
+      {
+        "id": 303638,
+        "name": "Tyrone Mings",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 864169,
+        "name": "Pau Torres",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 955245,
+        "name": "Harvey Elliott",
+        "position": "M",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-01-06 04:13:17+0000"
 }
