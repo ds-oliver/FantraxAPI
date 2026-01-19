@@ -278,6 +278,60 @@ def _status_kind(info: Optional[Any]) -> str:
         return "not_starting"
     return "unconfirmed"
 
+def _confirmed_status(info: Optional[Any]) -> Optional[LineupStatus]:
+    """
+    Return a confirmed lineup status when available (SofaScore confirmed lineups).
+    Falls back to Fantrax status only when no SofaScore mapping exists.
+    """
+    if not info:
+        return None
+    conf = getattr(info, "ss_conf_status", None)
+    if conf is not None:
+        if isinstance(conf, LineupStatus):
+            return conf if conf != LineupStatus.UNKNOWN else None
+        try:
+            norm = LineupStatus(str(conf).lower())
+            return norm if norm != LineupStatus.UNKNOWN else None
+        except Exception:
+            return None
+    if getattr(info, "sofascore_player_id", None):
+        return None
+    fx_status = getattr(info, "fx_status", None) or getattr(info, "status", None)
+    if fx_status is None:
+        return None
+    if isinstance(fx_status, LineupStatus):
+        return fx_status if fx_status != LineupStatus.UNKNOWN else None
+    try:
+        norm = LineupStatus(str(fx_status).lower())
+        return norm if norm != LineupStatus.UNKNOWN else None
+    except Exception:
+        return None
+
+
+def _confirmed_status_kind(info: Optional[Any]) -> str:
+    """
+    Determine the status kind using confirmed lineups only.
+    """
+    status = _confirmed_status(info)
+    if status is None:
+        return "unconfirmed"
+    if isinstance(status, LineupStatus):
+        if status == LineupStatus.STARTING:
+            return "starting"
+        if status in (LineupStatus.OUT, LineupStatus.BENCH, LineupStatus.DOUBTFUL):
+            return "not_starting"
+        return "unconfirmed"
+    val = str(status).lower()
+    if val == LineupStatus.STARTING.value:
+        return "starting"
+    if val in {
+        LineupStatus.OUT.value,
+        LineupStatus.BENCH.value,
+        LineupStatus.DOUBTFUL.value,
+    }:
+        return "not_starting"
+    return "unconfirmed"
+
 
 def _in_confirmation_window(kickoff: Optional[datetime], now: datetime) -> bool:
     """
@@ -825,10 +879,10 @@ def main() -> None:
                     user_id,
                 )
 
-            do_not_move: set[str] = set()
+            base_do_not_move: set[str] = set()
             late_kos_policy = "trust"
             if user_id and user_mgr and hasattr(user_mgr, "get_do_not_move"):
-                do_not_move = set(user_mgr.get_do_not_move(str(user_id), str(league_id)) or [])
+                base_do_not_move = set(user_mgr.get_do_not_move(str(user_id), str(league_id)) or [])
             if user_id and user_mgr and hasattr(user_mgr, "get_late_kos_policy"):
                 late_kos_policy = user_mgr.get_late_kos_policy(str(user_id), str(league_id)) or "trust"
 
@@ -860,6 +914,13 @@ def main() -> None:
 
                 roster_view = RosterView(roster)
                 now = _now()
+                do_not_move = set(base_do_not_move)
+                confirmed_active = {
+                    str(pid)
+                    for pid in roster_view.active_player_ids()
+                    if _confirmed_status_kind(lineup_info_by_player.get(str(pid))) == "starting"
+                }
+                do_not_move.update(confirmed_active)
 
                 id_to_row: Dict[str, RosterRow] = {}
                 for row in roster.rows:
@@ -968,7 +1029,10 @@ def main() -> None:
                     trigger = active_rules[0].get("trigger") or "confirmed_lineup"
 
                     active_info = lineup_info_by_player.get(active_id)
-                    active_status = _status_kind(active_info)
+                    status_kind_fn = _status_kind
+                    if not args.force_trigger and trigger == "confirmed_lineup":
+                        status_kind_fn = _confirmed_status_kind
+                    active_status = status_kind_fn(active_info)
                     active_kos_index = kos_index_map.get(active_id)
                     active_kickoff = getattr(active_info, "kickoff", None) if active_info else None
                     active_proj_fpts = next(
@@ -991,12 +1055,27 @@ def main() -> None:
                         logger.info("Rule %s skipped: do-not-move active.", active_rules[0].get("rule_id"))
                         continue
 
-                    if not args.force_trigger and trigger == "confirmed_lineup":
-                        if active_status == "starting":
-                            # Scenario 5 handled below; default behavior is no change.
-                            pass
+                    if not args.force_trigger:
+                        if trigger == "confirmed_lineup":
+                            if active_status == "unconfirmed":
+                                logger.info(
+                                    "Rule %s skipped: active lineup not confirmed (%s).",
+                                    active_rules[0].get("rule_id"),
+                                    _player_label(roster_view, active_id),
+                                )
+                                continue
+                            if active_status == "starting":
+                                logger.info(
+                                    "Rule %s skipped: active confirmed starter (%s).",
+                                    active_rules[0].get("rule_id"),
+                                    _player_label(roster_view, active_id),
+                                )
+                                continue
                         elif active_status == "unconfirmed" and not _in_confirmation_window(active_kickoff, now):
-                            logger.info("Rule %s skipped: active unconfirmed outside window.", active_rules[0].get("rule_id"))
+                            logger.info(
+                                "Rule %s skipped: active unconfirmed outside window.",
+                                active_rules[0].get("rule_id"),
+                            )
                             continue
                     # TODO: additional triggers (e.g., kickoff_passed, injury_flag) can be added here.
 
@@ -1030,7 +1109,7 @@ def main() -> None:
                             {
                                 "rule": r,
                                 "reserve_id": reserve_id,
-                                "status": _status_kind(reserve_info),
+                                "status": status_kind_fn(reserve_info),
                                 "proj_fpts": proj_val,
                                 "kos_index": kos_index_map.get(reserve_id),
                                 "kickoff": getattr(reserve_info, "kickoff", None) if reserve_info else None,
@@ -1058,6 +1137,13 @@ def main() -> None:
                             confirmed.sort(key=lambda c: c["proj_fpts"], reverse=True)
                             preferred = confirmed
                         else:
+                            if not args.force_trigger and trigger == "confirmed_lineup":
+                                logger.info(
+                                    "Rule %s skipped: no confirmed reserve starters for %s.",
+                                    active_rules[0].get("rule_id"),
+                                    _player_label(roster_view, active_id),
+                                )
+                                continue
                             preferred = reserve_candidates
 
                     else:  # unconfirmed

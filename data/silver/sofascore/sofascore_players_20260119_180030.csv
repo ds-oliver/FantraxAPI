@@ -1,0 +1,493 @@
+player_id,player_name,team_name,team_id
+288205,Bruno Fernandes,Manchester United,35
+856714,Declan Rice,Arsenal,42
+839956,Erling Haaland,Manchester City,17
+866469,Bruno Guimarães,Newcastle United,39
+980643,James Trafford,Manchester City,17
+962012,Jan Paul van Hecke,Brighton & Hove Albion,30
+117777,Granit Xhaka,Sunderland,41
+934386,Jérémy Doku,Manchester City,17
+861970,Kiernan Dewsbury-Hall,Everton,48
+869792,Gabriel Magalhães,Arsenal,42
+151545,Virgil van Dijk,Liverpool,44
+927361,James Garner,Everton,48
+996910,Bashir Humphreys,Burnley,6
+934235,Bukayo Saka,Arsenal,42
+987650,Moisés Caicedo,Chelsea,38
+979128,Rayan Cherki,Manchester City,17
+829932,Cristian Romero,Tottenham Hotspur,33
+885908,Reece James,Chelsea,38
+904897,Ryan Gravenberch,Liverpool,44
+189061,Jack Grealish,Everton,48
+994546,Elliot Anderson,Nottingham Forest,14
+994363,Bart Verbruggen,Brighton & Hove Albion,30
+1012928,Robin Roefs,Sunderland,41
+822470,Samuel Chukwueze,Fulham,43
+318941,Rúben Dias,Manchester City,17
+830659,Marcos Senesi,Bournemouth,60
+355528,Harry Wilson,Fulham,43
+145188,James Tarkowski,Everton,48
+827606,Rodri,Manchester City,17
+877994,Marc Guéhi,Crystal Palace,7
+1109771,Adam Wharton,Crystal Palace,7
+974505,Enzo Fernández,Chelsea,38
+331737,Youri Tielemans,Aston Villa,40
+1014286,Malick Thiaw,Newcastle United,39
+1142562,Mateus Fernandes,West Ham United,37
+843754,Ibrahim Sangaré,Nottingham Forest,14
+826204,Boubacar Kamara,Aston Villa,40
+859765,Phil Foden,Manchester City,17
+364612,João Palhinha,Tottenham Hotspur,33
+934354,Antoine Semenyo,Manchester City,17
+966837,Martín Zubimendi,Arsenal,42
+962053,Filip Jørgensen,Chelsea,38
+788784,Olivier Boscagli,Brighton & Hove Albion,30
+827362,Caoimhin Kelleher,Brentford,50
+101882,Fabian Schär,Newcastle United,39
+1168513,Max Alleyne,Manchester City,17
+138530,Jordan Pickford,Everton,48
+362682,Joachim Andersen,Fulham,43
+971037,Amad Diallo,Manchester United,35
+1016907,Igor Thiago,Brentford,50
+958878,Daniel Ballard,Sunderland,41
+788134,Dean Henderson,Crystal Palace,7
+923973,Amadou Onana,Aston Villa,40
+826215,Ibrahima Konaté,Liverpool,44
+547410,Martin Ødegaard,Arsenal,42
+864921,Eberechi Eze,Arsenal,42
+879349,Pedro Neto,Chelsea,38
+780014,Nordi Mukiele,Sunderland,41
+869856,Dominik Szoboszlai,Liverpool,44
+889861,Anton Stach,Leeds United,34
+847097,Ethan Ampadu,Leeds United,34
+941168,William Saliba,Arsenal,42
+870360,Daniel Muñoz,Crystal Palace,7
+352770,Alex Iwobi,Fulham,43
+847030,Noussair Mazraoui,Manchester United,35
+886363,Matheus Cunha,Manchester United,35
+859999,Lisandro Martínez,Manchester United,35
+964994,Joško Gvardiol,Manchester City,17
+923894,Wesley Fofana,Chelsea,38
+352668,Tosin Adarabioyo,Chelsea,38
+927083,Bryan Mbeumo,Manchester United,35
+122951,Casemiro,Manchester United,35
+826134,Trevoh Chalobah,Chelsea,38
+954056,Nico González,Manchester City,17
+42209,Martin Dúbravka,Burnley,6
+135666,Leandro Trossard,Arsenal,42
+824509,Gianluigi Donnarumma,Manchester City,17
+162653,Nick Pope,Newcastle United,39
+827679,Ezri Konsa,Aston Villa,40
+866191,Sean Longstaff,Leeds United,34
+1199282,Murillo,Nottingham Forest,14
+958959,Jurriën Timber,Arsenal,42
+1006387,Kevin Schade,Brentford,50
+803174,Antonee Robinson,Fulham,43
+945122,Matheus Nunes,Manchester City,17
+814873,Vitaly Janelt,Brentford,50
+794338,Daichi Kamada,Crystal Palace,7
+805137,Omar Alderete,Sunderland,41
+803031,Matthijs de Ligt,Manchester United,35
+110846,Michael Keane,Everton,48
+365802,Harrison Reed,Fulham,43
+1088897,Jenson Seelt,Sunderland,41
+931844,Chris Richards,Crystal Palace,7
+1020141,Nathan Patterson,Everton,48
+914902,Anthony Gordon,Newcastle United,39
+190877,Kenny Tete,Fulham,43
+1471671,Jaydee Canvot,Crystal Palace,7
+862967,Cody Gakpo,Liverpool,44
+920546,Robert Sánchez,Chelsea,38
+914309,Iliman Ndiaye,Everton,48
+927353,Curtis Jones,Liverpool,44
+1135873,Alejandro Garnacho,Chelsea,38
+846036,Ben White,Arsenal,42
+975079,João Pedro,Chelsea,38
+1400650,Lewis Miley,Newcastle United,39
+973431,Brenden Aaronson,Leeds United,34
+833956,Matty Cash,Aston Villa,40
+553606,Guglielmo Vicario,Tottenham Hotspur,33
+984624,Yéremy Pino,Crystal Palace,7
+103335,Bernd Leno,Fulham,43
+1426228,Eli Junior Kroupi,Bournemouth,60
+892673,Sandro Tonali,Newcastle United,39
+161717,James Ward-Prowse,West Ham United,37
+907072,Mikkel Damsgaard,Brentford,50
+793167,Sander Berge,Fulham,43
+792122,Josh Cullen,Burnley,6
+783126,Emiliano Buendía,Aston Villa,40
+1002837,Piero Hincapié,Arsenal,42
+1136730,Lewis Hall,Newcastle United,39
+839981,Lucas Paquetá,West Ham United,37
+1397168,Patrick Dorgu,Manchester United,35
+927356,Neco Williams,Nottingham Forest,14
+42694,Jordan Henderson,Brentford,50
+219572,Joël Veltman,Brighton & Hove Albion,30
+94758,Ben Davies,Tottenham Hotspur,33
+913654,Pedro Porro,Tottenham Hotspur,33
+303638,Tyrone Mings,Aston Villa,40
+115365,Lewis Dunk,Brighton & Hove Albion,30
+158263,Emiliano Martínez,Aston Villa,40
+552884,Jarrod Bowen,West Ham United,37
+893549,Tijjani Reijnders,Manchester City,17
+855647,Harvey Barnes,Newcastle United,39
+1048422,Hugo Ekitiké,Liverpool,44
+1065216,Oscar Bobb,Manchester City,17
+868715,Jorge Cuenca,Fulham,43
+1194333,Abdukodir Khusanov,Manchester City,17
+581310,David Raya,Arsenal,42
+800419,Tyler Adams,Bournemouth,60
+982780,Cole Palmer,Chelsea,38
+98427,Sam Johnstone,Wolverhampton,3
+1137431,Michael Kayode,Brentford,50
+794953,Kevin Danso,Tottenham Hotspur,33
+985086,Morato,Nottingham Forest,14
+840217,Richarlison,Tottenham Hotspur,33
+845286,Ismaïla Sarr,Crystal Palace,7
+843200,Diogo Dalot,Manchester United,35
+886930,Jaka Bijol,Leeds United,34
+69256,Kieran Trippier,Newcastle United,39
+957602,Riccardo Calafiori,Arsenal,42
+958916,Nathan Collins,Brentford,50
+243609,Alisson,Liverpool,44
+905163,Mohammed Kudus,Tottenham Hotspur,33
+560128,Joelinton,Newcastle United,39
+867442,Callum Hudson-Odoi,Nottingham Forest,14
+1019322,Florian Wirtz,Liverpool,44
+879674,Maxence Lacroix,Crystal Palace,7
+836694,Mason Mount,Manchester United,35
+372336,Jacob Murphy,Newcastle United,39
+799251,Mathias Jensen,Brentford,50
+891829,Matt O'Riley,Brighton & Hove Albion,30
+871765,Nicolás Domínguez,Nottingham Forest,14
+1144630,Cristhian Mosquera,Arsenal,42
+948261,Morgan Rogers,Aston Villa,40
+1899647,Mateus Mané,Wolverhampton,3
+825844,Ferdi Kadıoğlu,Brighton & Hove Albion,30
+910048,Brian Brobbey,Sunderland,41
+964753,Senne Lammens,Manchester United,35
+1400106,Yankuba Minteh,Brighton & Hove Albion,30
+250223,John McGinn,Aston Villa,40
+856739,Lutsharel Geertruida,Sunderland,41
+846308,Santiago Bueno,Wolverhampton,3
+1013842,Emmanuel Agbadou,Wolverhampton,3
+592010,Mikel Merino,Arsenal,42
+845273,Jean-Ricner Bellegarde,Wolverhampton,3
+96531,Alphonse Aréola,West Ham United,37
+1171539,Noah Sadiki,Sunderland,41
+864169,Pau Torres,Aston Villa,40
+997152,Maxim De Cuyper,Brighton & Hove Albion,30
+1104986,Alex Scott,Bournemouth,60
+1445799,Ayden Heaven,Manchester United,35
+98435,Ross Barkley,Aston Villa,40
+917005,Crysencio Summerville,West Ham United,37
+149663,Nathan Aké,Manchester City,17
+355796,Jefferson Lerma,Crystal Palace,7
+988275,Tyrick Mitchell,Crystal Palace,7
+218160,Bertrand Traoré,Sunderland,41
+1035996,André,Wolverhampton,3
+1406130,Veljko Milosavljević,Bournemouth,60
+1156586,James Hill,Bournemouth,60
+372344,Dominic Calvert-Lewin,Leeds United,34
+970361,Jeremie Frimpong,Liverpool,44
+865523,Noah Okafor,Leeds United,34
+1085950,Tim Iroegbunam,Everton,48
+1089582,Freddie Potts,West Ham United,37
+998253,Jake O'Brien,Everton,48
+1020680,Jaidon Anthony,Burnley,6
+1112879,Kevin,Fulham,43
+856250,Ladislav Krejčí,Wolverhampton,3
+1048916,Lesley Ugochukwu,Burnley,6
+159665,Mohamed Salah,Liverpool,44
+555386,Ollie Watkins,Aston Villa,40
+980634,Valentino Livramento,Newcastle United,39
+998247,Micky van de Ven,Tottenham Hotspur,33
+96538,Lucas Digne,Aston Villa,40
+1036269,Yasin Ayari,Brighton & Hove Albion,30
+829022,Konstantinos Mavropanos,West Ham United,37
+836168,Nikola Milenković,Nottingham Forest,14
+1048888,Mathys Tel,Tottenham Hotspur,33
+82566,Tom Cairney,Fulham,43
+1597265,Estêvão,Chelsea,38
+855845,Florentino Luís,Burnley,6
+910046,Sven Botman,Newcastle United,39
+984014,Enzo Le Fée,Sunderland,41
+548188,Lewis Cook,Bournemouth,60
+989034,Trai Hume,Sunderland,41
+1881902,Rio Ngumoha,Liverpool,44
+1105779,Andrey Santos,Chelsea,38
+1170560,Soungoutou Magassa,West Ham United,37
+193554,Will Hughes,Crystal Palace,7
+106337,Idrissa Gueye,Everton,48
+966547,Noni Madueke,Arsenal,42
+795066,Marcus Edwards,Burnley,6
+997183,Xavi Simons,Tottenham Hotspur,33
+1006073,Rodrigo Gomes,Wolverhampton,3
+911679,Ilia Gruev,Leeds United,34
+1416535,Charalampos Kostoulas,Brighton & Hove Albion,30
+836675,Pascal Struijk,Leeds United,34
+1401702,Ethan Nwaneri,Arsenal,42
+287643,Oleksandr Zinchenko,Nottingham Forest,14
+1015267,João Gomes,Wolverhampton,3
+876643,Vitaliy Mykolenko,Everton,48
+113956,Callum Wilson,West Ham United,37
+1136731,Rico Lewis,Manchester City,17
+936849,Kaoru Mitoma,Brighton & Hove Albion,30
+996958,Malo Gusto,Chelsea,38
+1090963,Omari Hutchinson,Nottingham Forest,14
+867887,Douglas Luiz,Nottingham Forest,14
+875137,Zian Flemming,Burnley,6
+791190,Rodrigo Bentancur,Tottenham Hotspur,33
+143334,Victor Lindelöf,Aston Villa,40
+1106451,Dango Ouattara,Brentford,50
+848276,Jean-Philippe Mateta,Crystal Palace,7
+998951,Wilfried Gnonto,Leeds United,34
+800417,Ola Aina,Nottingham Forest,14
+1142703,Nico O'Reilly,Manchester City,17
+846425,Manuel Ugarte,Manchester United,35
+149380,Harry Maguire,Manchester United,35
+867445,Emile Smith Rowe,Fulham,43
+1031258,Yehor Yarmolyuk,Brentford,50
+262911,Andrew Robertson,Liverpool,44
+831424,Reinildo Mandava,Sunderland,41
+895576,Marcus Tavernier,Bournemouth,60
+1140599,Jamie Gittens,Chelsea,38
+1046795,Savinho,Manchester City,17
+43215,Nathaniel Clyne,Crystal Palace,7
+846252,Ryan Yates,Nottingham Forest,14
+836705,Kai Havertz,Arsenal,42
+136710,Mateo Kovačić,Manchester City,17
+825839,Tyrell Malacia,Manchester United,35
+1126692,Antoni Milambo,Brentford,50
+76632,Séamus Coleman,Everton,48
+1069488,Roméo Lavia,Chelsea,38
+1050692,Diego Coppola,Brighton & Hove Albion,30
+826167,Sebastiaan Bornauw,Leeds United,34
+844842,Yves Bissouma,Tottenham Hotspur,33
+997103,Radu Drăguşin,Tottenham Hotspur,33
+135256,Christian Nørgaard,Arsenal,42
+931278,Rayan Aït-Nouri,Manchester City,17
+794939,Marc Cucurella,Chelsea,38
+331209,Bernardo Silva,Manchester City,17
+1002711,Pape Matar Sarr,Tottenham Hotspur,33
+895324,Alexis Mac Allister,Liverpool,44
+828640,Joe Rodon,Leeds United,34
+1065588,Diego Gómez,Brighton & Hove Albion,30
+1008456,Oliver Sonne,Burnley,6
+1184308,Álex Jiménez,Bournemouth,60
+1142315,Jack Hinshelwood,Brighton & Hove Albion,30
+322391,Ryan Christie,Bournemouth,60
+33902,Danny Welbeck,Brighton & Hove Albion,30
+980623,Nick Woltemade,Newcastle United,39
+803185,Lukas Nmecha,Leeds United,34
+946695,Georginio Rutter,Brighton & Hove Albion,30
+855731,David Brooks,Bournemouth,60
+972421,Keane Lewis-Potter,Brentford,50
+845386,Federico Chiesa,Liverpool,44
+1391251,Lucas Bergvall,Tottenham Hotspur,33
+991478,Amine Adli,Bournemouth,60
+998490,Evanilson,Bournemouth,60
+78152,Matz Sels,Nottingham Forest,14
+827681,James Justin,Leeds United,34
+1097425,Miloš Kerkez,Liverpool,44
+944327,Dan Ndoye,Nottingham Forest,14
+991604,Fabio Carvalho,Brentford,50
+838399,Joe Worrall,Burnley,6
+252669,José Sá,Wolverhampton,3
+791,James Milner,Brighton & Hove Albion,30
+1014835,Yerson Mosquera,Wolverhampton,3
+861972,Calvin Bassey,Fulham,43
+959628,Mats Wieffer,Brighton & Hove Albion,30
+1403050,Josh Acheampong,Chelsea,38
+871886,Ao Tanaka,Leeds United,34
+190839,Luke Shaw,Manchester United,35
+1014987,Dennis Cirkin,Sunderland,41
+123689,Karl Darlow,Leeds United,34
+1917626,Max Dowman,Arsenal,42
+1523623,Mohamadou Kanté,West Ham United,37
+803039,Donyell Malen,Aston Villa,40
+924378,Sepp van den Berg,Brentford,50
+894733,Marshall Munetsi,Wolverhampton,3
+962408,Bafodé Diakité,Bournemouth,60
+844096,Jhon Arias,Wolverhampton,3
+885864,Frank Onyeka,Brentford,50
+882604,Đorđe Petrović,Bournemouth,60
+1089388,Lamare Bogarde,Aston Villa,40
+954044,Ki-Jana Hoever,Wolverhampton,3
+1008402,Conor Bradley,Liverpool,44
+1627560,Harrison Armstrong,Everton,48
+904827,Benoît Badiashile,Chelsea,38
+174975,Arthur Masuaku,Sunderland,41
+576384,Kristoffer Ajer,Brentford,50
+875360,Hjalmar Ekdal,Burnley,6
+858194,Edward Nketiah,Crystal Palace,7
+143047,Matt Doherty,Wolverhampton,3
+1031283,David Möller Wolfe,Wolverhampton,3
+1155321,Stefanos Tzimas,Brighton & Hove Albion,30
+1085180,Brennan Johnson,Crystal Palace,7
+371222,Saša Lukić,Fulham,43
+828639,Daniel James,Leeds United,34
+609752,Guido Rodríguez,West Ham United,37
+922573,Gabriel Martinelli,Arsenal,42
+1117223,Maxime Estève,Burnley,6
+834308,Gabriel Gudmundsson,Leeds United,34
+976263,Ian Maatsen,Aston Villa,40
+823085,Kyle Walker-Peters,West Ham United,37
+877980,Wilson Isidor,Sunderland,41
+983572,Destiny Udogie,Tottenham Hotspur,33
+851100,Jadon Sancho,Aston Villa,40
+786186,Hee-Chan Hwang,Wolverhampton,3
+192442,Raúl Jiménez,Fulham,43
+1010220,Nicolò Savona,Nottingham Forest,14
+318927,Joe Gomez,Liverpool,44
+143040,Wataru Endo,Liverpool,44
+873554,Omar Marmoush,Manchester City,17
+795228,Odsonne Édouard,Crystal Palace,7
+1142182,Tyler Fredricson,Manchester United,35
+1170722,Jair,Nottingham Forest,14
+1011895,Jota Silva,Nottingham Forest,14
+1410178,Jamaldeen Jimoh,Aston Villa,40
+1390490,Zach Abbott,Nottingham Forest,14
+1005725,Tawanda Chirewa,Wolverhampton,3
+964106,Dan Neil,Sunderland,41
+815890,Altay Bayındır,Manchester United,35
+845464,Andy Irving,West Ham United,37
+945798,Djed Spence,Tottenham Hotspur,33
+826139,Reiss Nelson,Brentford,50
+888550,Joe Willock,Newcastle United,39
+1465865,Shea Lacey,Manchester United,35
+1398204,George Hemmings,Aston Villa,40
+986397,Benjamin Šeško,Manchester United,35
+1142675,Chemsdine Talbi,Sunderland,41
+1168588,Eliezer Mayenda,Sunderland,41
+999028,Adrien Truffert,Bournemouth,60
+1198075,Brajan Gruda,Brighton & Hove Albion,30
+871290,Lucas Perri,Leeds United,34
+836698,Ryan Sessegnon,Fulham,43
+865912,Morgan Gibbs-White,Nottingham Forest,14
+935543,Dwight McNeil,Everton,48
+799041,Tomáš Souček,West Ham United,37
+1013928,Hugo Bueno,Wolverhampton,3
+894474,Max Kilman,West Ham United,37
+1142175,Kobbie Mainoo,Manchester United,35
+1174472,Tyler Dibling,Everton,48
+99090,Dan Burn,Newcastle United,39
+1142679,Wilson Odobert,Tottenham Hotspur,33
+829570,Jack Harrison,Leeds United,34
+851596,Justin Kluivert,Bournemouth,60
+997087,Liam Delap,Chelsea,38
+1438837,Romain Esse,Crystal Palace,7
+1403061,Tyrique George,Chelsea,38
+839410,Aaron Ramsdale,Newcastle United,39
+1009386,Hannibal Mejbri,Burnley,6
+945217,Jean-Clair Todibo,West Ham United,37
+365812,Luke O'Nien,Sunderland,41
+152077,John Stones,Manchester City,17
+817979,Axel Tuanzebe,Burnley,6
+1153315,Leny Yoro,Manchester United,35
+1402726,Jack Fletcher,Manchester United,35
+1004505,Loum Tchaouna,Burnley,6
+823941,Alexander Isak,Liverpool,44
+1128532,Habib Diarra,Sunderland,41
+1652590,Ezra Mayers,West Ham United,37
+1015256,Rodrigo Muniz,Fulham,43
+1094440,Romaine Mundle,Sunderland,41
+1096210,Jackson Tchatchoua,Wolverhampton,3
+1142335,Archie Gray,Tottenham Hotspur,33
+863653,Aaron Wan-Bissaka,West Ham United,37
+329417,Timothy Castagne,Fulham,43
+50480,Chris Wood,Nottingham Forest,14
+975937,Jacob Ramsey,Newcastle United,39
+1423711,Myles Lewis-Skelly,Arsenal,42
+286165,Adama Traoré,Fulham,43
+917007,Joshua Zirkzee,Manchester United,35
+44614,Kyle Walker,Burnley,6
+100390,Marco Bizot,Aston Villa,40
+336655,Enes Ünal,Bournemouth,60
+1394089,Chris Rigg,Sunderland,41
+966869,Aaron Hickey,Brentford,50
+1154861,Ben Gannon-Doak,Bournemouth,60
+1199043,Carlos Baleba,Brighton & Hove Albion,30
+1526628,Fer López,Wolverhampton,3
+979232,Anthony Elanga,Newcastle United,39
+1153079,Jorrel Hato,Chelsea,38
+901907,Lyle Foster,Burnley,6
+809276,Jacob Bruun Larsen,Burnley,6
+1110842,Simon Adingra,Sunderland,41
+987734,Tolu Arokodare,Wolverhampton,3
+1546231,Joshua King,Fulham,43
+1122603,William Osula,Newcastle United,39
+892924,Hamed Junior Traorè,Bournemouth,60
+1545190,Bendito Mantato,Manchester United,35
+1467990,Divine Mukasa,Manchester City,17
+1064082,Merlin Röhl,Everton,48
+955245,Harvey Elliott,Aston Villa,40
+27028,Ashley Barnes,Burnley,6
+904970,Conor Gallagher,Tottenham Hotspur,33
+1167066,Tom Watson,Brighton & Hove Albion,30
+1003334,James McAtee,Nottingham Forest,14
+805123,Yoane Wissa,Newcastle United,39
+930997,Giorgi Mamardashvili,Liverpool,44
+1464248,Luis Guilherme,West Ham United,37
+1471764,El Hadji Malick Diouf,West Ham United,37
+794839,Gabriel Jesus,Arsenal,42
+1084311,Justin Devenny,Crystal Palace,7
+599128,Rico Henry,Brentford,50
+855864,Ethan Pinnock,Brentford,50
+361420,Dominic Solanke,Tottenham Hotspur,33
+1395746,Thierno Barry,Everton,48
+1150952,Oliver Scarles,West Ham United,37
+963298,Dilane Bakwa,Nottingham Forest,14
+1884145,Christantus Uche,Crystal Palace,7
+996985,Armando Broja,Burnley,6
+929132,Jayden Bogle,Leeds United,34
+2007717,Joel Drakes-Thomas,Crystal Palace,7
+1503757,Jonah Kusi-Asare,Fulham,43
+48480,Pascal Groß,Brighton & Hove Albion,30
+930245,Evann Guessand,Aston Villa,40
+1017392,Carlos Alcaraz,Everton,48
+1136896,Lucas Pires,Burnley,6
+987489,Beto,Everton,48
+1392044,Quilindschy Hartman,Burnley,6
+826183,Mike Trésor,Burnley,6
+981619,Igor Jesus,Nottingham Forest,14
+825719,Issa Diop,Fulham,43
+552036,Josh Laurent,Burnley,6
+1117025,Facundo Buonanotte,Leeds United,34
+1142573,Jaydon Banel,Burnley,6
+1212165,George Earthy,West Ham United,37
+1899712,Bradley Burrowes,Aston Villa,40
+1185603,Kaden Rodney,Crystal Palace,7
+871706,Randal Kolo Muani,Tottenham Hotspur,33
+850823,Joël Piroe,Leeds United,34
+954061,Arnaud Kalimuendo,Nottingham Forest,14
+1101174,Pablo Felipe,West Ham United,37
+153444,Jamaal Lascelles,Newcastle United,39
+361326,Patrick Roberts,Sunderland,41
+804508,Viktor Gyökeres,Arsenal,42
+842513,Igor Júlio,West Ham United,37
+1394099,Callum Marshall,West Ham United,37
+973418,Toti Gomes,Wolverhampton,3
+359664,Taiwo Awoniyi,Nottingham Forest,14
+876599,Jørgen Strand Larsen,Wolverhampton,3
+998772,Dane Scarlett,Tottenham Hotspur,33
+870038,Saša Kalajdžić,Wolverhampton,3
+2007889,Ben Winterburn,Bournemouth,60
+1201520,Julio Soler,Bournemouth,60
+1414933,Marc Guiu,Chelsea,38
+840103,John Victor,Nottingham Forest,14
+44566,Adam Smith,Bournemouth,60
+1457536,Andrés García,Aston Villa,40
+856640,Mads Hermansen,West Ham United,37
+254713,Sam Byram,Leeds United,34
+877102,Nayef Aguerd,West Ham United,37
+132645,Niclas Füllkrug,West Ham United,37
+877013,Valentín Castellanos,West Ham United,37
+357584,Borna Sosa,Crystal Palace,7
+150396,Emil Krafth,Newcastle United,39
+1597270,Pedro Lima,Wolverhampton,3
+980649,Myles Peart-Harris,Brentford,50
+1899611,Nehemiah Oriola,Brighton & Hove Albion,30
+1565348,Joe Knight,Brighton & Hove Albion,30
+1445945,Trey Nyoni,Liverpool,44
+1586020,Romelle Donovan,Brentford,50
