@@ -4,9 +4,10 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=oneshot
+Type=simple
 WorkingDirectory=/opt/FantraxAPI
 ExecStart=/opt/FantraxAPI/bin/pull_restart.sh
+Restart=on-failure
 StandardOutput=journal
 StandardError=journal
 Environment=PATH=/opt/FantraxAPI/.venv/bin:/usr/local/bin:/usr/bin:/bin

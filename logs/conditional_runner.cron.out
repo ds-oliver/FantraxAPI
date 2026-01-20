@@ -2,3 +2,107 @@
     """
     ^
 SyntaxError: unterminated triple-quoted string literal (detected at line 1107)
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1652
+    else:
+    ^^^^
+SyntaxError: invalid syntax
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1657
+    if swap_executed:
+                     ^
+IndentationError: unindent does not match any outer indentation level
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1554, in main
+    for candidate in preferred:
+UnboundLocalError: local variable 'preferred' referenced before assignment
+Traceback (most recent call last):
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1708, in <module>
+    main()
+  File "/Users/hogan/FantraxAPI/scripts/conditional_runner.py", line 1659, in main
+    if not trace_logged and args.trace:
+UnboundLocalError: local variable 'trace_logged' referenced before assignment

@@ -9,10 +9,9 @@ STREAMLIT_LOG="$LOG_DIR/streamlit.out"
 BRANCH="${BRANCH:-testing}"
 
 mkdir -p "$LOG_DIR"
-exec >> "$LOG_FILE" 2>&1
 
 log() {
-  echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] $*"
+  echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] $*" | tee -a "$LOG_FILE"
 }
 
 log "Starting pull_restart (${BRANCH})"
@@ -40,10 +39,9 @@ log "Installing requirements"
 
 log "Restarting Streamlit"
 pkill -f "streamlit run" >/dev/null 2>&1 || true
-mkdir -p "$LOG_DIR"
 PYTHONPATH="$REPO_ROOT" \
   .venv/bin/python -m streamlit run "$REPO_ROOT/apps/auth_login/overview.py" \
   --server.address 127.0.0.1 --server.port 8501 \
-  >> "$STREAMLIT_LOG" 2>&1 &
+  >> "$STREAMLIT_LOG" 2>&1
 
 log "pull_restart finished"
