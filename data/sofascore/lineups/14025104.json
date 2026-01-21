@@ -274,8 +274,14 @@
         "name": "João Palhinha",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 1002711,
+        "name": "Pape Matar Sarr",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-01-20 02:00:18+0000"
+  "fetched_at_utc": "2026-01-21 02:00:36+0000"
 }

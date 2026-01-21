@@ -130,6 +130,12 @@
         "name": "Nathaniel Clyne",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 1465401,
+        "name": "Caleb Kporha",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
@@ -277,5 +283,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-01-20 02:00:20+0000"
+  "fetched_at_utc": "2026-01-21 02:00:39+0000"
 }

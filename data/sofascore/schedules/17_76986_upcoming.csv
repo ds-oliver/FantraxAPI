@@ -118,6 +118,7 @@ event_id,kickoff_utc,home_team,away_team,home_team_id,away_team_id,tournament_id
 14024022,2026-04-25 14:00:00+0000,Wolverhampton,Tottenham Hotspur,3,33,17,76986,34,
 14024004,2026-04-25 14:00:00+0000,Fulham,Aston Villa,43,40,17,76986,34,
 14023934,2026-04-25 14:00:00+0000,West Ham United,Everton,37,48,17,76986,34,
+14025044,2026-04-25 14:00:00+0000,Bournemouth,Leeds United,60,34,17,76986,34,
 14023932,2026-04-25 14:00:00+0000,Sunderland,Nottingham Forest,41,14,17,76986,34,
 14023939,2026-05-02 14:00:00+0000,Manchester United,Liverpool,35,44,17,76986,35,
 14023930,2026-05-02 14:00:00+0000,Everton,Manchester City,48,17,17,76986,35,

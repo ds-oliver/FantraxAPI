@@ -133,6 +133,14 @@ With this stack, code updates flow via git, data arrives via Syncthing/ESD, and 
   ```
   Expected: VPS login banner and shell prompt.
 
+- **Fix unresolved `fantrax-vps` host**:
+  - If `ssh fantrax-vps` fails with `Could not resolve hostname`, check that the alias exists in `~/.ssh/config`, run `ssh -G fantrax-vps` to inspect the resolved HostName, and fall back to the numeric IP (`5.78.118.108`) or a temporary `/etc/hosts` entry until DNS or the alias is restored.
+  - To add the alias locally (macOS) so SSH always works even when DNS hiccups occur:
+    ```bash
+    echo "5.78.118.108 fantrax-vps" | sudo tee -a /etc/hosts
+    ```
+    Afterwards `ssh fantrax-vps` should resolve immediately, and you can remove the line once DNS is stable by editing `/etc/hosts`.
+
 - **Start Streamlit manually (VPS)**:
   ```bash
   cd /opt/FantraxAPI

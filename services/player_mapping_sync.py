@@ -131,17 +131,23 @@ class PlayerMappingSync:
             log.info("[mapping] Auto-added %s mappings", len(auto_added))
 
         report_path = None
+        report_link: Optional[str] = None
         if unmatched:
             report_path = self._write_report(unmatched)
+            report_link = f"{Path(report_path).resolve()}:1"
             log.warning(
                 "[mapping] %s SofaScore players remain unmapped. Report -> %s",
                 len(unmatched),
-                report_path,
+                report_link,
             )
         else:
             log.info("[mapping] All SofaScore lineup players have Fantrax mappings")
 
-        return {"auto_added": len(auto_added), "unmatched": len(unmatched), "report": report_path}
+        return {
+            "auto_added": len(auto_added),
+            "unmatched": len(unmatched),
+            "report": report_link,
+        }
 
     def _load_fantrax_players(self) -> pd.DataFrame:
         if not self.players_csv.exists():

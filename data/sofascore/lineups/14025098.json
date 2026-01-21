@@ -220,8 +220,14 @@
         "name": "Matthijs de Ligt",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 917007,
+        "name": "Joshua Zirkzee",
+        "position": "F",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-01-20 02:00:22+0000"
+  "fetched_at_utc": "2026-01-21 02:00:43+0000"
 }

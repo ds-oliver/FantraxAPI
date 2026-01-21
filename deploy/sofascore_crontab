@@ -4,7 +4,7 @@ ROOT_DIR=/Users/hogan/FantraxAPI
 LOG_DIR=/Users/hogan/FantraxAPI/logs
 
 # Daily predictions + mappings (refreshes schedule/lineups + cached schedule)
-0 3 * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_listener.sh --mode predictions --horizon-days 7 --with-mappings >> "$LOG_DIR/sofascore_predictions.log" 2>&1
+0 2 * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_listener.sh --mode predictions --horizon-days 7 --with-mappings >> "$LOG_DIR/sofascore_predictions.log" 2>&1
 
 # High-frequency confirmed watcher (uses cached schedule; internal 10s polling)
 */5 * * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_watcher.sh --window-minutes 80 --min-window-minutes 70 --poll-interval-seconds 10 --max-watch-minutes 15 >> "$LOG_DIR/sofascore_kickoff_watcher.log" 2>&1
