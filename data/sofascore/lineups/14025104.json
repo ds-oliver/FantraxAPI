@@ -280,8 +280,14 @@
         "name": "Pape Matar Sarr",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 1391251,
+        "name": "Lucas Bergvall",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-01-21 02:00:36+0000"
+  "fetched_at_utc": "2026-01-21 20:00:18+0000"
 }

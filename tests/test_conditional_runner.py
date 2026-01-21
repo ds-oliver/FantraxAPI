@@ -4,6 +4,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict
+from utils.user_manager import UserManager
 
 import pytest
 
@@ -253,3 +254,31 @@ def test_load_rules_prunes_stale_locks(tmp_path):
     path.write_text(json.dumps(payload))
     _, locks = load_rules_with_locks(path)
     assert locks == {}
+
+
+def test_candidate_summary_formats_local_kickoff():
+    dt = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+    summary = runner._summarize_candidates(
+        [
+            {
+                "reserve_id": "R1",
+                "status": "starting",
+                "proj_fpts": 1.2,
+                "kos_index": 1,
+                "kickoff": dt,
+                "locked": False,
+                "lock_bypass": False,
+            }
+        ],
+        user_timezone="America/Los_Angeles",
+    )
+    assert summary[0]["kickoff_local"].endswith("-08:00")
+
+
+def test_user_manager_timezone_defaults_and_override(tmp_path):
+    mgr = UserManager(data_dir=tmp_path)
+    user = mgr.get_or_create_user("tz@example.com")
+    tz = mgr.get_timezone(user["user_id"])
+    assert tz == "UTC"
+    assert mgr.set_timezone(user["user_id"], "America/New_York")
+    assert mgr.get_timezone(user["user_id"]) == "America/New_York"

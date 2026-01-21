@@ -28,6 +28,7 @@ import os
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -81,6 +82,30 @@ LOCK_TTL_SECONDS = 300
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+def _format_datetime_for_user(dt: Optional[datetime], tz_name: str) -> Optional[str]:
+    if not dt:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    try:
+        zone = ZoneInfo(tz_name or "UTC")
+    except Exception:
+        zone = timezone.utc
+    try:
+        return dt.astimezone(zone).isoformat()
+    except Exception:
+        return dt.isoformat()
+
+
+def _resolve_user_timezone(user_mgr: Optional[UserManager], user_id: Optional[str]) -> str:
+    if not user_mgr or not user_id:
+        return "UTC"
+    try:
+        tz = user_mgr.get_timezone(str(user_id))
+    except Exception:
+        tz = None
+    return tz or "UTC"
 
 
 def _sanitize_lock_segment(value: Optional[Any]) -> str:
@@ -470,9 +495,10 @@ def _lock_player(
     }
 
 
-def _summarize_candidates(candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _summarize_candidates(candidates: List[Dict[str, Any]], user_timezone: str = "UTC") -> List[Dict[str, Any]]:
     summary: List[Dict[str, Any]] = []
     for c in candidates:
+        kickoff = c.get("kickoff")
         summary.append(
             {
                 "reserve_id": c.get("reserve_id"),
@@ -481,6 +507,8 @@ def _summarize_candidates(candidates: List[Dict[str, Any]]) -> List[Dict[str, An
                 "kos_index": c.get("kos_index"),
                 "locked": c.get("locked"),
                 "lock_bypass": c.get("lock_bypass"),
+                "kickoff": kickoff.isoformat() if kickoff else None,
+                "kickoff_local": _format_datetime_for_user(kickoff, user_timezone),
             }
         )
     return summary
@@ -974,6 +1002,7 @@ def main() -> None:
     projections = _load_projections_map()
 
     for user_id, rules_path, rules, player_locks, session, user_mgr in runs:
+        user_timezone = _resolve_user_timezone(user_mgr, user_id)
         """
         Process runs for a given user.
         """
@@ -1348,6 +1377,8 @@ def main() -> None:
                             "active_proj_fpts": active_proj_fpts,
                             "lineup_active_before": lineup_active_before,
                             "lineup_reserve_before": lineup_reserve_before,
+                            "now_local": _format_datetime_for_user(now, user_timezone),
+                            "user_timezone": user_timezone,
                         }
 
                         lock_bucket = _lock_bucket(
@@ -1548,7 +1579,7 @@ def main() -> None:
                                     earlier_confirmed.sort(key=lambda c: c["proj_fpts"], reverse=True)
                                     preferred = earlier_confirmed
 
-                        trace_candidates = _summarize_candidates(preferred)
+                        trace_candidates = _summarize_candidates(preferred, user_timezone)
                         trace_logged = False
                         executed = False
                         for candidate in preferred:

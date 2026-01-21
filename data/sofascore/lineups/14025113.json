@@ -244,8 +244,14 @@
         "name": "Stefanos Tzimas",
         "position": "F",
         "reason": 1
+      },
+      {
+        "id": 997152,
+        "name": "Maxim De Cuyper",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-01-21 02:00:37+0000"
+  "fetched_at_utc": "2026-01-21 20:00:19+0000"
 }

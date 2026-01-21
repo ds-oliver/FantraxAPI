@@ -39,9 +39,8 @@ log "Installing requirements"
 
 log "Restarting Streamlit"
 pkill -f "streamlit run" >/dev/null 2>&1 || true
-PYTHONPATH="$REPO_ROOT" \
+log "Launching Streamlit"
+exec env PYTHONPATH="$REPO_ROOT" \
   .venv/bin/python -m streamlit run "$REPO_ROOT/apps/auth_login/overview.py" \
   --server.address 127.0.0.1 --server.port 8501 \
   >> "$STREAMLIT_LOG" 2>&1
-
-log "pull_restart finished"

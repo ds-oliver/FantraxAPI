@@ -158,7 +158,9 @@ class UserManager:
 			"created_at": datetime.utcnow().isoformat(),
 			"auth_status": "not_connected",
 			"last_login": None,
-			"password_hash": None  # Set via set_user_password()
+			"password_hash": None,  # Set via set_user_password()
+			"timezone": "UTC",
+			"timezone_updated_at": None,
 		}
 		
 		users[user_id] = user
@@ -280,6 +282,29 @@ class UserManager:
 		"""Get user info by user_id."""
 		data = self._load_users()
 		return data.get("users", {}).get(user_id)
+
+	def get_timezone(self, user_id: str) -> str:
+		"""Return the preferred timezone for a user (fallback UTC)."""
+		user = self.get_user_by_id(user_id) or {}
+		return user.get("timezone") or "UTC"
+
+	def set_timezone(self, user_id: str, timezone_str: str) -> bool:
+		"""Persist a timezone preference for the user."""
+		try:
+			data = self._load_users()
+			users = data.get("users", {})
+			if user_id not in users:
+				logger.error(f"User {user_id} not found")
+				return False
+			users[user_id]["timezone"] = str(timezone_str)
+			users[user_id]["timezone_updated_at"] = datetime.utcnow().isoformat()
+			data["users"] = users
+			self._save_users(data)
+			logger.info("Set timezone=%s for user=%s", timezone_str, user_id)
+			return True
+		except Exception as e:
+			logger.error(f"Failed to set timezone for user {user_id}: {e}")
+			return False
 
 	def get_default_league(self, user_id: str) -> Optional[Dict[str, Any]]:
 		"""Return the user's preferred default league/team if set."""
