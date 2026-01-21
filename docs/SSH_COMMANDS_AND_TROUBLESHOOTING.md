@@ -12,6 +12,20 @@
    brew services restart streamlit    # only if you run Streamlit locally
    ```
 3. Confirm Syncthing is listening on both GUI ports:
+5. The usual ports in use (run `lsof -iTCP -sTCP:LISTEN -nP` to confirm):
+   ```
+   5000, 7000, 52674 (ControlCenter / rapportd)
+   17600, 17603 (Dropbox loopback)
+   7265 (Raycast)
+   52352, 61791, 63440 (Cursor helpers)
+   57512 (Chrome/Google)
+   8384 (local Syncthing GUI)
+   8385 (VPS Syncthing tunnel listener)
+   22000 (Syncthing peer sync)
+   ```
+   Pick a different port (e.g., `12345` or `18080`) before you start/forward Streamlit so there’s no conflict. Always re-run `lsof` before launching a new tunnel to verify the port is free.
+6. Start the Syncthing tunnel to the VPS GUI:
+   `ssh -L 8385:127.0.0.1:8385 fantrax-vps`
    ```
    ps -ef | grep syncthing
    lsof -i :8384
@@ -36,7 +50,13 @@
   2. `hogan` owns the Syncthing configuration under `/home/hogan/.local/state/syncthing` and is the user `syncthing@hogan` runs as. 
 - When you run `syncthing@hogan`, systemd drops privileges into the `hogan` user so Syncthing keeps its state isolated; the service will fail (`217/USER`) if that user doesn’t exist. You should `sudo systemctl start syncthing@hogan` as root but never run Syncthing directly as root. When debugging, switch to `hogan` via `sudo -iu hogan` if you need to inspect its home directory or configuration files.
 
-1. Open the Streamlit tunnel: `ssh -L 8501:127.0.0.1:8501 fantrax-vps`
+1. If you run Streamlit locally on another port (e.g., `12345`), start it with the port flag:
+   ```
+   cd /Users/hogan/FantraxAPI
+   PYTHONPATH=/Users/hogan/FantraxAPI streamlit run apps/auth_login/overview.py --server.address 127.0.0.1 --server.port 12345
+   ```
+   Then tunnel whichever port you used (`12345` in this example) instead of `8501`.
+2. Open the Streamlit tunnel: `ssh -L 8501:127.0.0.1:8501 fantrax-vps`
    - The browser now reaches the VPS Streamlit UI through `http://127.0.0.1:8501/conditional_swaps`. If it says “Connection failed with status 0,” re-run the tunnel or restart the service (see below).
 2. From the VPS shell (`ssh fantrax-vps`):
    ```

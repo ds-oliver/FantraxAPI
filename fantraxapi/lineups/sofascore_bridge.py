@@ -14,7 +14,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, Optional, Set
 
 from fantraxapi.lineups.conditional_swaps import LineupStatus, PlayerLineupInfo
 from fantraxapi.objs import Roster, RosterRow
@@ -232,6 +232,25 @@ def _load_schedule_map(
         except Exception as exc:
             logger.warning("[sofascore-bridge] Failed reading %s: %s", path, exc)
     return mapping, team_index, event_team_map
+
+
+def _collect_lineup_event_ids(lineups_dir: Path) -> Set[int]:
+    event_ids: Set[int] = set()
+    if not lineups_dir.exists():
+        return event_ids
+    for path in sorted(lineups_dir.glob("*.json")):
+        try:
+            with path.open(encoding="utf-8") as fh:
+                payload = json.load(fh)
+        except Exception:
+            continue
+        event_id = payload.get("event_id")
+        if isinstance(event_id, (int, float)):
+            try:
+                event_ids.add(int(event_id))
+            except Exception:
+                continue
+    return event_ids
 
 
 def _missing_reason_to_status(reason: Optional[int]) -> LineupStatus:
@@ -509,6 +528,33 @@ def _collect_player_lineup_context(
     if schedule_event_id is not None and sofascore_id is not None:
         snapshot = (event_index.get(schedule_event_id) or {}).get(int(sofascore_id))
 
+    if snapshot is None and sofascore_id is not None:
+        fallback_event_id: Optional[int] = None
+        fallback_snapshot: Optional[_SofaPlayerSnapshot] = None
+        for eid, snaps in event_index.items():
+            cand = snaps.get(int(sofascore_id))
+            if not cand:
+                continue
+            if fallback_snapshot is None:
+                fallback_event_id = eid
+                fallback_snapshot = cand
+                continue
+            if cand.kickoff and fallback_snapshot.kickoff:
+                if cand.kickoff > fallback_snapshot.kickoff:
+                    fallback_event_id = eid
+                    fallback_snapshot = cand
+        if fallback_snapshot:
+            snapshot = fallback_snapshot
+            schedule_event_id = fallback_event_id
+            schedule_kickoff = fallback_snapshot.kickoff
+            if schedule_event_id and schedule_kickoff:
+                schedule_hit = (schedule_event_id, schedule_kickoff)
+            logger.info(
+                "[lineup-resolver] fallback snapshot match for %s event=%s",
+                fantrax_id,
+                schedule_event_id,
+            )
+
     already_played_current_round = bool(
         snapshot and snapshot.kickoff and snapshot.kickoff <= now
     )
@@ -653,7 +699,8 @@ def debug_player_lineup_context(
     schedule_map, schedule_by_team, event_team_map = _load_schedule_map(
         schedule_iterable, round_filter=round_hint
     )
-    allowed_event_ids = {event_id for event_id, _ in schedule_by_team.values()}
+    lineup_event_ids = _collect_lineup_event_ids(lineups_dir)
+    allowed_event_ids = {event_id for event_id, _ in schedule_by_team.values()} | lineup_event_ids
     event_index = _build_sofascore_index(
         lineups_dir=lineups_dir,
         schedule_map=schedule_map,
@@ -754,7 +801,8 @@ def build_lineup_info_by_player(
         schedule_iterable,
         round_filter=round_hint,
     )
-    allowed_event_ids = {event_id for event_id, _ in schedule_by_team.values()}
+    lineup_event_ids = _collect_lineup_event_ids(lineups_dir)
+    allowed_event_ids = {event_id for event_id, _ in schedule_by_team.values()} | lineup_event_ids
     event_index = _build_sofascore_index(
         lineups_dir=lineups_dir,
         schedule_map=schedule_map,
@@ -845,16 +893,18 @@ def build_lineup_info_by_player(
                     event_id,
                     snapshot.source_path.name if snapshot else None,
                 )
-        if status == LineupStatus.UNKNOWN and stats["no_kickoff"] <= 5:
-            logger.info(
-                "[unknown-status] %s (team=%s, sofascore_id=%s, schedule_event=%s, snapshot=%s, kickoff=%s)",
-                getattr(getattr(row, "player", None), "name", fantrax_id),
-                team_name,
-                getattr(snapshot, "sofascore_id", None) if snapshot else None,
-                event_id,
-                getattr(snapshot, "source_path", None),
-                kickoff,
-            )
+    if status == LineupStatus.UNKNOWN and stats["no_kickoff"] <= 5:
+        logger.info(
+            "[unknown-status] %s (team=%s, sofascore_id=%s, schedule_event=%s, snapshot=%s, kickoff=%s)",
+            getattr(getattr(row, "player", None), "name", fantrax_id),
+            team_name,
+            getattr(snapshot, "sofascore_id", None) if snapshot else None,
+            event_id,
+            getattr(snapshot, "source_path", None),
+            kickoff,
+        )
+    if schedule_event_id is not None and schedule_kickoff:
+        schedule_hit = (schedule_event_id, schedule_kickoff)
         # If we have a scheduled event and still no SofaScore status (not in starters/subs/missing),
         # treat as bench rather than unknown so downstream displays stay consistent.
         if event_id and player_info.ss_status == LineupStatus.UNKNOWN:
