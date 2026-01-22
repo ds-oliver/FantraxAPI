@@ -4,8 +4,40 @@
 - Follow the sections in the order below: prepare your Mac shell, manage the VPS Streamlit service, keep Syncthing healthy, and debug if things break.
 - A **tunnel** (`ssh -L local:127.0.0.1:remote host`) forwards a loopback port from the VPS back to your Mac. You benefit from tunnels whenever the remote UI binds only to `127.0.0.1`, preventing direct access from the internet. The tunnel lets your browser hit the service via your local `127.0.0.1` port while SSH securely proxies the traffic.
 
-## Step 1 – Mac shell (`zsh`) prep
+## Step 1 – Mac shell (`zsh`) prep (fresh restart checklist)
+When you boot your Mac and need to rebuild the working environment from scratch:
+1. Install any Homebrew dependencies (if you haven’t already):  
+   `brew install syncthing streamlit`
+2. Start the services you rely on:
+   ```
+   brew services start syncthing
+   brew services start streamlit   # only if you intend to run Streamlit locally
+   ```
+3. Ensure the tunnels/ports are free:
+   ```
+   lsof -iTCP -sTCP:LISTEN -nP
+   ```
+   Use the output (see list above) to choose an unused port (e.g., `12345`) before launching Streamlit locally or opening tunnels.
+4. Run `git status -sb` to confirm a clean tree, then push/deploy as needed (see cleanup instructions below).
+5. Launch any local Streamlit instance on the chosen port:
+   ```
+   cd /Users/hogan/FantraxAPI
+   PYTHONPATH=/Users/hogan/FantraxAPI streamlit run apps/auth_login/overview.py --server.address 127.0.0.1 --server.port 12345
+   ```
+6. Open the Syncthing tunnel (`ssh -L 8385:127.0.0.1:8385 fantrax-vps`) and visit `http://127.0.0.1:8385/`.
+7. Open the Streamlit tunnel (`ssh -L 8501:127.0.0.1:8501 fantrax-vps`) to access the VPS UI—make sure you already ran the Step 2 routine (`BRANCH=testing /opt/FantraxAPI/bin/pull_restart.sh` plus `sudo systemctl restart fantrax-pull-restart.service`) so the remote Streamlit app is listening before you tunnel it.
 1. Enter the repo: `cd /Users/hogan/FantraxAPI`
+2. Check git status and interpret the working tree:
+   ```
+   git status -sb
+   ```
+   - The “Working tree” message you sometimes see (“Existing runtime artifacts (rules JSON, locks, etc.) remain untracked/dirty…”) means temporary files created by Syncthing or the scripts are present but intentionally untracked. They should not be committed—keep them listed so you know what to clean before a commit.
+   - When you plan to commit, clean stale SofaScore/syncthing artifacts with:
+     ```
+     git clean -fd data/sofascore/lineups data/sofascore/schedules
+     git clean -fd data/sofascore/*.lock
+     ```
+   - After cleaning, rerun `git status -sb` to confirm a clean staging area.
 2. Restart/debug local services if needed:
    ```
    brew services restart syncthing
@@ -58,7 +90,7 @@
    Then tunnel whichever port you used (`12345` in this example) instead of `8501`.
 2. Open the Streamlit tunnel: `ssh -L 8501:127.0.0.1:8501 fantrax-vps`
    - The browser now reaches the VPS Streamlit UI through `http://127.0.0.1:8501/conditional_swaps`. If it says “Connection failed with status 0,” re-run the tunnel or restart the service (see below).
-2. From the VPS shell (`ssh fantrax-vps`):
+2. From the VPS shell (`ssh fantrax-vps`), run the auto-pull/restart script that fetches the `testing` branch before reloading Streamlit:
    ```
    sudo systemctl status fantrax-pull-restart.service
    BRANCH=testing /opt/FantraxAPI/bin/pull_restart.sh
@@ -66,6 +98,8 @@
    tail -n 40 /opt/FantraxAPI/logs/pull_restart.log
    tail -n 40 /opt/FantraxAPI/logs/streamlit.out
    ```
+   - This script executes `git fetch origin testing` internally, replaces the working tree, and restarts the managed Streamlit service, so it’s the recommended way to pull the latest repo changes onto the VPS. There’s otherwise no need to manually run `git pull` on the server; just push locally and rerun the script.
+3. Confirm you can tunnel the VPS Streamlit UI after the restart (`ssh -L 8501:127.0.0.1:8501 fantrax-vps`) and visit `http://127.0.0.1:8501/` to ensure the app is live.
 3. Confirm Streamlit is actually bound to 127.0.0.1:8501 before relying on the tunnel:
    ```
    sudo lsof -i :8501
@@ -79,7 +113,11 @@
    - Ensure port `8501` is free or the script exits with “Port 8501 is not available.”
 
 ## Step 3 – Syncthing & clean-up
-1. Check the local Syncthing GUI (`http://127.0.0.1:8384/`):
+1. If your Mac was rebooted, start Syncthing before anything else:
+   ```
+   brew services start syncthing
+   ```
+   Then check the local Syncthing GUI (`http://127.0.0.1:8384/`):
    - `sofascore` folder should be send-only.
    - The `vps device` should show `Connected` with at least one TCP socket.
    - Health status should show no warnings (especially no “insufficient space” errors).
@@ -89,7 +127,13 @@
    ```
    git clean -fd data/sofascore/lineups data/sofascore/schedules
    ```
-4. Inspect VPS Syncthing logs when you need more detail:
+4. After a VPS reboot, ensure the remote Syncthing service runs under `hogan`:
+   ```
+   ssh fantrax-vps
+   sudo systemctl start syncthing@hogan
+   sudo systemctl status syncthing@hogan
+   ```
+   Then inspect logs when necessary:
    ```
    ssh fantrax-vps
    sudo systemctl status syncthing@hogan

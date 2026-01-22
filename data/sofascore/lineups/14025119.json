@@ -136,6 +136,12 @@
         "name": "Fabian Schär",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 866469,
+        "name": "Bruno Guimarães",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
@@ -262,8 +268,26 @@
         "name": "Amadou Onana",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 808590,
+        "name": "Leon Bailey",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1631879,
+        "name": "Alysson",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 158263,
+        "name": "Emiliano Martínez",
+        "position": "G",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-01-21 20:00:21+0000"
+  "fetched_at_utc": "2026-01-22 19:00:46+0000"
 }

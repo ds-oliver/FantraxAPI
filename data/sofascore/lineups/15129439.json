@@ -124,6 +124,12 @@
         "name": "Tim Iroegbunam",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 189061,
+        "name": "Jack Grealish",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
@@ -241,5 +247,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-01-21 20:00:23+0000"
+  "fetched_at_utc": "2026-01-22 19:00:49+0000"
 }

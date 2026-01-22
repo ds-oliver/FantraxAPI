@@ -280,8 +280,20 @@
         "name": "Roméo Lavia",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 982780,
+        "name": "Cole Palmer",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 962053,
+        "name": "Filip Jørgensen",
+        "position": "G",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-01-21 20:00:20+0000"
+  "fetched_at_utc": "2026-01-22 19:00:45+0000"
 }

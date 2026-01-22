@@ -121,7 +121,7 @@ class ConditionalSwapRule(BaseModel):
     class Config:
         use_enum_values = True
 
-    @validator("backups", pre=True, always=True)
+    @validator("backups", pre=True, always=True, allow_reuse=True)
     def _validate_backups(cls, value: Sequence[BackupOption], values) -> Sequence[BackupOption]:
         action_type = values.get("action_type", RuleActionType.LINEUP_SWAP)
         if action_type == RuleActionType.LINEUP_SWAP:
@@ -139,7 +139,7 @@ class ConditionalSwapRule(BaseModel):
         # FA rules ignore backups
         return []
 
-    @validator("fa_add_scorer_id", "fa_add_position_id", always=True)
+    @validator("fa_add_scorer_id", "fa_add_position_id", always=True, allow_reuse=True)
     def _validate_fa_fields(cls, v, values, field):
         action_type = values.get("action_type", RuleActionType.LINEUP_SWAP)
         if action_type == RuleActionType.FA_CLAIM_DROP:

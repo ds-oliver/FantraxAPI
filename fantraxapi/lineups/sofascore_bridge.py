@@ -11,6 +11,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import yaml
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,7 +22,8 @@ from fantraxapi.objs import Roster, RosterRow
 from fantraxapi.player_mapping import PlayerMappingManager
 
 logger = logging.getLogger(__name__)
-_LOG_PATH = Path("data/logs/conditional_swaps.log")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+_LOG_PATH = REPO_ROOT / "data" / "logs" / "conditional_swaps.log"
 if not any(getattr(h, "baseFilename", None) == str(_LOG_PATH) for h in logger.handlers):
     _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     handler = logging.FileHandler(_LOG_PATH)
@@ -29,13 +31,15 @@ if not any(getattr(h, "baseFilename", None) == str(_LOG_PATH) for h in logger.ha
         logging.Formatter("%(asctime)s %(levelname)s [sofascore_bridge] %(message)s")
     )
     logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
-DEFAULT_LINEUPS_DIR = Path("data/sofascore/lineups")
+DEFAULT_LINEUPS_DIR = REPO_ROOT / "data" / "sofascore" / "lineups"
 DEFAULT_SCHEDULE_PATHS = (
-    Path("data/sofascore/schedules/17_76986_upcoming.csv"),
-    Path("data/sofascore/schedules/17_76986_last.csv"),
+    REPO_ROOT / "data" / "sofascore" / "schedules" / "17_76986_upcoming.csv",
+    REPO_ROOT / "data" / "sofascore" / "schedules" / "17_76986_last.csv",
 )
+CLUB_TEAM_MAPPINGS_PATH = REPO_ROOT / "config" / "club_team_mappings.yaml"
+TEAM_MAPPINGS_PATH = REPO_ROOT / "config" / "team_mappings.yaml"
 
 # Canonicalization of team names between Fantrax and SofaScore schedules.
 # Keys: lower-cased Fantrax teamName/teamShortName or other variants.
@@ -82,6 +86,12 @@ TEAM_NAME_ALIASES: dict[str, str] = {
     "leeds utd": "leeds united",
     "leeds united": "leeds united",
     "sun": "sunderland",
+    # Fantrax short codes that differ from SofaScore canonical codes.
+    "ar": "arsenal",
+    "brf": "brentford",
+    "fu": "fulham",
+    "not": "nottingham forest",
+    "wh": "west ham united",
 }
 
 TEAM_SHORTCODES: dict[str, str] = {
@@ -128,13 +138,82 @@ TEAM_SHORTCODES: dict[str, str] = {
 }
 TEAM_CODE_ALIASES: dict[str, str] = {code.lower(): name for name, code in TEAM_SHORTCODES.items()}
 
+_TEAM_ALIAS_CACHE: Optional[dict[str, str]] = None
+
+
+def _load_team_aliases() -> dict[str, str]:
+    """
+    Load team name/code aliases from config mappings to canonical SofaScore names.
+    """
+    global _TEAM_ALIAS_CACHE
+    if _TEAM_ALIAS_CACHE is not None:
+        return _TEAM_ALIAS_CACHE
+    aliases: dict[str, str] = {}
+
+    def _normalize_key(val: Optional[str]) -> Optional[str]:
+        if not val:
+            return None
+        cleaned = "".join(ch for ch in str(val).lower() if ch.isalnum() or ch in (" ", "&"))
+        cleaned = " ".join(cleaned.split())
+        return cleaned or None
+
+    try:
+        with TEAM_MAPPINGS_PATH.open() as fh:
+            code_cfg = yaml.safe_load(fh) or {}
+        for std, data in code_cfg.items():
+            canonical = _normalize_key(std)
+            if not canonical:
+                continue
+            variations = data.get("variations", []) if isinstance(data, dict) else []
+            for entry in [std, *variations]:
+                key = _normalize_key(entry)
+                if key:
+                    aliases[key] = canonical
+    except Exception:
+        pass
+
+    try:
+        with CLUB_TEAM_MAPPINGS_PATH.open() as fh:
+            club_cfg = yaml.safe_load(fh) or {}
+        for std, data in club_cfg.items():
+            if not isinstance(data, dict):
+                continue
+            canonical = _normalize_key(data.get("long_name") or std)
+            if not canonical:
+                continue
+            keys = [std, data.get("long_name"), data.get("short_name")]
+            keys += data.get("long_name_variations", []) or []
+            keys += data.get("short_name_variations", []) or []
+            keys += data.get("nicknames", []) or []
+            for entry in keys:
+                key = _normalize_key(entry)
+                if key:
+                    aliases[key] = canonical
+    except Exception:
+        pass
+
+    _TEAM_ALIAS_CACHE = aliases
+    return aliases
+
 
 def _normalize_team_name(raw: str) -> str:
     """
     Normalize a team name to the canonical key used in schedule_by_team.
     """
     key = (raw or "").strip().lower()
-    return TEAM_NAME_ALIASES.get(key, TEAM_CODE_ALIASES.get(key, key))
+    if key.startswith("@"):
+        key = key[1:].strip()
+    if key.startswith("vs "):
+        key = key[3:].strip()
+    if not key:
+        return key
+    alias_map = _load_team_aliases()
+    mapped = TEAM_NAME_ALIASES.get(key)
+    if mapped:
+        return mapped
+    mapped = TEAM_CODE_ALIASES.get(key) or alias_map.get(key) or key
+    mapped = TEAM_CODE_ALIASES.get(mapped, mapped)
+    return TEAM_NAME_ALIASES.get(mapped, mapped)
 
 
 def _team_code(raw: Optional[str]) -> Optional[str]:
@@ -145,13 +224,15 @@ def _team_code(raw: Optional[str]) -> Optional[str]:
     if raw is None:
         return None
     cleaned = str(raw).strip()
+    if cleaned.startswith("@"):
+        cleaned = cleaned[1:].strip()
     if not cleaned:
         return None
-    if len(cleaned) <= 4 and cleaned.replace(" ", "").isalpha():
-        return cleaned.upper()
     canonical = _normalize_team_name(cleaned)
     if canonical in TEAM_SHORTCODES:
         return TEAM_SHORTCODES[canonical]
+    if len(cleaned) <= 4 and cleaned.replace(" ", "").isalpha():
+        return cleaned.upper()
     if canonical.replace(" ", "") and len(canonical) >= 3:
         return canonical[:3].upper()
     return None
@@ -479,15 +560,21 @@ def _collect_player_lineup_context(
     if fantrax_kickoff and fantrax_kickoff < now:
         fantrax_kickoff = None
 
+    scorer = getattr(row, "_raw", {}) or {}
+    scorer_block = scorer.get("scorer") or {}
+
     raw_team_name = (
         getattr(player, "team_name", None)
         or getattr(player, "team_short_name", None)
+        or scorer_block.get("teamName")
+        or scorer_block.get("teamShortName")
         or ""
     )
     if not raw_team_name:
         scorer_raw = getattr(row, "_raw", {}) or {}
         scorer = scorer_raw.get("scorer") or {}
         raw_team_name = scorer.get("teamShortName") or scorer.get("teamName") or ""
+    logger.debug("[lineup-resolve] raw_team_name=%r scorer=%r", raw_team_name, scorer_block)
     team_name = _normalize_team_name(raw_team_name)
 
     schedule_hit: Optional[tuple[int, datetime]] = None
@@ -528,7 +615,7 @@ def _collect_player_lineup_context(
     if schedule_event_id is not None and sofascore_id is not None:
         snapshot = (event_index.get(schedule_event_id) or {}).get(int(sofascore_id))
 
-    if snapshot is None and sofascore_id is not None:
+    if snapshot is None and sofascore_id is not None and schedule_event_id is None:
         fallback_event_id: Optional[int] = None
         fallback_snapshot: Optional[_SofaPlayerSnapshot] = None
         for eid, snaps in event_index.items():
@@ -765,6 +852,8 @@ def debug_player_lineup_context(
     return {
         "fantrax_player_id": debug_ctx.get("fantrax_player_id"),
         "sofascore_player_id": debug_ctx.get("sofascore_player_id"),
+        "team_name_raw": debug_ctx.get("team_name_raw"),
+        "team_name_normalized": debug_ctx.get("team_name"),
         "snapshot_event_id": snapshot_event_id,
         "snapshot_confirmed": getattr(snapshot, "confirmed", None),
         "snapshot_role": getattr(snapshot, "role", None) or "none",
@@ -840,6 +929,7 @@ def build_lineup_info_by_player(
         if isinstance(team_norm, str):
             team_norm = team_norm.strip().lower()
 
+        schedule_kickoff: Optional[datetime] = None
         if event_id is not None:
             schedule_kickoff = schedule_map.get(event_id)
             if schedule_kickoff and not player_info.kickoff:
@@ -893,34 +983,33 @@ def build_lineup_info_by_player(
                     event_id,
                     snapshot.source_path.name if snapshot else None,
                 )
-    if status == LineupStatus.UNKNOWN and stats["no_kickoff"] <= 5:
-        logger.info(
-            "[unknown-status] %s (team=%s, sofascore_id=%s, schedule_event=%s, snapshot=%s, kickoff=%s)",
-            getattr(getattr(row, "player", None), "name", fantrax_id),
-            team_name,
-            getattr(snapshot, "sofascore_id", None) if snapshot else None,
-            event_id,
-            getattr(snapshot, "source_path", None),
-            kickoff,
-        )
-    if schedule_event_id is not None and schedule_kickoff:
-        schedule_hit = (schedule_event_id, schedule_kickoff)
-        # If we have a scheduled event and still no SofaScore status (not in starters/subs/missing),
-        # treat as bench rather than unknown so downstream displays stay consistent.
-        if event_id and player_info.ss_status == LineupStatus.UNKNOWN:
-            player_info.ss_status = LineupStatus.BENCH
-            if player_info.status == LineupStatus.UNKNOWN:
-                player_info.status = LineupStatus.BENCH
+        if status == LineupStatus.UNKNOWN and stats["no_kickoff"] <= 5:
+            logger.info(
+                "[unknown-status] %s (team=%s, sofascore_id=%s, schedule_event=%s, snapshot=%s, kickoff=%s)",
+                getattr(getattr(row, "player", None), "name", fantrax_id),
+                team_name,
+                getattr(snapshot, "sofascore_id", None) if snapshot else None,
+                event_id,
+                getattr(snapshot, "source_path", None),
+                kickoff,
+            )
+        if event_id is not None and schedule_kickoff:
+            # If we have a scheduled event and still no SofaScore status (not in starters/subs/missing),
+            # treat as bench rather than unknown so downstream displays stay consistent.
+            if player_info.ss_status == LineupStatus.UNKNOWN:
+                player_info.ss_status = LineupStatus.BENCH
+                if player_info.status == LineupStatus.UNKNOWN:
+                    player_info.status = LineupStatus.BENCH
 
-        if event_id and event_confirmed_map.get(event_id):
-            if player_info.ss_conf_status is None:
-                if player_info.ss_pred_status is not None:
-                    player_info.ss_status = LineupStatus.BENCH
-                    if player_info.status == player_info.ss_pred_status:
-                        player_info.status = LineupStatus.BENCH
-                if player_info.ss_status is None or player_info.ss_status == LineupStatus.UNKNOWN:
-                    player_info.ss_status = LineupStatus.BENCH
-                player_info.ss_conf_status = player_info.ss_status
+            if event_confirmed_map.get(event_id):
+                if player_info.ss_conf_status is None:
+                    if player_info.ss_pred_status is not None:
+                        player_info.ss_status = LineupStatus.BENCH
+                        if player_info.status == player_info.ss_pred_status:
+                            player_info.status = LineupStatus.BENCH
+                    if player_info.ss_status is None or player_info.ss_status == LineupStatus.UNKNOWN:
+                        player_info.ss_status = LineupStatus.BENCH
+                    player_info.ss_conf_status = player_info.ss_status
 
         info[fantrax_id] = player_info
         stats["total"] += 1

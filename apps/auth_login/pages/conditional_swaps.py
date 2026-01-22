@@ -5,6 +5,7 @@ Conditional swaps page – define tiered backup rules per Fantrax period.
 from __future__ import annotations
 
 import csv
+import html
 import json
 import logging
 import os
@@ -12,7 +13,7 @@ import unicodedata
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 import pandas as pd
@@ -130,6 +131,78 @@ st.info(
     "conditional anchors because you can queue backups that play later. Adjust your lineup below before "
     "defining swap rules."
 )
+
+readme_fields_md = """
+This page **writes directly to your Fantrax roster** (immediate swaps and optimized lineup applies).
+Double-check the period and lineup before you click any action buttons.
+
+**Page flow**
+1. Select the Fantrax period (gameweek) to target.
+2. Review the terminal lineup feed and any lineup status changes.
+3. Review the suggested optimized XI and apply only if needed.
+4. Make a single, immediate player-for-player swap.
+5. Review the Current Lineup Snapshot; this status feeds conditional swaps and optimization.
+6. Review Suggested Conditional Swaps and queue rules.
+
+**Lineup confirmation sources**
+- SofaScore is the recommended confirmation source (faster and more consistent).
+- Fantrax icons/flags can be delayed or inconsistent; use them as a fallback.
+
+**Terms**
+- KOS = Kickoff Slot: the chronological kickoff slot for the gameweek (1 = earliest kickoff, 2 = next, etc). Same-KOS swaps mean both players share the same kickoff time.
+- FX = Fantrax
+- SS = SofaScore
+
+**Auto lineup swaps logic (how the engine behaves)**
+- Conditional swaps only act on the current active/reserve status at the time the rule fires.
+- Rules are evaluated in priority order per active player; the first legal swap wins.
+- Fantrax legality (positional mins/maxes, locks, kickoff timing) is enforced during confirmation.
+- Lineup optimization and conditional swaps are separate: optimization sets your starting XI,
+  conditional swaps react to lineup status and kickoff timing after that.
+
+**Swap types and priority**
+- Auto: system-generated swaps based on kickoff timing, projections, and eligibility.
+- Recommended: suggested swaps you can review and queue.
+- Manual: swaps you create directly.
+- Priority: Auto runs first when enabled; Recommended and Manual are only used when Auto is off
+  (so avoid building Manual rules if you plan to keep Auto toggled on).
+
+**Live Google Sheet fields (TDS/@Draftlad)**
+- `TDS` (projGS) in the lineup feed.
+- `ProjFPts` and `ProjGS` in optimized lineup tables and suggested swaps.
+
+These fields are pulled live from a Google Sheet maintained by TDS/@Draftlad and may be newer than
+the Toolkit app, so mismatches vs the Toolkit can be observed.
+""".strip()
+
+readme_dialog_md = """
+**Heads up:** This page makes **live changes** to your Fantrax roster.
+
+Please read the expanded "Read This First" section for the full page flow and field details,
+especially the live Google Sheet fields (TDS/@Draftlad) that may differ from the Toolkit app.
+""".strip()
+
+@st.dialog("Read This First: Conditional Swaps are Live")
+def _show_conditional_swaps_dialog() -> None:
+    st.markdown(readme_dialog_md)
+    st.checkbox("Don't remind me again this session", key="conditional_swaps_dont_remind")
+    if st.button("Continue", type="primary"):
+        st.session_state["conditional_swaps_notice_seen"] = True
+        if st.session_state.get("conditional_swaps_dont_remind"):
+            st.session_state["conditional_swaps_notice_suppressed"] = True
+        st.rerun()
+
+if not st.session_state.get("conditional_swaps_notice_seen") and not st.session_state.get(
+    "conditional_swaps_notice_suppressed"
+):
+    _show_conditional_swaps_dialog()
+
+with st.expander("Read This First (Live Fantrax Changes)", expanded=True):
+    st.warning(
+        "Actions on this page can change your Fantrax lineup immediately. "
+        "Review the period and lineups carefully before applying swaps or optimized lineups."
+    )
+    st.markdown(readme_fields_md)
 
 
 # ---------------------------------------------------------------------
@@ -866,11 +939,54 @@ def _team_code_for_display(raw: Optional[str]) -> str:
     if candidate:
         return candidate
     trimmed = str(raw).strip()
+    if trimmed.startswith("@"):
+        trimmed = trimmed[1:].strip()
     if not trimmed:
         return "-"
     if len(trimmed) <= 4 and trimmed.replace(" ", "").isalpha():
         return trimmed.upper()
     return trimmed[:3].upper()
+
+
+@st.cache_data(show_spinner=False)
+def _load_team_logo_map(path: Path = Path("players.csv")) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    logo_map: dict[str, str] = {}
+    try:
+        with path.open("r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                logo = (row.get("headshot_url") or "").strip()
+                if not logo:
+                    continue
+                team_name = (row.get("team_name") or "").strip()
+                team_short = (row.get("team_short_name") or "").strip()
+                if team_name and team_name not in logo_map:
+                    logo_map[team_name] = logo
+                if team_short and team_short not in logo_map:
+                    logo_map[team_short] = logo
+    except Exception as exc:
+        logger.info("Unable to load team logo map: %s", exc)
+    return logo_map
+
+
+def _team_logo_url(team_name: Optional[str], logo_map: dict[str, str]) -> Optional[str]:
+    if not team_name:
+        return None
+    if team_name in logo_map:
+        return logo_map[team_name]
+    alias = TEAM_NAME_ALIASES.get(str(team_name).strip().lower())
+    if alias and alias in logo_map:
+        return logo_map[alias]
+    try:
+        code = _team_code(team_name) if callable(_team_code) else None
+    except Exception:
+        code = None
+    if code and code in logo_map:
+        return logo_map[code]
+    display = _team_code_for_display(team_name)
+    return logo_map.get(display)
 
 
 def _parse_fetch_timestamp(raw: Optional[str]) -> Optional[datetime]:
@@ -937,41 +1053,55 @@ def _build_gameweek_meta(
         return None
     kickoff_to_index = {ko: idx + 1 for idx, ko in enumerate(kickoffs)}
     days: dict[datetime.date, list[datetime]] = {}
-    event_keys_by_kickoff: dict[datetime, set[str]] = {}
+    matches_by_kickoff: dict[datetime, dict[str, dict]] = {}
     for ko in kickoffs:
         days.setdefault(ko.date(), []).append(ko)
     for info in lineup_info_by_player.values():
         if not info or not info.kickoff:
             continue
         kickoff = info.kickoff
-        key = None
-        if getattr(info, "event_id", None) is not None:
-            key = f"event:{info.event_id}"
+        team = getattr(info, "team_name", None)
+        opp = getattr(info, "opponent_name", None)
+        if not team or not opp:
+            continue
+        is_home = getattr(info, "is_home", None)
+        if is_home is True:
+            home_team, away_team = team, opp
+        elif is_home is False:
+            home_team, away_team = opp, team
         else:
-            team = getattr(info, "team_name", None)
-            opp = getattr(info, "opponent_name", None)
-            if team and opp:
-                pair = "|".join(sorted([str(team), str(opp)]))
-                key = f"teams:{pair}"
-        if key is None:
-            key = f"player:{getattr(info, 'fantrax_player_id', '')}"
-        event_keys_by_kickoff.setdefault(kickoff, set()).add(key)
+            home_team, away_team = team, opp
+        event_id = getattr(info, "event_id", None)
+        key = f"event:{event_id}" if event_id is not None else f"teams:{home_team}|{away_team}"
+        matches_by_kickoff.setdefault(kickoff, {})[key] = {
+            "home": str(home_team),
+            "away": str(away_team),
+            "event_id": event_id,
+        }
     gw_payload: dict[str, dict] = {
         gw_label: {
             "days": len(days),
             "kickoff_slots": len(kickoffs),
         }
     }
-    for day_idx, day_key in enumerate(sorted(days.keys()), start=1):
+    day_index_map = {day_key: idx for idx, day_key in enumerate(sorted(days.keys()), start=1)}
+    for day_key in sorted(days.keys()):
+        day_idx = day_index_map[day_key]
         md_key = f"MD {day_idx}"
         day_entries: dict[str, dict] = {}
         for ko in sorted(days[day_key]):
             kos_idx = kickoff_to_index.get(ko)
             label = f"KOS {kos_idx}" if kos_idx else "KOS ?"
-            count = len(event_keys_by_kickoff.get(ko, set()))
+            matches = list(matches_by_kickoff.get(ko, {}).values())
+            matches.sort(key=lambda m: str(m.get("home") or "").lower())
+            for idx, match in enumerate(matches):
+                letter = chr(ord("a") + idx) if idx < 26 else str(idx + 1)
+                match["match_id"] = f"{day_idx}_{kos_idx or '?'}{letter}"
+            count = len(matches)
             day_entries[label] = {
                 "kickoff": ko.strftime("%Y-%m-%d %H:%M UTC"),
                 "count": count,
+                "matches": matches,
             }
         gw_payload[gw_label][md_key] = day_entries
     return gw_payload
@@ -1012,7 +1142,14 @@ def _load_schedule_events_from_cache(
                         if not event_id or event_id in seen:
                             continue
                         seen.add(event_id)
-                        events.append({"event_id": event_id, "kickoff": kickoff})
+                        events.append(
+                            {
+                                "event_id": event_id,
+                                "kickoff": kickoff,
+                                "home_team": row.get("home_team"),
+                                "away_team": row.get("away_team"),
+                            }
+                        )
             except Exception:
                 continue
         return events
@@ -1094,14 +1231,33 @@ def _fetch_gameweek_events(inferred_round: Optional[str]) -> Tuple[List[dict], O
                 if event_id in seen:
                     continue
                 seen.add(event_id)
-                events.append({"event_id": event_id, "kickoff": kickoff})
+                home_team = (ev.get("homeTeam") or {}).get("name") or (ev.get("homeTeam") or {}).get(
+                    "shortName"
+                )
+                away_team = (ev.get("awayTeam") or {}).get("name") or (ev.get("awayTeam") or {}).get(
+                    "shortName"
+                )
+                events.append(
+                    {
+                        "event_id": event_id,
+                        "kickoff": kickoff,
+                        "home_team": home_team,
+                        "away_team": away_team,
+                    }
+                )
 
         _collect(False)
         _collect(True)
         if cached_events:
             merged = {ev["event_id"]: ev for ev in cached_events}
             for ev in events:
-                merged.setdefault(ev["event_id"], ev)
+                existing = merged.get(ev["event_id"])
+                if not existing:
+                    merged[ev["event_id"]] = ev
+                    continue
+                for key, value in ev.items():
+                    if value and not existing.get(key):
+                        existing[key] = value
             events = list(merged.values())
         source = "live"
         if cache_source and cached_events:
@@ -1118,35 +1274,177 @@ def _build_gameweek_meta_from_events(events: List[dict], gw_label: str) -> Optio
         return None
     kickoff_to_index = {ko: idx + 1 for idx, ko in enumerate(kickoffs)}
     days: dict[datetime.date, list[datetime]] = {}
-    event_ids_by_kickoff: dict[datetime, set[int]] = {}
+    events_by_kickoff: dict[datetime, list[dict]] = {}
     for ev in events:
         kickoff = ev.get("kickoff")
         if not kickoff:
             continue
         days.setdefault(kickoff.date(), []).append(kickoff)
-        event_id = ev.get("event_id")
-        if event_id is None:
-            continue
-        event_ids_by_kickoff.setdefault(kickoff, set()).add(int(event_id))
+        events_by_kickoff.setdefault(kickoff, []).append(ev)
     gw_payload: dict[str, dict] = {
         gw_label: {
             "days": len(days),
             "kickoff_slots": len(kickoffs),
         }
     }
-    for day_idx, day_key in enumerate(sorted(days.keys()), start=1):
+    day_index_map = {day_key: idx for idx, day_key in enumerate(sorted(days.keys()), start=1)}
+    for day_key in sorted(days.keys()):
+        day_idx = day_index_map[day_key]
         md_key = f"MD {day_idx}"
         day_entries: dict[str, dict] = {}
         for ko in sorted(days[day_key]):
             kos_idx = kickoff_to_index.get(ko)
             label = f"KOS {kos_idx}" if kos_idx else "KOS ?"
-            count = len(event_ids_by_kickoff.get(ko, set()))
+            seen_keys: set[str] = set()
+            matches = []
+            for ev in events_by_kickoff.get(ko, []):
+                event_id = ev.get("event_id")
+                home_team = (ev.get("home_team") or "").strip()
+                away_team = (ev.get("away_team") or "").strip()
+                match_key = f"event:{event_id}" if event_id is not None else f"teams:{home_team}|{away_team}"
+                if match_key in seen_keys:
+                    continue
+                seen_keys.add(match_key)
+                matches.append(
+                    {
+                        "home": home_team or "-",
+                        "away": away_team or "-",
+                        "event_id": event_id,
+                    }
+                )
+            matches.sort(key=lambda m: str(m.get("home") or "").lower())
+            for idx, match in enumerate(matches):
+                letter = chr(ord("a") + idx) if idx < 26 else str(idx + 1)
+                match["match_id"] = f"{day_idx}_{kos_idx or '?'}{letter}"
+            count = len(matches)
             day_entries[label] = {
                 "kickoff": ko.strftime("%Y-%m-%d %H:%M UTC"),
                 "count": count,
+                "matches": matches,
             }
         gw_payload[gw_label][md_key] = day_entries
     return gw_payload
+
+
+def _render_gameweek_overview_table(gw_meta: dict, gw_label: str) -> None:
+    payload = gw_meta.get(gw_label)
+    if not isinstance(payload, dict):
+        return
+    logo_map = _load_team_logo_map()
+    rows: list[dict] = []
+    for md_key, day_entries in payload.items():
+        if md_key in {"days", "kickoff_slots"}:
+            continue
+        if not isinstance(day_entries, dict):
+            continue
+        for kos_label, slot in day_entries.items():
+            if not isinstance(slot, dict):
+                continue
+            kickoff = slot.get("kickoff") or ""
+            matches = slot.get("matches") or []
+            try:
+                kos_index = int(str(kos_label).split()[-1])
+            except Exception:
+                kos_index = 999
+            rows.append(
+                {
+                    "kos_label": kos_label,
+                    "kos_index": kos_index,
+                    "kickoff": kickoff,
+                    "matches": matches,
+                }
+            )
+    if not rows:
+        return
+    rows.sort(key=lambda r: r["kos_index"])
+
+    def _badge(team_name: Optional[str]) -> str:
+        label = _team_code_for_display(team_name)
+        title = html.escape(team_name or label or "-")
+        logo_url = _team_logo_url(team_name, logo_map)
+        if logo_url:
+            return (
+                "<span class='gw-team-badge' title='{title}'>"
+                "<img class='gw-team-logo' src='{logo}' alt='{label}' />"
+                "</span>"
+            ).format(title=title, logo=html.escape(logo_url), label=html.escape(label))
+        return f"<span class='gw-team-badge gw-team-fallback' title='{title}'>{html.escape(label)}</span>"
+
+    table_rows = []
+    for row in rows:
+        match_chunks = []
+        for match in row["matches"]:
+            home = match.get("home")
+            away = match.get("away")
+            match_chunks.append(
+                "<div class='gw-match'>"
+                f"{_badge(home)}<span class='gw-vs'>vs</span>{_badge(away)}"
+                "</div>"
+            )
+        matches_html = "".join(match_chunks) if match_chunks else "<span class='gw-empty'>-</span>"
+        table_rows.append(
+            "<tr>"
+            f"<td class='gw-kos'>{html.escape(str(row['kos_label']))}</td>"
+            f"<td class='gw-matches'>{matches_html}</td>"
+            f"<td class='gw-time'>{html.escape(str(row['kickoff']))}</td>"
+            "</tr>"
+        )
+
+    st.markdown(
+        """
+        <style>
+        .gw-overview-table { width: 100%; border-collapse: collapse; }
+        .gw-overview-table th, .gw-overview-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            vertical-align: top;
+            font-size: 13px;
+        }
+        .gw-overview-table { border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
+        .gw-overview-table th { text-align: left; font-weight: 600; }
+        .gw-team-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #0f172a;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            margin: 2px 4px 2px 0;
+            line-height: 16px;
+            min-width: 24px;
+            text-align: center;
+        }
+        .gw-team-logo {
+            width: 18px;
+            height: 18px;
+            vertical-align: middle;
+        }
+        .gw-team-fallback {
+            padding: 2px 8px;
+        }
+        .gw-vs {
+            margin: 0 6px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .gw-match { display: inline-block; margin-right: 10px; }
+        .gw-kos { width: 90px; font-weight: 700; }
+        .gw-time { width: 170px; color: #475569; }
+        .gw-empty { color: #94a3b8; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    table_html = (
+        "<table class='gw-overview-table'>"
+        "<thead><tr><th>KOS</th><th>Matches</th><th>Kickoff (UTC)</th></tr></thead>"
+        "<tbody>"
+        + "".join(table_rows)
+        + "</tbody></table>"
+    )
+    st.markdown(table_html, unsafe_allow_html=True)
 
 
 def _late_kos_risk(
@@ -1680,7 +1978,7 @@ player_lookup = {
     if getattr(row, "player", None) and getattr(row.player, "id", None)
 }
 
-with st.spinner("Loading lineup data..."):
+with st.spinner("Refreshing lineup data..."):
     lineup_fetch_completed_at = datetime.now(timezone.utc)
     try:
         mapping_manager = PlayerMappingManager()
@@ -1756,46 +2054,46 @@ with st.spinner("Loading lineup data..."):
         f"last live fetch={last_any.strftime('%Y-%m-%d %H:%M:%S UTC') if last_any else 'N/A'}"
     )
 
-    with st.expander("🔍 SofaScore live refresh debug"):
-        st.write("Target event kickoffs (event_id -> kickoff UTC):")
-        if event_kickoffs:
-            st.write(
-                {
-                    eid: ko.strftime("%Y-%m-%d %H:%M:%S UTC") if isinstance(ko, datetime) else str(ko)
-                    for eid, ko in event_kickoffs.items()
-                }
-            )
-        else:
-            st.write("None")
-        st.write(
-            "Last ss_refresh_meta:",
-            {k: v for k, v in ss_meta.items() if k != "_call_count"} if isinstance(ss_meta, dict) else ss_meta,
-        )
-        if last_err:
-            st.write("Last live fetch error:", str(last_err))
-        if last_debug:
-            st.write("Last live refresh debug:", str(last_debug))
+    # with st.expander("🔍 SofaScore live refresh debug"):
+    #     st.write("Target event kickoffs (event_id -> kickoff UTC):")
+    #     if event_kickoffs:
+    #         st.write(
+    #             {
+    #                 eid: ko.strftime("%Y-%m-%d %H:%M:%S UTC") if isinstance(ko, datetime) else str(ko)
+    #                 for eid, ko in event_kickoffs.items()
+    #             }
+    #         )
+    #     else:
+    #         st.write("None")
+    #     st.write(
+    #         "Last ss_refresh_meta:",
+    #         {k: v for k, v in ss_meta.items() if k != "_call_count"} if isinstance(ss_meta, dict) else ss_meta,
+    #     )
+    #     if last_err:
+    #         st.write("Last live fetch error:", str(last_err))
+    #     if last_debug:
+    #         st.write("Last live refresh debug:", str(last_debug))
 
-    with st.expander("🧩 Event ID debug"):
-        event_rows = []
-        for pid in roster_view.active_player_ids() + roster_view.reserve_player_ids():
-            row = player_lookup.get(pid)
-            name = getattr(getattr(row, "player", None), "name", str(pid))
-            info = lineup_info_by_player.get(pid)
-            event_rows.append(
-                {
-                    "Player": name,
-                    "Team": getattr(info, "team_name", None) if info else None,
-                    "Opponent": getattr(info, "opponent_name", None) if info else None,
-                    # Event ID should be a string in the dataframe
-                    "Event ID": str(getattr(info, "event_id", None)) if info else None,
-                    "Kickoff (UTC)": _format_kickoff(getattr(info, "kickoff", None)) if info else "—",
-                }
-            )
-        if event_rows:
-            st.dataframe(pd.DataFrame(event_rows), use_container_width=True, hide_index=True)
-        else:
-            st.write("No event data available for this roster.")
+    # with st.expander("🧩 Event ID debug"):
+    #     event_rows = []
+    #     for pid in roster_view.active_player_ids() + roster_view.reserve_player_ids():
+    #         row = player_lookup.get(pid)
+    #         name = getattr(getattr(row, "player", None), "name", str(pid))
+    #         info = lineup_info_by_player.get(pid)
+    #         event_rows.append(
+    #             {
+    #                 "Player": name,
+    #                 "Team": getattr(info, "team_name", None) if info else None,
+    #                 "Opponent": getattr(info, "opponent_name", None) if info else None,
+    #                 # Event ID should be a string in the dataframe
+    #                 "Event ID": str(getattr(info, "event_id", None)) if info else None,
+    #                 "Kickoff (UTC)": _format_kickoff(getattr(info, "kickoff", None)) if info else "—",
+    #             }
+    #         )
+    #     if event_rows:
+    #         st.dataframe(pd.DataFrame(event_rows), use_container_width=True, hide_index=True)
+    #     else:
+    #         st.write("No event data available for this roster.")
 
 kos_map, last_kos_index = _build_kos_index_map(lineup_info_by_player)
 
@@ -1946,6 +2244,18 @@ def _format_eta(
     return " ".join(parts), next_at
 
 
+def _format_status_tuple(value: Optional[tuple]) -> str:
+    if not value:
+        return "—"
+    status, ss_status, ss_pred, ss_conf = value
+    return (
+        f"status={_format_status(status)} | "
+        f"ss={_format_status(ss_status)} | "
+        f"ss_pred={_format_status(ss_pred)} | "
+        f"ss_conf={_format_status(ss_conf)}"
+    )
+
+
 def _build_lineup_feed_rows(
     *,
     roster_view: RosterView,
@@ -1954,10 +2264,14 @@ def _build_lineup_feed_rows(
     projections: Optional[dict] = None,
 ) -> list[dict]:
     """
-    Build a simple feed payload sorted by team code, then kickoff.
+    Build a simple feed payload sorted by Active/Reserve, then position (G/D/M/F).
     """
     rows: list[dict] = []
-    order_index = {pid: i for i, pid in enumerate(roster_view.active_player_ids())}
+    active_ids = roster_view.active_player_ids()
+    reserve_ids = roster_view.reserve_player_ids()
+    active_set = set(active_ids)
+    order_index = {pid: i for i, pid in enumerate(active_ids + reserve_ids)}
+    pos_order = {"G": 0, "D": 1, "M": 2, "F": 3}
     for pid in roster_view.active_player_ids() + roster_view.reserve_player_ids():
         info = lineup_info_by_player.get(pid)
         row = player_lookup.get(pid)
@@ -1968,7 +2282,13 @@ def _build_lineup_feed_rows(
         ss_effective = None
         ss_confirmed = 0
         if info:
-            if getattr(info, "ss_conf_status", None):
+            if getattr(info, "status_source", None) == "sofascore" and getattr(
+                info, "status", None
+            ) not in (None, LineupStatus.UNKNOWN):
+                ss_effective = getattr(info, "status", None)
+                if getattr(info, "ss_conf_status", None):
+                    ss_confirmed = 1
+            elif getattr(info, "ss_conf_status", None):
                 ss_effective = getattr(info, "ss_conf_status")
                 ss_confirmed = 1
             elif getattr(info, "ss_pred_status", None):
@@ -1988,6 +2308,8 @@ def _build_lineup_feed_rows(
                 except Exception:
                     proj_gs = None
 
+        pos = _display_pos(row).upper()
+        slot_order = 0 if pid in active_set else 1
         rows.append(
             {
                 "team": team or "-",
@@ -1999,10 +2321,12 @@ def _build_lineup_feed_rows(
                 "kickoff": kickoff,
                 "kickoff_label": _format_kickoff(kickoff),
                 "opponent": opponent,
+                "slot_order": slot_order,
+                "pos_order": pos_order.get(pos, 9),
                 "order": order_index.get(pid, 999),
             }
         )
-    rows.sort(key=lambda r: (r["team"], r["kickoff"] or datetime.max.replace(tzinfo=timezone.utc), r["order"]))
+    rows.sort(key=lambda r: (r["slot_order"], r["pos_order"], r["order"]))
     return rows
 
 
@@ -2031,8 +2355,11 @@ def _dump_debug_for_player(fantrax_player_id: Optional[str]) -> None:
         return
     row = player_lookup.get(fantrax_player_id)
     raw_lock_flags = {}
+    raw: dict[str, Any] = {}
+    scorer: dict[str, Any] = {}
     if row:
         raw = getattr(row, "_raw", {}) or {}
+        scorer = raw.get("scorer") or {}
         raw_lock_flags = {
             k: v
             for k, v in raw.items()
@@ -2067,6 +2394,8 @@ def _dump_debug_for_player(fantrax_player_id: Optional[str]) -> None:
     payload = {
         "fantrax_player_id": debug_ctx.get("fantrax_player_id"),
         "sofascore_player_id": debug_ctx.get("sofascore_player_id"),
+        "team_name_raw": debug_ctx.get("team_name_raw"),
+        "team_name_normalized": debug_ctx.get("team_name"),
         "event_id": debug_ctx.get("snapshot_event_id"),
         "confirmed": debug_ctx.get("snapshot_confirmed"),
         "role": debug_ctx.get("snapshot_role"),
@@ -2086,21 +2415,29 @@ def _dump_debug_for_player(fantrax_player_id: Optional[str]) -> None:
             lineup_info_by_player=lineup_info_by_player,
         ),
         "raw_lock_flags": raw_lock_flags,
+        "scorer_team_id": scorer.get("teamId") or scorer.get("team_id"),
+        "scorer_team_name": scorer.get("teamName"),
+        "scorer_team_short_name": scorer.get("teamShortName"),
+        "scorer_event_id": scorer.get("eventId"),
+        "scorer_next_kickoff": scorer.get("nextKickoff"),
+        "scorer_next_opponent": scorer.get("nextOpponent"),
+        "lineup_row_raw": row._raw,
     }
-    st.markdown(f"**SofaScore debug for {player_name} ({fantrax_player_id})**")
-    st.code(json.dumps(payload, indent=2))
-    if fx_debug:
-        st.markdown("**Fantrax lineup debug**")
-        st.code(json.dumps(fx_debug, indent=2, default=str))
+    # st.markdown(f"**SofaScore debug for {player_name} ({fantrax_player_id})**")
+    # st.code(json.dumps(payload, indent=2))
+    logger.info("[sofa-debug] %s", json.dumps(payload, separators=(',', ':')))
+    # if fx_debug:
+    #     st.markdown("**Fantrax lineup debug**")
+    #     st.code(json.dumps(fx_debug, indent=2, default=str))
 
 
 # ----------------------------------------------------------------------
 # Immediate swap section (single)
 # ----------------------------------------------------------------------
 st.divider()
-st.subheader("Lineup updates feed (terminal view)")
+st.subheader("Roster & Gameweek Overview")
 st.caption(
-    "Projected lineups (SofaScore vs. Fantrax) grouped by EPL team. "
+    "Projected lineups (SofaScore vs. Fantrax) ordered by active/reserve then position. "
     "1 = predicted starter, 0 = predicted bench, -1 = predicted out. "
     "Confirmed = 1 only when the provider marks a lineup as confirmed "
     "(SofaScore confirmed flag, Fantrax confirmed icon); otherwise 0. "
@@ -2149,7 +2486,8 @@ if not gw_meta:
     gw_meta = _build_gameweek_meta(lineup_info_by_player, gw_label)
 if gw_meta:
     st.markdown("**Gameweek overview**")
-    st.code(json.dumps(gw_meta, indent=2), language="json")
+    # st.code(json.dumps(gw_meta, indent=2), language="json")
+    _render_gameweek_overview_table(gw_meta, gw_label)
     if schedule_events:
         tournament_id = st.session_state.get("sofascore_tournament_id", 17)
         expected_matches = 10 if int(tournament_id) == 17 else None
@@ -2177,6 +2515,8 @@ feed_rows = _build_lineup_feed_rows(
 status_changes: list[dict] = []
 current_status_map: dict[str, tuple] = {}
 prev_status_map = st.session_state.get("prev_lineup_statuses", {})
+status_refresh_at = st.session_state.get("fantrax_lineup_fetch_at") or datetime.now(timezone.utc)
+status_refresh_label = _fmt_dt(status_refresh_at)
 for pid, info in lineup_info_by_player.items():
     if not info:
         continue
@@ -2192,10 +2532,11 @@ for pid, info in lineup_info_by_player.items():
         status_changes.append(
             {
                 "Player": player_lookup.get(pid).player.name if pid in player_lookup else pid,
-                "From": old,
-                "To": current_status_map[key],
+                "From": _format_status_tuple(old),
+                "To": _format_status_tuple(current_status_map[key]),
                 "Note": getattr(info, "note", None),
                 "Source": getattr(info, "status_source", None),
+                "Refreshed (UTC)": status_refresh_label,
             }
         )
 st.session_state["prev_lineup_statuses"] = current_status_map
@@ -2210,7 +2551,7 @@ feed_styles = """
     font-family: SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
     padding: 12px;
     border-radius: 4px;
-    max-height: 320px;
+    max-height: 420px;
     overflow-y: auto;
 }
 .lineup-feed-table {
@@ -2286,6 +2627,7 @@ else:
 
 if status_changes:
     with st.expander("Lineup status changes (latest refresh)", expanded=False):
+        st.caption(f"Last refresh: {status_refresh_label}")
         st.dataframe(pd.DataFrame(status_changes), hide_index=True, use_container_width=True)
 
 st.subheader("Make lineup adjustments before defining conditional rules")
@@ -2315,6 +2657,19 @@ if swap_period_int is None:
 st.markdown("**Suggested optimized XI (10 outfield + 1 GK if available)**")
 st.caption(
     "GS uses confirmed lineup status when available (SofaScore then Fantrax); otherwise ProjGS."
+)
+st.markdown(
+    """
+    <style>
+    button[data-testid="baseButton-secondary"]:disabled {
+        border: 1px solid #0f5e19;
+        color: #56ff76;
+        background: #031403;
+        opacity: 1;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 # Ensure projections are loaded for optimization
@@ -2487,9 +2842,15 @@ if opt_missing_gk:
     st.warning("No goalkeeper available; selecting top 10 outfielders. Fantrax lineup may be invalid without a GK.")
 
 opt_cols = st.columns(2)
+opt_active_height = 35 * (max(len(opt_active_rows), 11) + 1)
 with opt_cols[0]:
     st.markdown("**Optimized Actives**")
-    st.dataframe(pd.DataFrame(opt_active_rows), use_container_width=True, hide_index=True)
+    st.dataframe(
+        pd.DataFrame(opt_active_rows),
+        use_container_width=True,
+        hide_index=True,
+        height=opt_active_height,
+    )
 with opt_cols[1]:
     st.markdown("**Optimized Reserves**")
     st.dataframe(pd.DataFrame(opt_reserve_rows), use_container_width=True, hide_index=True)
@@ -2533,8 +2894,9 @@ with apply_col1:
     desired_set = set(opt_active_ids)
     already_optimal = bool(desired_set) and current_starters_set == desired_set
     apply_disabled = already_optimal or not opt_active_ids
-    apply_label = "Apply optimized lineup to Fantrax" + (" (already applied)" if already_optimal else "")
-    if st.button(apply_label, type="primary", key="apply_optimized_lineup", disabled=apply_disabled):
+    apply_label = "Lineup already optimized" if already_optimal else "Apply optimized lineup to Fantrax"
+    apply_type = "secondary" if already_optimal else "primary"
+    if st.button(apply_label, type=apply_type, key="apply_optimized_lineup", disabled=apply_disabled):
         if swap_period_int is None:
             st.error("Cannot apply lineup: no valid Fantrax period selected.")
         elif not opt_active_ids:
@@ -2556,8 +2918,11 @@ with apply_col1:
                 st.error(f"Failed to apply lineup: {result.get('reason')}")
                 if result.get("illegal_msgs"):
                     st.warning(f"Illegal roster messages: {result.get('illegal_msgs')}")
+    if already_optimal:
+        st.caption("Lineup already optimized based on current projections and confirmed status.")
 
 st.subheader("Make a single swap")
+st.caption("Swap one player for another immediately; this writes directly to Fantrax.")
 
 live_active_ids = [
     pid for pid in roster_view.active_player_ids() if pid in player_lookup
@@ -2579,7 +2944,7 @@ swap_reserve = st.selectbox(
     key="immediate_swap_reserve_top",
 )
 
-# _dump_debug_for_player(swap_active)
+_dump_debug_for_player(swap_active)
 
 if selected_period_id is not None:
     try:
@@ -2633,200 +2998,204 @@ if st.button("Execute swap now", type="primary", key="immediate_swap_button_top"
 # ----------------------------------------------------------------------
 # Current lineup snapshot (single)
 # ----------------------------------------------------------------------
-st.subheader("Current Lineup Snapshot")
-latest_lineup_fetch = _latest_lineup_fetch_timestamp(Path(DEFAULT_LINEUPS_DIR))
-if latest_lineup_fetch:
-    st.caption(f"Predicted lineups refreshed on {latest_lineup_fetch.strftime('%Y-%m-%d %H:%M:%S %Z')}")
-else:
-    st.caption("Predicted lineups refresh time unavailable.")
+# st.subheader("Current Lineup Snapshot")
+# st.write(
+#     "This snapshot reflects your current roster status and metadata. "
+#     "It is the baseline used for conditional swap decisions and the handoff point for optimization."
+# )
+# latest_lineup_fetch = _latest_lineup_fetch_timestamp(Path(DEFAULT_LINEUPS_DIR))
+# if latest_lineup_fetch:
+#     st.caption(f"Predicted lineups refreshed on {latest_lineup_fetch.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+# else:
+#     st.caption("Predicted lineups refresh time unavailable.")
 
-with st.expander("What do these columns mean?"):
-    st.markdown(
-        "- SS / FX: numeric code (1 starter, 0 bench, -1 out) from SofaScore/Fantrax signals.\n"
-        "- Kickoff: Effective kickoff used for ordering and locking heuristics.\n"
-        "- FX locked / markers: Fantrax disableLineupChange and visual markers that indicate player is locked and cannot be changed."
-    )
+# with st.expander("What do these columns mean?"):
+#     st.markdown(
+#         "- SS / FX: numeric code (1 starter, 0 bench, -1 out) from SofaScore/Fantrax signals.\n"
+#         "- Kickoff: Effective kickoff used for ordering and locking heuristics.\n"
+#         "- FX locked / markers: Fantrax disableLineupChange and visual markers that indicate player is locked and cannot be changed."
+#     )
 
-active_display = []
-for pid in roster_view.active_player_ids():
-    row = player_lookup.get(pid)
-    if not row:
-        continue
-    info = lineup_info_by_player.get(pid)
-    team_name, opponent = _team_and_opponent_for_player(
-        pid, lineup_info_by_player, player_lookup
-    )
-    if hasattr(roster_view, "lock_flags"):
-        lock_flags = roster_view.lock_flags(
-            pid,
-            now=now,
-            lineup_info_by_player=lineup_info_by_player,
-        )
-    else:  # fallback for older RosterView without lock_flags
-        lock_flags = get_row_lock_flags(
-            row,
-            now=now,
-            lineup_info_by_player=lineup_info_by_player,
-        )
-    locked = lock_flags.get("fx_locked", False)
-    visually_locked = lock_flags.get("visually_locked", False)
-    effective_kickoff = None if visually_locked else (info.kickoff if info else None)
-    ss_effective = None
-    fx_effective = getattr(info, "fx_status", None) if info else None
-    if info:
-        if getattr(info, "ss_conf_status", None):
-            ss_effective = getattr(info, "ss_conf_status")
-        elif getattr(info, "ss_pred_status", None):
-            ss_effective = getattr(info, "ss_pred_status")
-        else:
-            ss_effective = getattr(info, "ss_status", None)
-    ss_code = _status_code(ss_effective)
-    fx_code = _status_code(fx_effective)
-    active_display.append(
-        {
-            "Player": row.player.name,
-            "Pos": _display_pos(row),
-            "Team": team_name,
-            "Opponent": opponent,
-            "SS": ss_code,
-            "FX": fx_code,
-            "Kickoff": _format_kickoff(effective_kickoff),
-            "FX locked": "Yes" if locked else "No",
-            "Kickoff passed": "Yes" if lock_flags.get("kickoff_passed") else "No",
-            "Finished marker": "Yes" if lock_flags.get("finished_marker") else "No",
-            "Visually locked": "Yes" if visually_locked else "No",
-        }
-    )
+# active_display = []
+# for pid in roster_view.active_player_ids():
+#     row = player_lookup.get(pid)
+#     if not row:
+#         continue
+#     info = lineup_info_by_player.get(pid)
+#     team_name, opponent = _team_and_opponent_for_player(
+#         pid, lineup_info_by_player, player_lookup
+#     )
+#     if hasattr(roster_view, "lock_flags"):
+#         lock_flags = roster_view.lock_flags(
+#             pid,
+#             now=now,
+#             lineup_info_by_player=lineup_info_by_player,
+#         )
+#     else:  # fallback for older RosterView without lock_flags
+#         lock_flags = get_row_lock_flags(
+#             row,
+#             now=now,
+#             lineup_info_by_player=lineup_info_by_player,
+#         )
+#     locked = lock_flags.get("fx_locked", False)
+#     visually_locked = lock_flags.get("visually_locked", False)
+#     effective_kickoff = None if visually_locked else (info.kickoff if info else None)
+#     ss_effective = None
+#     fx_effective = getattr(info, "fx_status", None) if info else None
+#     if info:
+#         if getattr(info, "ss_conf_status", None):
+#             ss_effective = getattr(info, "ss_conf_status")
+#         elif getattr(info, "ss_pred_status", None):
+#             ss_effective = getattr(info, "ss_pred_status")
+#         else:
+#             ss_effective = getattr(info, "ss_status", None)
+#     ss_code = _status_code(ss_effective)
+#     fx_code = _status_code(fx_effective)
+#     active_display.append(
+#         {
+#             "Player": row.player.name,
+#             "Pos": _display_pos(row),
+#             "Team": team_name,
+#             "Opponent": opponent,
+#             "SS": ss_code,
+#             "FX": fx_code,
+#             "Kickoff": _format_kickoff(effective_kickoff),
+#             "FX locked": "Yes" if locked else "No",
+#             "Kickoff passed": "Yes" if lock_flags.get("kickoff_passed") else "No",
+#             "Finished marker": "Yes" if lock_flags.get("finished_marker") else "No",
+#             "Visually locked": "Yes" if visually_locked else "No",
+#         }
+#     )
 
-reserve_display = []
-for pid in roster_view.reserve_player_ids():
-    row = player_lookup.get(pid)
-    if not row:
-        continue
-    info = lineup_info_by_player.get(pid)
-    team_name, opponent = _team_and_opponent_for_player(
-        pid, lineup_info_by_player, player_lookup
-    )
-    if hasattr(roster_view, "lock_flags"):
-        lock_flags = roster_view.lock_flags(
-            pid,
-            now=now,
-            lineup_info_by_player=lineup_info_by_player,
-        )
-    else:
-        lock_flags = get_row_lock_flags(
-            row,
-            now=now,
-            lineup_info_by_player=lineup_info_by_player,
-        )
-    locked = lock_flags.get("fx_locked", False)
-    visually_locked = lock_flags.get("visually_locked", False)
-    effective_kickoff = None if visually_locked else (info.kickoff if info else None)
-    ss_effective = None
-    fx_effective = getattr(info, "fx_status", None) if info else None
-    if info:
-        if getattr(info, "ss_conf_status", None):
-            ss_effective = getattr(info, "ss_conf_status")
-        elif getattr(info, "ss_pred_status", None):
-            ss_effective = getattr(info, "ss_pred_status")
-        else:
-            ss_effective = getattr(info, "ss_status", None)
-    ss_code = _status_code(ss_effective)
-    fx_code = _status_code(fx_effective)
-    reserve_display.append(
-        {
-            "Player": row.player.name,
-            "Pos": _display_pos(row),
-            "Team": team_name,
-            "Opponent": opponent,
-            "SS": ss_code,
-            "FX": fx_code,
-            "Kickoff": _format_kickoff(effective_kickoff),
-            "FX locked": "Yes" if locked else "No",
-            "Kickoff passed": "Yes" if lock_flags.get("kickoff_passed") else "No",
-            "Finished marker": "Yes" if lock_flags.get("finished_marker") else "No",
-            "Visually locked": "Yes" if visually_locked else "No",
-        }
-    )
+# reserve_display = []
+# for pid in roster_view.reserve_player_ids():
+#     row = player_lookup.get(pid)
+#     if not row:
+#         continue
+#     info = lineup_info_by_player.get(pid)
+#     team_name, opponent = _team_and_opponent_for_player(
+#         pid, lineup_info_by_player, player_lookup
+#     )
+#     if hasattr(roster_view, "lock_flags"):
+#         lock_flags = roster_view.lock_flags(
+#             pid,
+#             now=now,
+#             lineup_info_by_player=lineup_info_by_player,
+#         )
+#     else:
+#         lock_flags = get_row_lock_flags(
+#             row,
+#             now=now,
+#             lineup_info_by_player=lineup_info_by_player,
+#         )
+#     locked = lock_flags.get("fx_locked", False)
+#     visually_locked = lock_flags.get("visually_locked", False)
+#     effective_kickoff = None if visually_locked else (info.kickoff if info else None)
+#     ss_effective = None
+#     fx_effective = getattr(info, "fx_status", None) if info else None
+#     if info:
+#         if getattr(info, "ss_conf_status", None):
+#             ss_effective = getattr(info, "ss_conf_status")
+#         elif getattr(info, "ss_pred_status", None):
+#             ss_effective = getattr(info, "ss_pred_status")
+#         else:
+#             ss_effective = getattr(info, "ss_status", None)
+#     ss_code = _status_code(ss_effective)
+#     fx_code = _status_code(fx_effective)
+#     reserve_display.append(
+#         {
+#             "Player": row.player.name,
+#             "Pos": _display_pos(row),
+#             "Team": team_name,
+#             "Opponent": opponent,
+#             "SS": ss_code,
+#             "FX": fx_code,
+#             "Kickoff": _format_kickoff(effective_kickoff),
+#             "FX locked": "Yes" if locked else "No",
+#             "Kickoff passed": "Yes" if lock_flags.get("kickoff_passed") else "No",
+#             "Finished marker": "Yes" if lock_flags.get("finished_marker") else "No",
+#             "Visually locked": "Yes" if visually_locked else "No",
+#         }
+#     )
 
-formation = (
-    f"Formation: GK {sum(1 for pid in roster_view.active_player_ids() if getattr(player_lookup.get(pid).pos, 'short_name', '').upper() == 'G')} "
-    f"/ DEF {sum(1 for pid in roster_view.active_player_ids() if getattr(player_lookup.get(pid).pos, 'short_name', '').upper() == 'D')} "
-    f"/ MID {sum(1 for pid in roster_view.active_player_ids() if getattr(player_lookup.get(pid).pos, 'short_name', '').upper() == 'M')} "
-    f"/ FWD {sum(1 for pid in roster_view.active_player_ids() if getattr(player_lookup.get(pid).pos, 'short_name', '').upper() == 'F')}"
-)
-st.caption(formation)
+# formation = (
+#     f"Formation: GK {sum(1 for pid in roster_view.active_player_ids() if getattr(player_lookup.get(pid).pos, 'short_name', '').upper() == 'G')} "
+#     f"/ DEF {sum(1 for pid in roster_view.active_player_ids() if getattr(player_lookup.get(pid).pos, 'short_name', '').upper() == 'D')} "
+#     f"/ MID {sum(1 for pid in roster_view.active_player_ids() if getattr(player_lookup.get(pid).pos, 'short_name', '').upper() == 'M')} "
+#     f"/ FWD {sum(1 for pid in roster_view.active_player_ids() if getattr(player_lookup.get(pid).pos, 'short_name', '').upper() == 'F')}"
+# )
+# st.caption(formation)
 
-active_df = pd.DataFrame(active_display)
-reserve_df = pd.DataFrame(reserve_display)
+# active_df = pd.DataFrame(active_display)
+# reserve_df = pd.DataFrame(reserve_display)
 
-st.caption("Active XI (codes: 1 starter, 0 bench, -1 out; confirmed=1 only when provider marks confirmed)")
-st.dataframe(
-    active_df,
-    use_container_width=True,
-    hide_index=True,
-    column_config={
-        "Team": st.column_config.Column(width="small"),
-        "SS": st.column_config.Column(width="small"),
-        "FX": st.column_config.Column(width="small"),
-        "Kickoff": st.column_config.Column(width="medium"),
-    },
-)
-st.caption("Reserves (codes: 1 starter, 0 bench, -1 out; confirmed=1 only when provider marks confirmed)")
-st.dataframe(
-    reserve_df,
-    use_container_width=True,
-    hide_index=True,
-    column_config={
-        "Team": st.column_config.Column(width="small"),
-        "SS": st.column_config.Column(width="small"),
-        "FX": st.column_config.Column(width="small"),
-        "Kickoff": st.column_config.Column(width="medium"),
-    },
-)
+# st.caption("Active XI (codes: 1 starter, 0 bench, -1 out; confirmed=1 only when provider marks confirmed)")
+# st.dataframe(
+#     active_df,
+#     use_container_width=True,
+#     hide_index=True,
+#     column_config={
+#         "Team": st.column_config.Column(width="small"),
+#         "SS": st.column_config.Column(width="small"),
+#         "FX": st.column_config.Column(width="small"),
+#         "Kickoff": st.column_config.Column(width="medium"),
+#     },
+# )
+# st.caption("Reserves (codes: 1 starter, 0 bench, -1 out; confirmed=1 only when provider marks confirmed)")
+# st.dataframe(
+#     reserve_df,
+#     use_container_width=True,
+#     hide_index=True,
+#     column_config={
+#         "Team": st.column_config.Column(width="small"),
+#         "SS": st.column_config.Column(width="small"),
+#         "FX": st.column_config.Column(width="small"),
+#         "Kickoff": st.column_config.Column(width="medium"),
+#     },
+# )
 
-with st.expander("🔍 Debug: Team/Opponent context"):
-    debug_rows = []
-    for pid in roster_view.active_player_ids() + roster_view.reserve_player_ids():
-        row = player_lookup.get(pid)
-        if not row:
-            continue
-        info = lineup_info_by_player.get(pid)
-        if hasattr(roster_view, "lock_flags"):
-            lock_flags = roster_view.lock_flags(
-                pid,
-                now=now,
-                lineup_info_by_player=lineup_info_by_player,
-            )
-        else:
-            lock_flags = get_row_lock_flags(
-                row,
-                now=now,
-                lineup_info_by_player=lineup_info_by_player,
-            )
-        team_name, opponent = _team_and_opponent_for_player(
-            pid, lineup_info_by_player, player_lookup
-        )
-        debug_rows.append(
-            {
-                "Player": row.player.name,
-                "Team": team_name,
-                "Opponent": opponent,
-                "Effective status": _format_status(info.status) if info else "Unknown",
-                "Kickoff": _fmt_debug_datetime(getattr(info, "kickoff", None)) if info else None,
-                "FX locked": bool(lock_flags.get("fx_locked")),
-                "event_id": getattr(info, "event_id", None) if info else None,
-                "status_source": getattr(info, "status_source", None) if info else None,
-                "team_name": getattr(info, "team_name", None) if info else None,
-                "opponent_name": getattr(info, "opponent_name", None) if info else None,
-                "is_home": getattr(info, "is_home", None) if info else None,
-                "opponent_source": _opponent_source(info),
-            }
-        )
-    if debug_rows:
-        st.dataframe(pd.DataFrame(debug_rows), hide_index=True, use_container_width=True)
-    else:
-        st.caption("No lineup snapshot data available.")
+# with st.expander("🔍 Debug: Team/Opponent context"):
+#     debug_rows = []
+#     for pid in roster_view.active_player_ids() + roster_view.reserve_player_ids():
+#         row = player_lookup.get(pid)
+#         if not row:
+#             continue
+#         info = lineup_info_by_player.get(pid)
+#         if hasattr(roster_view, "lock_flags"):
+#             lock_flags = roster_view.lock_flags(
+#                 pid,
+#                 now=now,
+#                 lineup_info_by_player=lineup_info_by_player,
+#             )
+#         else:
+#             lock_flags = get_row_lock_flags(
+#                 row,
+#                 now=now,
+#                 lineup_info_by_player=lineup_info_by_player,
+#             )
+#         team_name, opponent = _team_and_opponent_for_player(
+#             pid, lineup_info_by_player, player_lookup
+#         )
+#         debug_rows.append(
+#             {
+#                 "Player": row.player.name,
+#                 "Team": team_name,
+#                 "Opponent": opponent,
+#                 "Effective status": _format_status(info.status) if info else "Unknown",
+#                 "Kickoff": _fmt_debug_datetime(getattr(info, "kickoff", None)) if info else None,
+#                 "FX locked": bool(lock_flags.get("fx_locked")),
+#                 "event_id": getattr(info, "event_id", None) if info else None,
+#                 "status_source": getattr(info, "status_source", None) if info else None,
+#                 "team_name": getattr(info, "team_name", None) if info else None,
+#                 "opponent_name": getattr(info, "opponent_name", None) if info else None,
+#                 "is_home": getattr(info, "is_home", None) if info else None,
+#                 "opponent_source": _opponent_source(info),
+#             }
+#         )
+#     if debug_rows:
+#         st.dataframe(pd.DataFrame(debug_rows), hide_index=True, use_container_width=True)
+#     else:
+#         st.caption("No lineup snapshot data available.")
 
 # ----------------------------------------------------------------------
 # Suggested Conditional Swaps (quick picks)
@@ -3156,11 +3525,11 @@ elif suggestions:
         return [pick(v) for v in vals]
 
     display_cols = [
+        "Out",
+        "In",
         "Priority",
         "Swap Type",
         "Description",
-        "Out",
-        "In",
         "ProjFPts",
         "ProjGS",
         "Score",
@@ -3170,19 +3539,50 @@ elif suggestions:
     view_df = sugg_df.copy()
     if "In KO dt" in view_df.columns:
         display_df = view_df[display_cols + ["In KO dt"]].copy()
-        view_df_styled = display_df.style.apply(_kickoff_gradient, subset=["In KO dt"]).hide(
-            axis="columns", subset=["In KO dt"]
+        display_df["ProjFPts"] = pd.to_numeric(display_df["ProjFPts"], errors="coerce")
+        view_df_styled = (
+            display_df.style.apply(_kickoff_gradient, subset=["In KO dt"])
+            .format({"ProjFPts": "{:.1f}"}, na_rep="")
+            .hide(axis="columns", subset=["In KO dt"])
         )
         st.dataframe(view_df_styled, hide_index=True, use_container_width=True)
     else:
-        st.dataframe(view_df[display_cols], hide_index=True, use_container_width=True)
+        display_df = view_df[display_cols].copy()
+        display_df["ProjFPts"] = pd.to_numeric(display_df["ProjFPts"], errors="coerce")
+        st.dataframe(
+            display_df.style.format({"ProjFPts": "{:.1f}"}, na_rep=""),
+            hide_index=True,
+            use_container_width=True,
+        )
+
+    editor_cols = [
+        "Out",
+        "In",
+        "Select",
+        "Priority",
+        "Swap Type",
+        "Description",
+        "ProjFPts",
+        "ProjGS",
+        "Score",
+        "Out KO",
+        "In KO",
+        "active_id",
+        "reserve_id",
+        "Active",
+    ]
+    editor_df = sugg_df[[col for col in editor_cols if col in sugg_df.columns]].copy()
+    if "ProjFPts" in editor_df.columns:
+        editor_df["ProjFPts"] = pd.to_numeric(editor_df["ProjFPts"], errors="coerce")
 
     edited = st.data_editor(
-        sugg_df,
+        editor_df,
         hide_index=True,
         use_container_width=True,
         column_config={
             "Select": st.column_config.CheckboxColumn("Select", help="Choose swaps to queue as conditional rules."),
+            "Out": st.column_config.TextColumn("Out", width="medium"),
+            "In": st.column_config.TextColumn("In", width="medium"),
             "active_id": st.column_config.TextColumn("active_id", disabled=True),
             "reserve_id": st.column_config.TextColumn("reserve_id", disabled=True),
             "Swap Type": st.column_config.TextColumn("Swap Type", disabled=True),
@@ -3194,6 +3594,7 @@ elif suggestions:
                 step=1,
                 help="Lower numbers are tried first for the same active.",
             ),
+            "ProjFPts": st.column_config.NumberColumn("ProjFPts", format="%.1f"),
         },
         key="suggested_swaps_editor",
     )

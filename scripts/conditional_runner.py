@@ -25,6 +25,7 @@ import argparse
 import json
 import logging
 import os
+import time
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone, timedelta
@@ -66,6 +67,7 @@ except Exception:
 
 LOG_PATH = Path("data/logs/conditional_runner.log")
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+logging.Formatter.converter = time.gmtime
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,

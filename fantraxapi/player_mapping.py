@@ -15,6 +15,8 @@ import logging
 from pydantic import BaseModel, Field
 from unidecode import unidecode
 
+log = logging.getLogger(__name__)
+
 class PlayerMapping(BaseModel):
 	"""Player mapping entry."""
 	fantrax_id: str
@@ -37,6 +39,7 @@ class PlayerMappingManager:
 		"""
 		self.mapping_file = Path(mapping_file)
 		self._mappings: Dict[str, PlayerMapping] = {}
+		self._canonical_index: Dict[str, PlayerMapping] = {}
 		self._load_mappings()
 	
 	def _load_mappings(self) -> None:
@@ -52,7 +55,7 @@ class PlayerMappingManager:
 			
 		for entry in data:
 			mapping = PlayerMapping(**entry)
-			self._mappings[mapping.fantrax_id] = mapping
+			self._register_mapping(mapping)
 			
 	def save_mappings(self) -> None:
 		"""Save current mappings to file."""
@@ -78,12 +81,24 @@ class PlayerMappingManager:
 			# Use the new smart display name selection that analyzes all sources
 			mapping.display_name = self._get_best_display_name(mapping)
 				
-		self._mappings[mapping.fantrax_id] = mapping
+		self._register_mapping(mapping)
 		self.save_mappings()
-	
+
 	def get_by_fantrax_id(self, fantrax_id: str) -> Optional[PlayerMapping]:
 		"""Get mapping by Fantrax ID."""
-		return self._mappings.get(fantrax_id)
+		if not fantrax_id:
+			return None
+		clean_id = str(fantrax_id).strip()
+		if not clean_id:
+			return None
+		normalized = clean_id.lower()
+		mapping = self._mappings.get(normalized)
+		if mapping:
+			return mapping
+		canonical = self._canonical_fantrax_id(normalized)
+		if canonical:
+			return self._canonical_index.get(canonical)
+		return None
 	
 	def get_by_sofascore_id(self, sofascore_id: int) -> Optional[PlayerMapping]:
 		"""Get mapping by SofaScore ID."""
@@ -119,7 +134,36 @@ class PlayerMappingManager:
 				return mapping
 				
 		return None
-	
+
+	def _canonical_fantrax_id(self, fantrax_id: str) -> Optional[str]:
+		if not fantrax_id:
+			return None
+		clean_id = str(fantrax_id).strip()
+		if not clean_id:
+			return None
+		clean = clean_id.lower()
+		without_padding = clean.lstrip("0")
+		return without_padding or clean
+
+	def _register_mapping(self, mapping: PlayerMapping) -> None:
+		raw = str(mapping.fantrax_id).strip()
+		if not raw:
+			return
+		clean = raw.lower()
+		self._mappings[clean] = mapping
+		canonical = self._canonical_fantrax_id(clean)
+		if not canonical:
+			return
+		existing = self._canonical_index.get(canonical)
+		if existing and existing.fantrax_id != mapping.fantrax_id:
+			log.debug(
+				"Fantrax canonical collision for %s -> %s (existing=%s)",
+				canonical,
+				mapping.fantrax_id,
+				existing.fantrax_id,
+			)
+		self._canonical_index[canonical] = mapping
+
 	@staticmethod
 	def _get_display_name(name: str) -> str:
 		"""
