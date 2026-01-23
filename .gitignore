@@ -139,3 +139,13 @@ config/service_account.json
 
 # SofaScore runtime files
 data/sofascore/*.lock
+
+# Sensitive/runtime app data (do not commit)
+.streamlit/secrets.toml
+auth_artifacts.json
+config.ini
+data/auth/
+data/conditional_rules/
+data/logs/
+data/secret.key
+deploy/fantraxloggedin.cookie

@@ -15,6 +15,7 @@ from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
+ENV_SECRET_ID_KEY = "FANTRAX_SECRET_ID_KEY"
 
 # Import secure storage for encrypted cookies
 try:
@@ -68,8 +69,11 @@ class UserManager:
 		
 		# Get encryption key from environment or generate one
 		key_file = self.data_dir / ".encryption_key"
+		env_key = os.getenv(ENV_SECRET_ID_KEY)
 		
-		if key_file.exists():
+		if env_key:
+			key = env_key.encode("utf-8")
+		elif key_file.exists():
 			with open(key_file, 'rb') as f:
 				key = f.read()
 		else:

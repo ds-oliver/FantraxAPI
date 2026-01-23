@@ -4,6 +4,7 @@ Secure storage utilities for encrypting data at rest.
 Uses Fernet symmetric encryption to protect sensitive data like cookies.
 """
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict
 from cryptography.fernet import Fernet
@@ -12,15 +13,20 @@ import logging
 logger = logging.getLogger(__name__)
 
 # In production, manage this key via environment variable or secret manager
+ENV_KEY = "FANTRAX_ENCRYPTION_KEY"
 KEY_FILE = Path("data/secret.key")
 AUTH_DIR = Path("data/auth")
 
 def _get_fernet() -> Fernet:
 	"""Get or create Fernet cipher instance."""
 	AUTH_DIR.mkdir(parents=True, exist_ok=True)
-	if not KEY_FILE.exists():
+	env_key = os.getenv(ENV_KEY)
+	if env_key:
+		key = env_key.encode("utf-8")
+	elif not KEY_FILE.exists():
 		key = Fernet.generate_key()
 		KEY_FILE.write_bytes(key)
+		os.chmod(KEY_FILE, 0o600)
 		logger.info("Generated new encryption key at %s", KEY_FILE)
 	else:
 		key = KEY_FILE.read_bytes()
@@ -59,4 +65,3 @@ def load_encrypted_json(path: Path) -> Dict[str, Any]:
 	token = path.read_bytes()
 	raw = f.decrypt(token)
 	return json.loads(raw.decode("utf-8"))
-
