@@ -77,10 +77,10 @@
         "captain": false
       },
       {
-        "id": 189061,
-        "name": "Jack Grealish",
+        "id": 935543,
+        "name": "Dwight McNeil",
         "position": "M",
-        "team_id": 48,
+        "team_id": 36553,
         "substitute": false,
         "captain": false
       },
@@ -244,8 +244,14 @@
         "name": "Anton Stach",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 834308,
+        "name": "Gabriel Gudmundsson",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-01-22 19:00:49+0000"
+  "fetched_at_utc": "2026-01-23 20:01:31+0000"
 }

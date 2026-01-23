@@ -50,7 +50,7 @@
         "position": "M",
         "team_id": 39,
         "substitute": false,
-        "captain": true
+        "captain": false
       },
       {
         "id": 892673,
@@ -289,5 +289,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-01-22 19:00:46+0000"
+  "fetched_at_utc": "2026-01-23 20:01:29+0000"
 }

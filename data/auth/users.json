@@ -38,6 +38,14 @@
           "team_id": "ekzha63dmcm8fxhp",
           "updated_at": "2026-01-17T06:40:00.054118",
           "enabled": true
+        },
+        "0z7r5871mc1yqc0s": {
+          "features": {
+            "lineup_swaps": true
+          },
+          "team_id": "d953m0nemc6dddcp",
+          "updated_at": "2026-01-23T02:27:32.960999",
+          "enabled": true
         }
       },
       "period_prefs": {
@@ -64,6 +72,48 @@
           "period_label": "Gameweek 23",
           "updated_at": "2026-01-22T04:08:03.296390",
           "team_id": "5u6ce0wkmd8wxnnc"
+        },
+        "0z7r5871mc1yqc0s": {
+          "period_id": "23",
+          "period_label": "Gameweek 23",
+          "updated_at": "2026-01-22T23:31:26.791776",
+          "team_id": "d953m0nemc6dddcp"
+        }
+      },
+      "never_drop": {
+        "0z7r5871mc1yqc0s": {
+          "auto": [
+            "06znb",
+            "04agz",
+            "05gcr",
+            "06dmj",
+            "0327r",
+            "067zv"
+          ],
+          "manual_add": [],
+          "manual_remove": []
+        },
+        "o90qdw15mc719reh": {
+          "auto": [
+            "05a6e",
+            "05nns",
+            "0700p",
+            "04abb",
+            "06c6g",
+            "068y0",
+            "046c5"
+          ],
+          "manual_add": [],
+          "manual_remove": []
+        }
+      },
+      "never_drop_updated_at": "2026-01-23T20:03:52.010818",
+      "never_drop_team_id": "3uxxpgpemc719rep",
+      "claims_ack": {
+        "0z7r5871mc1yqc0s": {
+          "acknowledged": true,
+          "updated_at": "2026-01-23T01:02:32.886263",
+          "team_id": "d953m0nemc6dddcp"
         }
       }
     },

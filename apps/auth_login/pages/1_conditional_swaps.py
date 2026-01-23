@@ -104,6 +104,7 @@ from fantraxapi.player_mapping import PlayerMappingManager
 from fantraxapi.subs import SubsService
 from urllib.parse import unquote
 from requests import Session
+from zoneinfo import ZoneInfo
 
 try:
     from utils.auth_helpers import load_requests_session_from_artifacts
@@ -113,11 +114,18 @@ from utils.user_manager import UserManager
 
 logger = logging.getLogger(__name__)
 _LOG_PATH = Path("data/logs/conditional_swaps.log")
+LOG_TIMEZONE = "America/Los_Angeles"
+
+def _log_time_converter(*_args):
+    return datetime.now(ZoneInfo(LOG_TIMEZONE)).timetuple()
+
 if not any(getattr(h, "baseFilename", None) == str(_LOG_PATH) for h in logger.handlers):
     try:
         _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
         fh = logging.FileHandler(_LOG_PATH)
-        fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s [conditional_swaps] %(message)s"))
+        formatter = logging.Formatter("%(asctime)s %(levelname)s [conditional_swaps] %(message)s")
+        formatter.converter = _log_time_converter
+        fh.setFormatter(formatter)
         logger.addHandler(fh)
     except Exception:
         # Fall back to default handlers if file handler setup fails
@@ -132,6 +140,10 @@ st.info(
     "defining swap rules."
 )
 
+FA_ACTION_ADD_ONLY = "fa_add_only"
+FA_ACTION_DROP_ONLY = "drop_only"
+TEST_CLAIMS_LEAGUE_ID = "0z7r5871mc1yqc0s"
+
 readme_fields_md = """
 This page **writes directly to your Fantrax roster** (immediate swaps and optimized lineup applies).
 Double-check the period and lineup before you click any action buttons.
@@ -139,10 +151,11 @@ Double-check the period and lineup before you click any action buttons.
 **Page flow**
 1. Select the Fantrax period (gameweek) to target.
 2. Review the terminal lineup feed and any lineup status changes.
-3. Review the suggested optimized XI and apply only if needed.
-4. Make a single, immediate player-for-player swap.
-5. Review the Current Lineup Snapshot; this status feeds conditional swaps and optimization.
-6. Review Suggested Conditional Swaps and queue rules.
+3. Finalize your lineup by making any final lineup tweaks.
+   - Review the suggested optimized XI and apply only if needed.
+   - Make a single, immediate player-for-player swap.
+4. Review Suggested Conditional Swaps.
+   - Queue conditional active/reserve swaps or FA claims/drops.
 
 **Lineup confirmation sources**
 - SofaScore is the recommended confirmation source (faster and more consistent).
@@ -178,8 +191,7 @@ the Toolkit app, so mismatches vs the Toolkit can be observed.
 readme_dialog_md = """
 **Heads up:** This page makes **live changes** to your Fantrax roster.
 
-Please read the expanded "Read This First" section for the full page flow and field details,
-especially the live Google Sheet fields (TDS/@Draftlad) that may differ from the Toolkit app.
+Please read the expanded "Read This First" section for the full app flow.
 """.strip()
 
 @st.dialog("Read This First: Conditional Swaps are Live")
@@ -327,6 +339,10 @@ def _safe_rerun() -> None:
         fn()
 
 
+def _mark_never_drop_dirty() -> None:
+    st.session_state["never_drop_dirty"] = True
+
+
 session = _require_session()
 if session is None:
     st.error("Please authenticate on the Overview page first.")
@@ -341,6 +357,7 @@ if not league_id or not team_id:
     st.stop()
 
 user_id = st.session_state.get("user_id")
+claims_allowed = str(league_id) == TEST_CLAIMS_LEAGUE_ID
 global_status_path = global_status_path_for_user(str(user_id)) if user_id else global_status_path_for_user(None)
 if user_id:
     user_mgr = UserManager()
@@ -358,11 +375,22 @@ if user_id:
             key="auto_rules_lineup_swaps_toggle",
         )
         auto_claims_toggle = st.toggle(
-            "Auto claims/drops (per league)",
-            value=auto_claims_enabled,
-            help="Higher risk; automated claims/drops are disabled by default.",
+            "Auto claims/drops (disabled during testing)",
+            value=False,
+            help="Auto claims are disabled during testing; only manual claim rules are allowed.",
             key="auto_rules_claims_toggle",
+            disabled=True,
         )
+        show_claims_builder = st.toggle(
+            "Show claim/drop builder",
+            value=st.session_state.get("show_claims_builder", True) if claims_allowed else False,
+            help="Claims/drops are limited to the test league during this pilot.",
+            key="show_claims_builder_toggle",
+            disabled=not claims_allowed,
+        )
+        if not claims_allowed:
+            st.caption("Claims/drops are locked to the test league for now.")
+        st.session_state["show_claims_builder"] = show_claims_builder
     if auto_swaps_toggle != auto_swaps_enabled and hasattr(user_mgr, "set_auto_rules_enabled"):
         user_mgr.set_auto_rules_enabled(
             user_id=str(user_id),
@@ -371,14 +399,7 @@ if user_id:
             enabled=auto_swaps_toggle,
             feature="lineup_swaps",
         )
-    if auto_claims_toggle != auto_claims_enabled and hasattr(user_mgr, "set_auto_rules_enabled"):
-        user_mgr.set_auto_rules_enabled(
-            user_id=str(user_id),
-            league_id=str(league_id),
-            team_id=str(team_id),
-            enabled=auto_claims_toggle,
-            feature="claims",
-        )
+    # Auto claims are disabled during testing; no persistence for now.
 
 current_api = st.session_state.get("api")
 cached_league = st.session_state.get("api_league_id")
@@ -478,6 +499,87 @@ def _swap_description(active_name: str, backup_names: List[str]) -> str:
     )
 
 
+def _fa_projection_row(name: Optional[str], team: Optional[str], projections: dict) -> Optional[dict]:
+    if not projections or not name:
+        return None
+    name_key = _normalize_player_name(name)
+    if not name_key:
+        return None
+    team_key = _canonical_team_code(team)
+    return projections.get((name_key, team_key)) or projections.get((name_key, ""))
+
+
+def _open_roster_slots(roster) -> tuple[list[RosterRow], list[RosterRow]]:
+    open_active: list[RosterRow] = []
+    open_reserve: list[RosterRow] = []
+    for row in roster.rows:
+        if getattr(row, "player", None):
+            continue
+        pos_id = str(getattr(row, "pos_id", "0"))
+        if pos_id != "0":
+            open_active.append(row)
+        else:
+            open_reserve.append(row)
+    return open_active, open_reserve
+
+
+def _slot_label(row: RosterRow) -> str:
+    pos = _display_pos(row) or "Slot"
+    pos_id = getattr(row, "pos_id", "")
+    return f"{pos} slot (pos_id {pos_id})"
+
+
+def _top_fpts_ids_cached(
+    waivers_service: WaiversService,
+    *,
+    league_id: str,
+    limit: int = 50,
+    ttl_minutes: int = 30,
+) -> set[str]:
+    cache = st.session_state.get("top_fpts_cache") or {}
+    now = datetime.now(timezone.utc)
+    cached_league = str(cache.get("league_id") or "")
+    if cached_league == str(league_id):
+        fetched_at = cache.get("fetched_at")
+        if fetched_at:
+            try:
+                ts = datetime.fromisoformat(str(fetched_at))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+            except Exception:
+                ts = None
+            if ts and (now - ts) < timedelta(minutes=ttl_minutes):
+                return set(str(pid) for pid in (cache.get("ids") or []))
+
+    try:
+        top_players = waivers_service.list_top_players_by_fpts(limit=limit, status="ALL")
+    except Exception as exc:
+        logger.info("Failed to load top FPts list: %s", exc)
+        return set()
+    ids = [str(p.get("id")) for p in top_players if p.get("id")]
+    st.session_state["top_fpts_cache"] = {
+        "league_id": str(league_id),
+        "ids": ids,
+        "fetched_at": now.isoformat(),
+    }
+    return set(ids)
+
+
+def _default_never_drop_ids(
+    roster,
+    top_fpts_ids: Optional[set[str]],
+) -> list[str]:
+    if not top_fpts_ids:
+        return []
+    roster_ids: list[str] = []
+    for row in roster.rows:
+        player = getattr(row, "player", None)
+        if not player or not getattr(player, "id", None):
+            continue
+        roster_ids.append(str(player.id))
+    return [pid for pid in roster_ids if pid in top_fpts_ids]
+
+
 def _partition_backups(
     backup_ids: List[str],
     roster_view: RosterView,
@@ -568,6 +670,15 @@ def _build_swap_legality_debug(
                 reserve_id=good["pid"],
                 period_id=swap_period_int,
             )
+            warning_note = ""
+            confirm = res.get("confirm") or {}
+            model = confirm.get("model") or {}
+            try:
+                first_illegal = model.get("firstIllegalRosterPeriod")
+                if first_illegal is not None and int(first_illegal) > int(swap_period_int):
+                    warning_note = f"future_period_warning (GW {first_illegal})"
+            except Exception:
+                warning_note = ""
             illegal_msgs = res.get("illegal_msgs") or []
             warnings = res.get("warnings") or []
             result = "ok" if res.get("ok") else "blocked"
@@ -587,6 +698,7 @@ def _build_swap_legality_debug(
                     "Reason": res.get("reason"),
                     "Illegal": "; ".join(str(m) for m in illegal_msgs if m),
                     "Warnings": "; ".join(str(m) for m in warnings if m),
+                    "Warning Type": warning_note,
                 }
             )
     return rows
@@ -865,6 +977,20 @@ def _load_projections(path: Path = PROJECTIONS_PATH) -> dict:
             # also allow name-only lookup
             proj_map[(name_key, "")] = row.to_dict()
     return proj_map
+
+
+def _load_projections_df(path: Path = PROJECTIONS_PATH) -> Optional[pd.DataFrame]:
+    """
+    Return the projections dataframe for top-N comparisons.
+    """
+    df: Optional[pd.DataFrame] = _fetch_projections_from_sheet()
+    if df is None:
+        try:
+            df = pd.read_parquet(path)
+            df = _normalize_projection_columns(df)
+        except Exception:
+            return None
+    return df
 
 
 def _player_projection(
@@ -2096,6 +2222,7 @@ with st.spinner("Refreshing lineup data..."):
     #         st.write("No event data available for this roster.")
 
 kos_map, last_kos_index = _build_kos_index_map(lineup_info_by_player)
+never_drop_ids: set[str] = set()
 
 if user_id:
     user_mgr = UserManager()
@@ -2124,6 +2251,49 @@ if user_id:
     label_to_id = {label: pid for label, pid in player_options}
     stored_do_not_move = user_mgr.get_do_not_move(str(user_id), str(league_id))
     default_labels = [id_to_label[pid] for pid in stored_do_not_move if pid in id_to_label]
+    projections_map = st.session_state.get("projections_map")
+    if projections_map is None:
+        projections_map = _load_projections()
+        st.session_state["projections_map"] = projections_map
+    auto_never_drop: list[str] = []
+    top_fpts_ids = _top_fpts_ids_cached(
+        waivers_service,
+        league_id=str(league_id),
+        limit=50,
+    )
+    if top_fpts_ids:
+        auto_never_drop = _default_never_drop_ids(roster, top_fpts_ids)
+    never_drop_state = user_mgr.get_never_drop_state(str(user_id), str(league_id))
+    stored_auto = set(never_drop_state.get("auto") or [])
+    manual_add = set(never_drop_state.get("manual_add") or [])
+    manual_remove = set(never_drop_state.get("manual_remove") or [])
+    stored_effective = set(never_drop_state.get("effective") or [])
+    auto_set = set(auto_never_drop) if auto_never_drop else set(stored_auto)
+
+    if auto_never_drop:
+        if never_drop_state.get("legacy"):
+            manual_add = set()
+            manual_remove = set()
+            user_mgr.set_never_drop_state(
+                user_id=str(user_id),
+                league_id=str(league_id),
+                auto_ids=list(auto_set),
+                manual_add=[],
+                manual_remove=[],
+                team_id=str(team_id),
+            )
+        elif stored_auto != auto_set:
+            user_mgr.set_never_drop_state(
+                user_id=str(user_id),
+                league_id=str(league_id),
+                auto_ids=list(auto_set),
+                manual_add=list(manual_add),
+                manual_remove=list(manual_remove),
+                team_id=str(team_id),
+            )
+    stored_effective = (auto_set - manual_remove) | manual_add
+    default_never_drop_labels = [id_to_label[pid] for pid in stored_effective if pid in id_to_label]
+    never_drop_ids = set(stored_effective or [])
 
     with st.sidebar:
         st.markdown("**Late KOS coverage**")
@@ -2160,6 +2330,54 @@ if user_id:
                 player_ids=selected_ids,
                 team_id=str(team_id),
             )
+
+        st.markdown("**Never drop (default = top 50 by FPts, league-wide)**")
+        if st.button("Reset to auto list", key="never_drop_reset"):
+            auto_set = set(auto_never_drop) if auto_never_drop else set(stored_auto)
+            user_mgr.set_never_drop_state(
+                user_id=str(user_id),
+                league_id=str(league_id),
+                auto_ids=list(auto_set),
+                manual_add=[],
+                manual_remove=[],
+                team_id=str(team_id),
+            )
+            st.session_state["never_drop_players"] = [
+                id_to_label[pid] for pid in auto_set if pid in id_to_label
+            ]
+            st.session_state["never_drop_dirty"] = False
+            _safe_rerun()
+            st.stop()
+        current_never_drop = st.session_state.get("never_drop_players")
+        never_drop_dirty = bool(st.session_state.get("never_drop_dirty", False))
+        if current_never_drop is None:
+            st.session_state["never_drop_players"] = list(default_never_drop_labels)
+            st.session_state["never_drop_dirty"] = False
+        elif not never_drop_dirty and set(current_never_drop) != set(default_never_drop_labels):
+            st.session_state["never_drop_players"] = list(default_never_drop_labels)
+        never_drop_labels = st.multiselect(
+            "Players",
+            options=[label for label, _ in player_options],
+            key="never_drop_players",
+            on_change=_mark_never_drop_dirty,
+        )
+        never_drop_ids = [label_to_id[label] for label in never_drop_labels if label in label_to_id]
+        if set(never_drop_ids) != set(stored_effective):
+            auto_set = set(auto_never_drop) if auto_never_drop else set(stored_auto)
+            manual_add = set(never_drop_ids) - auto_set
+            manual_remove = auto_set - set(never_drop_ids)
+            user_mgr.set_never_drop_state(
+                user_id=str(user_id),
+                league_id=str(league_id),
+                auto_ids=list(auto_set),
+                manual_add=list(manual_add),
+                manual_remove=list(manual_remove),
+                team_id=str(team_id),
+            )
+            st.session_state["never_drop_dirty"] = False
+
+    if not isinstance(never_drop_ids, set):
+        never_drop_ids = set(never_drop_ids)
 
 legacy_storage = RuleStorage()
 now = datetime.now(timezone.utc)
@@ -2921,7 +3139,7 @@ with apply_col1:
     if already_optimal:
         st.caption("Lineup already optimized based on current projections and confirmed status.")
 
-st.subheader("Make a single swap")
+st.subheader("Make any final lineup tweaks")
 st.caption("Swap one player for another immediately; this writes directly to Fantrax.")
 
 live_active_ids = [
@@ -3698,10 +3916,20 @@ if missing_projections_debug:
 st.divider()
 st.subheader("Create Rule")
 
-active_rows = [
+projections_map = st.session_state.get("projections_map")
+if projections_map is None:
+    projections_map = _load_projections()
+    st.session_state["projections_map"] = projections_map
+
+all_rows = [
     row
     for row in roster.rows
-    if getattr(row, "player", None) and getattr(row, "pos_id", "0") != "0"
+    if getattr(row, "player", None)
+]
+active_rows = [
+    row
+    for row in all_rows
+    if getattr(row, "pos_id", "0") != "0"
 ]
 
 if not active_rows:
@@ -3712,40 +3940,99 @@ active_labels = {
     str(row.player.id): f"{row.player.name} ({getattr(row.pos, 'short_name', '')})"
     for row in active_rows
 }
+roster_labels = {
+    str(row.player.id): f"{row.player.name} ({_display_pos(row)})"
+    for row in all_rows
+}
 
-# Live-updating controls (outside the form)
-active_player_id = st.selectbox(
-    "Active player to monitor",
-    options=list(active_labels.keys()),
-    format_func=lambda pid: active_labels.get(pid, pid),
-    key="conditional_active_select",
-)
-
+show_claims_builder = st.session_state.get("show_claims_builder", True)
+if not claims_allowed:
+    show_claims_builder = False
+action_options = {
+    "Lineup swap (bench player)": RuleActionType.LINEUP_SWAP,
+}
+if show_claims_builder:
+    action_options.update(
+        {
+            "FA add/drop (free agent)": RuleActionType.FA_CLAIM_DROP,
+            "FA add only (no drop)": FA_ACTION_ADD_ONLY,
+            "Drop only": FA_ACTION_DROP_ONLY,
+        }
+    )
 rule_action_label = st.radio(
     "Rule action",
-    options=["Lineup swap (bench player)", "FA claim/drop (free agent)"],
+    options=list(action_options.keys()),
     index=0,
-    help="Choose whether this rule swaps to an existing bench player or submits a free-agent claim.",
+    help="Choose whether this rule swaps to a bench player or submits a free-agent claim/drop.",
 )
-selected_action_type = (
-    RuleActionType.LINEUP_SWAP
-    if rule_action_label.startswith("Lineup")
-    else RuleActionType.FA_CLAIM_DROP
-)
+selected_action_type = action_options[rule_action_label]
 
-active_row = player_lookup.get(active_player_id)
-active_lineup = lineup_info_by_player.get(active_player_id)
+active_player_id: Optional[str] = None
+drop_player_id: Optional[str] = None
+override_never_drop = False
+
+if selected_action_type == RuleActionType.LINEUP_SWAP:
+    active_player_id = st.selectbox(
+        "Active player to monitor",
+        options=list(active_labels.keys()),
+        format_func=lambda pid: active_labels.get(pid, pid),
+        key="conditional_active_select",
+    )
+elif selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_DROP_ONLY):
+    drop_player_id = st.selectbox(
+        "Roster player to drop/monitor",
+        options=list(roster_labels.keys()),
+        format_func=lambda pid: roster_labels.get(pid, pid),
+        key="conditional_drop_select",
+    )
+
+active_row = player_lookup.get(active_player_id) if active_player_id else None
+active_lineup = lineup_info_by_player.get(active_player_id) if active_player_id else None
+drop_row = player_lookup.get(drop_player_id) if drop_player_id else None
+drop_lineup = lineup_info_by_player.get(drop_player_id) if drop_player_id else None
+claims_acknowledged = False
+claims_ack_checkbox = False
 
 if active_row:
     status_text = _format_status(active_lineup.status) if active_lineup else "Unknown"
-    kickoff_text = _format_kickoff(
-        active_lineup.kickoff if active_lineup else None
-    )
+    kickoff_text = _format_kickoff(active_lineup.kickoff if active_lineup else None)
     st.markdown(
         f"**Selected**: {active_row.player.name} (`{active_player_id}`) — lineup status: "
         f"`{status_text}` (kickoff {kickoff_text})"
     )
+if drop_row:
+    status_text = _format_status(drop_lineup.status) if drop_lineup else "Unknown"
+    kickoff_text = _format_kickoff(drop_lineup.kickoff if drop_lineup else None)
+    st.markdown(
+        f"**Drop candidate**: {drop_row.player.name} (`{drop_player_id}`) — lineup status: "
+        f"`{status_text}` (kickoff {kickoff_text})"
+    )
+    if drop_player_id in never_drop_ids:
+        override_never_drop = st.checkbox(
+            "Override never-drop guard for this rule",
+            value=False,
+            key="override_never_drop_rule",
+            help="Only enable if you are intentionally dropping a never-drop player.",
+        )
+        if not override_never_drop:
+            st.warning("This player is in your never-drop list; saving is disabled until you override.")
 
+if user_id and claims_allowed and selected_action_type in (
+    RuleActionType.FA_CLAIM_DROP,
+    FA_ACTION_ADD_ONLY,
+    FA_ACTION_DROP_ONLY,
+):
+    claims_acknowledged = user_mgr.get_claims_ack(str(user_id), str(league_id))
+    if claims_acknowledged:
+        st.caption("Claim/drop rules acknowledged for this league.")
+    else:
+        claims_ack_checkbox = st.checkbox(
+            "I understand these claim/drop rules submit live Fantrax transactions.",
+            value=False,
+            key="claims_ack_checkbox",
+        )
+
+period_id_map: Dict[str, str] = {}
 if not periods:
     st.error("No roster-change periods available. Visit the Overview page to refresh your session.")
     period_id = None
@@ -3945,12 +4232,22 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                 "Once confirmed lineups or legal swaps become available, the list will populate automatically."
             )
 
-if selected_action_type == RuleActionType.FA_CLAIM_DROP:
+claim_to_status_id: Optional[str] = None
+claim_position_id: Optional[str] = None
+post_claim_swap_out_id: Optional[str] = None
+drop_is_active = bool(drop_row and getattr(drop_row, "pos_id", "0") != "0")
+open_active_slots, open_reserve_slots = _open_roster_slots(roster)
+
+if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
     st.markdown("**Free agent candidate (conditional claim target)**")
-    if not active_lineup or not active_lineup.kickoff:
-        st.info("Waiting for active player's kickoff/time before evaluating FA candidates.")
+    drop_kickoff = drop_lineup.kickoff if drop_lineup else None
+    if selected_action_type == RuleActionType.FA_CLAIM_DROP and not drop_kickoff:
+        st.info("Waiting for drop candidate's kickoff/time before evaluating FA candidates.")
+    elif selected_action_type == FA_ACTION_ADD_ONLY and not (open_active_slots or open_reserve_slots):
+        st.info("No open roster slots available for add-only claims.")
     else:
         fa_candidate_rows: List[Dict[str, str]] = []
+        fa_confirmed_rows: List[Dict[str, str]] = []
         with st.spinner("Evaluating eligible free agents..."):
             try:
                 fa_status_map = fetch_fa_status_map(session=session, league_id=league_id)
@@ -3966,21 +4263,31 @@ if selected_action_type == RuleActionType.FA_CLAIM_DROP:
             for p in fa_pool:
                 sid = str(p.get("id"))
                 snapshot = fa_status_map.get(sid) if fa_status_map else None
-                if not snapshot:
-                    continue
-                if snapshot.status != LineupStatus.STARTING:
-                    continue
-                if snapshot.kickoff:
-                    if snapshot.kickoff <= now:
+                status_val = getattr(snapshot, "status", None) if snapshot else None
+                status_label = _format_status(status_val)
+                kickoff_dt = getattr(snapshot, "kickoff", None) if snapshot else None
+                is_confirmed = False
+                if status_val == LineupStatus.STARTING:
+                    if kickoff_dt and kickoff_dt <= now:
+                        is_confirmed = False
+                    elif drop_kickoff and kickoff_dt and kickoff_dt < drop_kickoff:
+                        is_confirmed = False
+                    else:
+                        is_confirmed = True
+                if selected_action_type == RuleActionType.FA_CLAIM_DROP:
+                    if not drop_player_id:
                         continue
-                    if active_lineup.kickoff and snapshot.kickoff < active_lineup.kickoff:
+                    if drop_player_id in never_drop_ids and not override_never_drop:
                         continue
-                if not ConditionalSwapEngine._drop_would_keep_roster_legal(
-                    roster_view,
-                    drop_id=active_player_id,
-                    min_gks=1,
-                ):
-                    continue
+                    if not ConditionalSwapEngine._drop_would_keep_roster_legal(
+                        roster_view,
+                        drop_id=drop_player_id,
+                        min_gks=1,
+                    ):
+                        continue
+                proj_row = _fa_projection_row(p.get("name"), p.get("team"), projections_map or {})
+                proj_fpts = proj_row.get("ProjFPts") if proj_row else None
+                proj_gs = proj_row.get("ProjGS") if proj_row else None
                 fa_candidate_rows.append(
                     {
                         "id": sid,
@@ -3988,13 +4295,28 @@ if selected_action_type == RuleActionType.FA_CLAIM_DROP:
                         "Team": p.get("team") or "",
                         "Position": p.get("position") or "",
                         "default_pos_id": p.get("default_pos_id"),
-                        "Kickoff (UTC)": _format_kickoff(snapshot.kickoff),
+                        "Status": status_label,
+                        "ProjFPts": proj_fpts,
+                        "ProjGS": proj_gs,
+                        "Kickoff (UTC)": _format_kickoff(kickoff_dt),
                         "Select": False,
                     }
                 )
+                if is_confirmed:
+                    fa_confirmed_rows.append(fa_candidate_rows[-1])
 
-        if fa_candidate_rows:
-            fa_df = pd.DataFrame(fa_candidate_rows)
+        display_rows = fa_confirmed_rows or fa_candidate_rows
+        if fa_candidate_rows and not fa_confirmed_rows:
+            st.info("No confirmed starters right now; showing all available free agents.")
+
+        if display_rows:
+            fa_df = pd.DataFrame(display_rows)
+            fa_df["ProjFPts"] = pd.to_numeric(fa_df["ProjFPts"], errors="coerce")
+            fa_df["ProjGS"] = pd.to_numeric(fa_df["ProjGS"], errors="coerce")
+            fa_df = fa_df.sort_values(
+                by=["ProjFPts", "ProjGS"],
+                ascending=[False, False],
+            )
             edited_fa_df = st.data_editor(
                 fa_df,
                 hide_index=True,
@@ -4004,6 +4326,9 @@ if selected_action_type == RuleActionType.FA_CLAIM_DROP:
                     "Name": st.column_config.TextColumn("Name", disabled=True),
                     "Team": st.column_config.TextColumn("Team", disabled=True),
                     "Position": st.column_config.TextColumn("Pos", disabled=True),
+                    "Status": st.column_config.TextColumn("Status", disabled=True),
+                    "ProjFPts": st.column_config.NumberColumn("ProjFPts", format="%.1f", disabled=True),
+                    "ProjGS": st.column_config.NumberColumn("ProjGS", disabled=True),
                     "Kickoff (UTC)": st.column_config.TextColumn("Kickoff (UTC)", disabled=True),
                     "id": st.column_config.TextColumn("id", disabled=True),
                     "default_pos_id": st.column_config.TextColumn("default_pos_id", disabled=True),
@@ -4026,7 +4351,51 @@ if selected_action_type == RuleActionType.FA_CLAIM_DROP:
                     f"FA target selected: **{fa_candidate['name']}** ({fa_candidate['position']} – {fa_candidate['team']})"
                 )
         else:
-            st.info("No eligible free agents currently meet the starting/legality requirements.")
+            st.info("No free agents available for this league/period.")
+
+    if fa_candidate:
+        active_targets: list[tuple[str, str]] = []
+        if drop_is_active:
+            active_targets.append(("Active (replace drop slot)", "active_drop"))
+        if open_active_slots:
+            active_targets.append(("Active (open slot)", "active_open"))
+
+        if active_targets:
+            target_choice = st.selectbox(
+                "Active placement",
+                options=[label for label, _ in active_targets],
+                index=0,
+                key="claim_destination_select",
+            )
+            target_key = dict(active_targets).get(target_choice)
+        else:
+            target_key = None
+
+        if target_key == "active_drop" and drop_row:
+            claim_to_status_id = "1"
+            claim_position_id = str(getattr(drop_row, "pos_id", "") or "")
+        elif target_key == "active_open" and open_active_slots:
+            slot_labels = [_slot_label(row) for row in open_active_slots]
+            slot_choice = st.selectbox(
+                "Active slot to fill",
+                options=slot_labels,
+                key="claim_active_slot_select",
+            )
+            slot_index = slot_labels.index(slot_choice)
+            slot_row = open_active_slots[slot_index]
+            claim_to_status_id = "1"
+            claim_position_id = str(getattr(slot_row, "pos_id", "") or "")
+        else:
+            claim_to_status_id = "2"
+            claim_position_id = str(fa_candidate.get("default_pos_id") or "")
+            st.caption("No open active slots; FA will claim to reserve then swap into active.")
+            st.markdown("**Active player to move to reserve after claim**")
+            post_claim_swap_out_id = st.selectbox(
+                "Active player to replace",
+                options=list(active_labels.keys()),
+                format_func=lambda pid: active_labels.get(pid, pid),
+                key="post_claim_swap_out_select",
+            )
 
 if selected_action_type == RuleActionType.LINEUP_SWAP:
     submit_disabled = not (
@@ -4036,17 +4405,43 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
         and active_lineup
         and active_lineup.kickoff
     )
-else:
+elif selected_action_type == RuleActionType.FA_CLAIM_DROP:
     submit_disabled = not (
-        active_player_id
+        drop_player_id
         and period_id
         and fa_candidate
-        and active_lineup
+        and claim_to_status_id
+        and claim_position_id
     )
-
-if selected_action_type == RuleActionType.LINEUP_SWAP and not user_id:
+    if claim_to_status_id == "2" and not post_claim_swap_out_id:
+        submit_disabled = True
+    if drop_player_id in never_drop_ids and not override_never_drop:
+        submit_disabled = True
+    if claims_allowed and not (claims_acknowledged or claims_ack_checkbox):
+        submit_disabled = True
+elif selected_action_type == FA_ACTION_ADD_ONLY:
+    submit_disabled = not (
+        period_id
+        and fa_candidate
+        and claim_to_status_id
+        and claim_position_id
+    )
+    if claim_to_status_id == "2" and not post_claim_swap_out_id:
+        submit_disabled = True
+    if claims_allowed and not (claims_acknowledged or claims_ack_checkbox):
+        submit_disabled = True
+elif selected_action_type == FA_ACTION_DROP_ONLY:
+    submit_disabled = not (drop_player_id and period_id)
+    if drop_player_id in never_drop_ids and not override_never_drop:
+        submit_disabled = True
+    if claims_allowed and not (claims_acknowledged or claims_ack_checkbox):
+        submit_disabled = True
+else:
     submit_disabled = True
-    st.info("Log in to save manual lineup swap rules.")
+
+if not user_id:
+    submit_disabled = True
+    st.info("Log in to save manual rules.")
 
 submitted = st.button("Save Rule", disabled=submit_disabled, type="primary", key="save_rule_btn")
 
@@ -4116,22 +4511,80 @@ if submitted and not submit_disabled:
             st.success("Rule saved successfully.")
             st.rerun()
         else:
-            rule = ConditionalSwapRule(
-                league_id=league_id,
-                team_id=team_id,
-                active_player_id=active_player_id,
-                backups=[],
-                period_id=str(period_id),
-                period_label=period_label,
-                condition=SwapCondition.NOT_STARTING,
-                action_type=RuleActionType.FA_CLAIM_DROP,
-                fa_add_scorer_id=fa_candidate["id"] if fa_candidate else None,
-                fa_add_position_id=fa_candidate["default_pos_id"] if fa_candidate else None,
-                fa_claim_to_status_id="2",
-                fa_add_display_name=fa_candidate["name"] if fa_candidate else None,
+            if not user_id:
+                st.warning("Log in to save manual rules.")
+                st.stop()
+            try:
+                existing_rules = load_rules_for_user(str(user_id))
+            except Exception:
+                existing_rules = []
+            action_key = selected_action_type.value if hasattr(selected_action_type, "value") else str(selected_action_type)
+            drop_key = str(drop_player_id or "")
+            fa_key = str(fa_candidate["id"]) if fa_candidate else ""
+            already_exists = False
+            for r in existing_rules:
+                if not _is_manual_rule(r):
+                    continue
+                if str(r.get("league_id")) != str(league_id) or str(r.get("team_id")) != str(team_id):
+                    continue
+                if str(r.get("period")) != str(period_id):
+                    continue
+                if str(r.get("action_type") or "") != action_key:
+                    continue
+                if action_key == FA_ACTION_DROP_ONLY and str(r.get("active_id") or "") == drop_key:
+                    if _normalized_rule_state(r.get("state")) != "fired":
+                        already_exists = True
+                        break
+                if action_key == RuleActionType.FA_CLAIM_DROP.value:
+                    if str(r.get("active_id") or "") == drop_key and str(r.get("fa_add_scorer_id") or "") == fa_key:
+                        if _normalized_rule_state(r.get("state")) != "fired":
+                            already_exists = True
+                            break
+                if action_key == FA_ACTION_ADD_ONLY and str(r.get("fa_add_scorer_id") or "") == fa_key:
+                    if _normalized_rule_state(r.get("state")) != "fired":
+                        already_exists = True
+                        break
+            if already_exists:
+                st.warning("A manual rule already exists for this selection and period.")
+                st.stop()
+
+            rec = {
+                "action_type": action_key,
+                "active_id": drop_player_id if drop_player_id else None,
+                "drop_label": roster_labels.get(drop_player_id, "") if drop_player_id else "",
+                "fa_add_scorer_id": fa_candidate["id"] if fa_candidate else None,
+                "fa_add_position_id": claim_position_id,
+                "fa_claim_to_status_id": claim_to_status_id,
+                "fa_bid_amount": fa_bid_amount,
+                "fa_add_display_name": fa_candidate["name"] if fa_candidate else None,
+                "post_claim_swap_out_id": post_claim_swap_out_id,
+                "period": period_id,
+                "period_label": period_label,
+                "trigger": "confirmed_lineup",
+                "max_fires": 1,
+                "league_id": league_id,
+                "team_id": team_id,
+                "user_id": str(user_id),
+                "source": "manual",
+                "source_type": 3,
+                "state": "active",
+                "override_never_drop": bool(override_never_drop),
+            }
+            append_rules_for_user(
+                str(user_id),
+                [rec],
+                source="manual",
+                source_type=3,
+                default_max_fires=1,
             )
-            legacy_storage.save_rule(rule)
-            st.success("Rule saved successfully (legacy FA rule).")
+            if claims_allowed and not claims_acknowledged:
+                user_mgr.set_claims_ack(
+                    user_id=str(user_id),
+                    league_id=str(league_id),
+                    acknowledged=True,
+                    team_id=str(team_id),
+                )
+            st.success("Rule saved successfully.")
             st.rerun()
     except ValueError as exc:
         st.warning(str(exc))
@@ -4143,7 +4596,8 @@ if submitted and not submit_disabled:
 # ----------------------------------------------------------------------
 # Existing rules (manual, per-user storage)
 # ----------------------------------------------------------------------
-manual_rules: List[Dict[str, Any]] = []
+manual_swap_rules: List[Dict[str, Any]] = []
+manual_claim_rules: List[Dict[str, Any]] = []
 legacy_fa_rules: List[ConditionalSwapRule] = []
 
 if user_id:
@@ -4161,12 +4615,41 @@ if user_id:
         }
         to_migrate = []
         for legacy in legacy_rules:
-            if legacy.action_type == RuleActionType.FA_CLAIM_DROP:
-                legacy_fa_rules.append(legacy)
-                continue
             if legacy.id in existing_origin:
                 continue
             state = "disabled" if legacy.state == RuleState.DISABLED else "active"
+            if legacy.action_type == RuleActionType.FA_CLAIM_DROP:
+                drop_row = player_lookup.get(legacy.active_player_id)
+                drop_label = ""
+                if drop_row:
+                    drop_label = _format_player_label(
+                        drop_row.player.name,
+                        _display_pos(drop_row),
+                    )
+                to_migrate.append(
+                    {
+                        "action_type": RuleActionType.FA_CLAIM_DROP.value,
+                        "active_id": legacy.active_player_id,
+                        "drop_label": drop_label,
+                        "fa_add_scorer_id": legacy.fa_add_scorer_id,
+                        "fa_add_position_id": legacy.fa_add_position_id,
+                        "fa_claim_to_status_id": legacy.fa_claim_to_status_id,
+                        "fa_bid_amount": legacy.fa_bid_amount,
+                        "fa_add_display_name": legacy.fa_add_display_name,
+                        "period": legacy.period_id,
+                        "period_label": legacy.period_label,
+                        "trigger": "confirmed_lineup",
+                        "max_fires": legacy.max_fires_per_period,
+                        "league_id": legacy.league_id,
+                        "team_id": legacy.team_id,
+                        "user_id": str(user_id),
+                        "source": "manual",
+                        "source_type": 3,
+                        "origin_rule_id": legacy.id,
+                        "state": state,
+                    }
+                )
+                continue
             group_id = legacy.id
             for backup in legacy.sorted_backups():
                 row = player_lookup.get(backup.reserve_player_id)
@@ -4207,25 +4690,33 @@ if user_id:
             except Exception:
                 existing_rules = []
 
-    manual_rules = [
-        r
-        for r in existing_rules
-        if _is_manual_rule(r)
-        and str(r.get("league_id")) == str(league_id)
-        and str(r.get("team_id")) == str(team_id)
-    ]
+    for r in existing_rules:
+        if not _is_manual_rule(r):
+            continue
+        if str(r.get("league_id")) != str(league_id) or str(r.get("team_id")) != str(team_id):
+            continue
+        action = str(r.get("action_type") or "")
+        if action in {
+            RuleActionType.FA_CLAIM_DROP.value,
+            FA_ACTION_ADD_ONLY,
+            FA_ACTION_DROP_ONLY,
+        }:
+            if claims_allowed:
+                manual_claim_rules.append(r)
+        else:
+            manual_swap_rules.append(r)
 else:
     legacy_rules = legacy_storage.load_rules_for_team(league_id, team_id)
     legacy_fa_rules = [r for r in legacy_rules if r.action_type == RuleActionType.FA_CLAIM_DROP]
 
-if not manual_rules and not legacy_fa_rules:
+if not manual_swap_rules and not manual_claim_rules and not legacy_fa_rules:
     st.info("No manual conditional rules configured yet.")
 else:
-    if manual_rules:
+    if manual_swap_rules:
         st.divider()
         st.subheader("Existing Conditional Rules")
         grouped: Dict[str, Dict[str, Any]] = {}
-        for r in manual_rules:
+        for r in manual_swap_rules:
             group_id = str(r.get("group_id") or "")
             if not group_id:
                 group_id = f"{r.get('period')}::{r.get('active_id')}"
@@ -4361,10 +4852,106 @@ else:
             st.caption(f"Rule group ID: {group_id}")
             st.markdown("---")
 
+    if manual_claim_rules and claims_allowed:
+        st.divider()
+        st.subheader("Existing Claim/Drop Rules")
+        manual_claim_rules = sorted(
+            manual_claim_rules,
+            key=lambda r: (
+                int(r.get("period") or 0),
+                str(r.get("active_id") or ""),
+                str(r.get("fa_add_scorer_id") or ""),
+            ),
+        )
+        for rule in manual_claim_rules:
+            action = str(rule.get("action_type") or RuleActionType.FA_CLAIM_DROP.value)
+            drop_id = str(rule.get("active_id") or "")
+            drop_row = player_lookup.get(drop_id)
+            drop_name = drop_row.player.name if drop_row else drop_id  # type: ignore[union-attr]
+            fa_label = (
+                rule.get("fa_add_display_name")
+                or rule.get("fa_add_scorer_id")
+                or "unknown FA"
+            )
+            post_swap_out = rule.get("post_claim_swap_out_id")
+            period_label = (
+                rule.get("period_label")
+                or period_id_map.get(str(rule.get("period")), str(rule.get("period")))
+            )
+            state_text = _normalized_rule_state(rule.get("state"))
+            if action == FA_ACTION_DROP_ONLY:
+                st.markdown(
+                    f"**Drop rule:** When **{drop_name}** is *not starting*, drop **{drop_name}** during **{period_label}**."
+                )
+            elif action == FA_ACTION_ADD_ONLY:
+                st.markdown(
+                    f"**Add rule:** When **{fa_label}** is *starting*, submit claim to add **{fa_label}** "
+                    f"during **{period_label}**."
+                )
+            else:
+                st.markdown(
+                    f"**Add/Drop rule:** When **{drop_name}** is *not starting* and **{fa_label}** is *starting*, "
+                    f"submit claim to add **{fa_label}** and drop **{drop_name}** during **{period_label}**."
+                )
+            if post_swap_out:
+                swap_row = player_lookup.get(str(post_swap_out))
+                swap_label = swap_row.player.name if swap_row else post_swap_out  # type: ignore[union-attr]
+                st.caption(f"After claim, swap into active (send to reserve): {swap_label}")
+            st.caption(
+                f"Type: {action} | State: {state_text} | Max fires: {rule.get('max_fires', 1)}"
+            )
+            action_cols = st.columns(2)
+            if state_text != "fired":
+                toggle_label = "Disable" if state_text == "active" else "Enable"
+                if action_cols[0].button(
+                    f"{toggle_label} Rule",
+                    key=f"toggle_manual_claim_{rule.get('rule_id')}",
+                    use_container_width=True,
+                ):
+                    try:
+                        path = rules_path_for_user(str(user_id))
+                        updated_rules = load_rules_for_user(str(user_id))
+                        for r in updated_rules:
+                            if not _is_manual_rule(r):
+                                continue
+                            if str(r.get("rule_id")) == str(rule.get("rule_id")):
+                                r["state"] = "disabled" if state_text == "active" else "active"
+                        save_rules(updated_rules, path=path)
+                        st.rerun()
+                    except Exception:
+                        st.warning("Failed to update rule state.")
+            else:
+                action_cols[0].write("")
+            if action_cols[1].button(
+                "Delete",
+                key=f"delete_manual_claim_{rule.get('rule_id')}",
+                use_container_width=True,
+            ):
+                try:
+                    path = rules_path_for_user(str(user_id))
+                    updated_rules = load_rules_for_user(str(user_id))
+                    retained = []
+                    for r in updated_rules:
+                        if not _is_manual_rule(r):
+                            retained.append(r)
+                            continue
+                        if str(r.get("rule_id")) != str(rule.get("rule_id")):
+                            retained.append(r)
+                    save_rules(retained, path=path)
+                    st.rerun()
+                except Exception:
+                    st.warning("Failed to delete rule.")
+            st.caption(f"Rule ID: {rule.get('rule_id')}")
+            st.markdown("---")
+    elif manual_claim_rules and not claims_allowed:
+        st.divider()
+        st.subheader("Existing Claim/Drop Rules")
+        st.caption("Claim/drop rules are locked to the test league during the pilot.")
+
     if legacy_fa_rules:
         st.divider()
         st.subheader("Legacy FA claim/drop rules")
-        st.caption("FA claim rules are stored in legacy storage and are not executed by the runner yet.")
+        st.caption("Legacy FA claim rules are stored in legacy storage.")
         for rule in legacy_fa_rules:
             active_name = (
                 player_lookup.get(rule.active_player_id).player.name  # type: ignore[union-attr]
@@ -4514,3 +5101,7 @@ else:
                 reserve_candidates=reserve_candidates,
             )
             st.dataframe(pd.DataFrame(debug_rows), hide_index=True, use_container_width=True)
+
+    st.divider()
+    st.subheader("Auto-generated claim/drop rules (read-only)")
+    st.caption("Auto claims/drops are disabled during testing.")

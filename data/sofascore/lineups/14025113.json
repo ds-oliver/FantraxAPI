@@ -114,12 +114,6 @@
         "reason": 1
       },
       {
-        "id": 868715,
-        "name": "Jorge Cuenca",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 371222,
         "name": "Saša Lukić",
         "position": "M",
@@ -187,8 +181,8 @@
         "captain": false
       },
       {
-        "id": 1065588,
-        "name": "Diego Gómez",
+        "id": 1400106,
+        "name": "Yankuba Minteh",
         "position": "M",
         "team_id": 30,
         "substitute": false,
@@ -211,12 +205,12 @@
         "captain": false
       },
       {
-        "id": 33902,
-        "name": "Danny Welbeck",
-        "position": "F",
+        "id": 946695,
+        "name": "Georginio Rutter",
+        "position": "M",
         "team_id": 30,
         "substitute": false,
-        "captain": true
+        "captain": false
       }
     ],
     "subs": [],
@@ -253,5 +247,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-01-22 19:00:43+0000"
+  "fetched_at_utc": "2026-01-23 20:01:26+0000"
 }

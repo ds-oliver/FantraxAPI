@@ -22,7 +22,7 @@ When you boot your Mac and need to rebuild the working environment from scratch:
 5. Launch any local Streamlit instance on the chosen port:
    ```
    cd /Users/hogan/FantraxAPI
-   PYTHONPATH=/Users/hogan/FantraxAPI streamlit run apps/auth_login/overview.py --server.address 127.0.0.1 --server.port 12345
+   PYTHONPATH=/Users/hogan/FantraxAPI streamlit run apps/auth_login/overview.py --server.address 127.0.0.1 --server.port 12346
    ```
 6. Open the Syncthing tunnel (`ssh -L 8385:127.0.0.1:8385 fantrax-vps`) and visit `http://127.0.0.1:8385/`.
 7. Open the Streamlit tunnel (`ssh -L 8501:127.0.0.1:8501 fantrax-vps`) to access the VPS UI—make sure you already ran the Step 2 routine (`BRANCH=testing /opt/FantraxAPI/bin/pull_restart.sh` plus `sudo systemctl restart fantrax-pull-restart.service`) so the remote Streamlit app is listening before you tunnel it.

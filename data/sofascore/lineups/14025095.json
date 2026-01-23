@@ -69,8 +69,8 @@
         "captain": false
       },
       {
-        "id": 895576,
-        "name": "Marcus Tavernier",
+        "id": 1476524,
+        "name": "Alex Tóth",
         "position": "M",
         "team_id": 60,
         "substitute": false,
@@ -171,8 +171,8 @@
         "captain": false
       },
       {
-        "id": 826215,
-        "name": "Ibrahima Konaté",
+        "id": 318927,
+        "name": "Joe Gomez",
         "position": "D",
         "team_id": 44,
         "substitute": false,
@@ -274,8 +274,20 @@
         "name": "Alexander Isak",
         "position": "F",
         "reason": 1
+      },
+      {
+        "id": 826215,
+        "name": "Ibrahima Konaté",
+        "position": "D",
+        "reason": 0
+      },
+      {
+        "id": 845386,
+        "name": "Federico Chiesa",
+        "position": "F",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-01-22 19:00:44+0000"
+  "fetched_at_utc": "2026-01-23 20:01:28+0000"
 }

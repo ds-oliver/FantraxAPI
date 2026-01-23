@@ -455,6 +455,127 @@ class UserManager:
 			logger.error(f"Failed to set do-not-move for user {user_id}: {e}")
 			return False
 
+	def get_claims_ack(self, user_id: str, league_id: str) -> bool:
+		"""Return whether the user acknowledged claim/drop rules for this league."""
+		user = self.get_user_by_id(user_id) or {}
+		claims_ack = user.get("claims_ack") or {}
+		entry = claims_ack.get(str(league_id))
+		if isinstance(entry, dict):
+			return bool(entry.get("acknowledged"))
+		if isinstance(entry, bool):
+			return entry
+		return False
+
+	def set_claims_ack(
+		self,
+		user_id: str,
+		league_id: str,
+		acknowledged: bool = True,
+		team_id: Optional[str] = None,
+	) -> bool:
+		"""Persist claim/drop acknowledgement for this user/league."""
+		try:
+			data = self._load_users()
+			users = data.get("users", {})
+			if user_id not in users:
+				logger.error(f"User {user_id} not found")
+				return False
+			claims_ack = users[user_id].get("claims_ack") or {}
+			claims_ack[str(league_id)] = {
+				"acknowledged": bool(acknowledged),
+				"updated_at": datetime.utcnow().isoformat(),
+				"team_id": str(team_id) if team_id else None,
+			}
+			users[user_id]["claims_ack"] = claims_ack
+			data["users"] = users
+			self._save_users(data)
+			logger.info("Updated claims acknowledgement for user=%s league=%s", user_id, league_id)
+			return True
+		except Exception as e:
+			logger.error(f"Failed to set claims acknowledgement for user {user_id}: {e}")
+			return False
+
+	def get_never_drop(self, user_id: str, league_id: str) -> list[str]:
+		"""Return list of player ids that should never be dropped."""
+		state = self.get_never_drop_state(user_id, league_id)
+		return state.get("effective", [])
+
+	def get_never_drop_state(self, user_id: str, league_id: str) -> Dict[str, Any]:
+		"""Return never-drop state including auto/manual overrides."""
+		user = self.get_user_by_id(user_id) or {}
+		never_drop = user.get("never_drop") or {}
+		entry = never_drop.get(str(league_id))
+		legacy = False
+		auto_ids: list[str] = []
+		manual_add: list[str] = []
+		manual_remove: list[str] = []
+		if isinstance(entry, dict):
+			auto_ids = [str(pid) for pid in (entry.get("auto") or [])]
+			manual_add = [str(pid) for pid in (entry.get("manual_add") or [])]
+			manual_remove = [str(pid) for pid in (entry.get("manual_remove") or [])]
+		elif isinstance(entry, list):
+			legacy = True
+			manual_add = [str(pid) for pid in entry]
+		effective = (set(auto_ids) - set(manual_remove)) | set(manual_add)
+		return {
+			"auto": auto_ids,
+			"manual_add": manual_add,
+			"manual_remove": manual_remove,
+			"effective": list(effective),
+			"legacy": legacy,
+		}
+
+	def set_never_drop(
+		self,
+		user_id: str,
+		league_id: str,
+		player_ids: list[str],
+		team_id: Optional[str] = None,
+	) -> bool:
+		"""Set the never-drop list for a user/league (manual-only fallback)."""
+		return self.set_never_drop_state(
+			user_id=user_id,
+			league_id=league_id,
+			auto_ids=[],
+			manual_add=player_ids,
+			manual_remove=[],
+			team_id=team_id,
+		)
+
+	def set_never_drop_state(
+		self,
+		user_id: str,
+		league_id: str,
+		auto_ids: list[str],
+		manual_add: list[str],
+		manual_remove: list[str],
+		team_id: Optional[str] = None,
+	) -> bool:
+		"""Set never-drop state with auto list and manual overrides."""
+		try:
+			data = self._load_users()
+			users = data.get("users", {})
+			if user_id not in users:
+				logger.error(f"User {user_id} not found")
+				return False
+			never_drop = users[user_id].get("never_drop") or {}
+			never_drop[str(league_id)] = {
+				"auto": [str(pid) for pid in auto_ids],
+				"manual_add": [str(pid) for pid in manual_add],
+				"manual_remove": [str(pid) for pid in manual_remove],
+			}
+			users[user_id]["never_drop"] = never_drop
+			users[user_id]["never_drop_updated_at"] = datetime.utcnow().isoformat()
+			if team_id:
+				users[user_id]["never_drop_team_id"] = str(team_id)
+			data["users"] = users
+			self._save_users(data)
+			logger.info("Updated never-drop state for user=%s league=%s", user_id, league_id)
+			return True
+		except Exception as e:
+			logger.error(f"Failed to set never-drop for user {user_id}: {e}")
+			return False
+
 	def get_late_kos_policy(self, user_id: str, league_id: str) -> str:
 		"""Return late KOS policy for this user/league."""
 		user = self.get_user_by_id(user_id) or {}

@@ -117,7 +117,7 @@ except Exception:
             api_logger.addHandler(ah)
         api_logger.setLevel(logging.DEBUG)
 
-st.set_page_config(page_title="Overview", page_icon="🔁", layout="wide")
+st.set_page_config(page_title="Auth & Overview", page_icon="🔁", layout="wide")
 
 LOG_PATH = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log"
 configure_logging(LOG_PATH)
@@ -1427,19 +1427,31 @@ def main():
 	# Show header with user info and logout button
 	col1, col2 = st.columns([4, 1])
 	with col1:
-		st.title("Overview: Roster Management")
+		st.title("Auth & Overview")
 		st.caption(f"Logged in as: {username}")
 	with col2:
 		if st.button("Logout", type="secondary"):
 			logout()
 	
+	# Landing page overview
+	st.subheader("Quick Start")
+	st.markdown(
+		"**Conditional Swaps**\n"
+		"- Create rules that automatically swap players when conditions are met.\n"
+		"- View active rules, recent executions, and any errors from the last run.\n\n"
+		"**Trade Opps**\n"
+		"- See potential trade targets based on roster needs and surplus.\n"
+		"- Compare suggested deals and their impact at a glance."
+	)
+
 	# Check if user has connected their Fantrax cookies
+	needs_connect = True
 	artifacts = user_mgr.load_user_cookies(user_id)
 	if not artifacts:
 		st.warning("""
 		**Connect your Fantrax account**
 		
-		Upload your Fantrax cookies to enable roster management.
+		Upload your Fantrax cookies to enable conditional swaps and trade analysis.
 		""")
 	else:
 		# Store artifacts in session state for existing functionality
@@ -1460,21 +1472,22 @@ def main():
 				Please reconnect below to resume.
 				""")
 				st.session_state.pop("auth_artifacts", None)
-			elif validation['expires_soon']:
-				st.warning("""
-				⚠️ **Cookies expire soon (< 24 hours)**
-				
-				Re-upload fresh cookies to avoid interruption.
-				""")
+			else:
+				needs_connect = False
+				if validation['expires_soon']:
+					st.warning("""
+					⚠️ **Cookies expire soon (< 24 hours)**
+					
+					Re-upload fresh cookies to avoid interruption.
+					""")
 		except Exception as e:
 			logger.error(f"Error checking auth: {e}")
 			st.warning(f"⚠️ Could not validate session: {str(e)}")
 	
-	# Show main UI sections
-	st.divider()
-	ui_login_section()
-	st.divider()
-	ui_simple_subs_section()
+	# Show connect UI only when missing or invalid
+	if needs_connect:
+		st.divider()
+		ui_login_section()
 
 
 if __name__ == "__main__":

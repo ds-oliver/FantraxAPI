@@ -126,12 +126,6 @@
         "reason": 1
       },
       {
-        "id": 43215,
-        "name": "Nathaniel Clyne",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 1465401,
         "name": "Caleb Kporha",
         "position": "D",
@@ -252,27 +246,9 @@
         "reason": 1
       },
       {
-        "id": 996958,
-        "name": "Malo Gusto",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 352668,
         "name": "Tosin Adarabioyo",
         "position": "D",
-        "reason": 1
-      },
-      {
-        "id": 1597265,
-        "name": "Estêvão",
-        "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 1140599,
-        "name": "Jamie Gittens",
-        "position": "M",
         "reason": 1
       },
       {
@@ -295,5 +271,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-01-22 19:00:45+0000"
+  "fetched_at_utc": "2026-01-23 20:01:28+0000"
 }

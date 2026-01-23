@@ -267,3 +267,106 @@ class WaiversService:
 			raise FantraxException(f"list_players_by_name(getPlayerStats) failed: {e}")
 
 		return collected[:limit]
+
+	def _parse_cell_float(self, cell: Any) -> Optional[float]:
+		if cell is None:
+			return None
+		raw = cell
+		if isinstance(cell, dict):
+			raw = cell.get("content")
+		if raw is None:
+			return None
+		text = str(raw)
+		text = text.replace(",", "")
+		# strip basic HTML tags
+		while "<" in text and ">" in text:
+			start = text.find("<")
+			end = text.find(">", start + 1)
+			if start == -1 or end == -1:
+				break
+			text = text[:start] + text[end + 1 :]
+		text = text.strip()
+		if not text:
+			return None
+		try:
+			return float(text)
+		except Exception:
+			return None
+
+	def _fpts_cell_index(self, header_cells: List[Dict[str, Any]]) -> Optional[int]:
+		for idx, cell in enumerate(header_cells):
+			key = str(cell.get("key") or "").lower()
+			short = str(cell.get("shortName") or "").lower()
+			name = str(cell.get("name") or "").lower()
+			if key == "fpts" or short == "fpts" or "fantasy points" in name or "fpts" in name:
+				return idx
+		return None
+
+	def list_top_players_by_fpts(
+		self,
+		limit: int = 50,
+		status: str = "ALL",
+	) -> List[Dict[str, Any]]:
+		"""
+		Return the top players by fantasy points (FPts) from the Players table.
+		"""
+		collected: List[Dict[str, Any]] = []
+		page_number = 1
+		fpts_index: Optional[int] = None
+		last_total_pages: Optional[int] = None
+
+		while len(collected) < limit:
+			per_page = max(1, min(50, limit - len(collected)))
+			resp = self._fetch_player_stats_page(
+				page_number=page_number,
+				status=status,
+				max_results=per_page,
+			)
+
+			if not isinstance(resp, dict):
+				break
+
+			if fpts_index is None:
+				header = resp.get("tableHeader") or {}
+				header_cells = header.get("cells") or []
+				if isinstance(header_cells, list):
+					fpts_index = self._fpts_cell_index(header_cells)
+
+			table = resp.get("statsTable") or resp.get("table") or []
+			rows = table if isinstance(table, list) else table.get("rows", [])
+			if not rows:
+				break
+
+			for row in rows:
+				scorer = row.get("scorer") or row.get("player") or {}
+				pid = scorer.get("scorerId") or scorer.get("playerId") or scorer.get("id")
+				if not pid:
+					continue
+				cells = row.get("cells") or []
+				fpts_val = None
+				if fpts_index is not None and fpts_index < len(cells):
+					fpts_val = self._parse_cell_float(cells[fpts_index])
+				collected.append(
+					{
+						"id": pid,
+						"name": scorer.get("name") or scorer.get("shortName") or scorer.get("longName"),
+						"team": scorer.get("teamShortName") or scorer.get("teamName"),
+						"position": scorer.get("posShortNames"),
+						"fpts": fpts_val,
+					}
+				)
+				if len(collected) >= limit:
+					break
+
+			prs = resp.get("paginatedResultSet") or {}
+			total_pages = prs.get("totalNumPages")
+			if total_pages is not None:
+				try:
+					last_total_pages = int(total_pages)
+				except Exception:
+					last_total_pages = None
+			page_number += 1
+			if last_total_pages and page_number > last_total_pages:
+				break
+
+		return collected[:limit]

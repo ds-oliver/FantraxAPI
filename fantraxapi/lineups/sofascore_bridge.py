@@ -14,6 +14,7 @@ import logging
 import yaml
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Set
 
@@ -24,12 +25,26 @@ from fantraxapi.player_mapping import PlayerMappingManager
 logger = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parents[2]
 _LOG_PATH = REPO_ROOT / "data" / "logs" / "conditional_swaps.log"
+LOG_TIMEZONE = "America/Los_Angeles"
+
+def _log_time_converter(*_args):
+    return datetime.now(ZoneInfo(LOG_TIMEZONE)).timetuple()
+
+def _format_log_dt(dt: Optional[datetime]) -> Optional[str]:
+    if not dt:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    try:
+        return dt.astimezone(ZoneInfo(LOG_TIMEZONE)).isoformat()
+    except Exception:
+        return dt.isoformat()
 if not any(getattr(h, "baseFilename", None) == str(_LOG_PATH) for h in logger.handlers):
     _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     handler = logging.FileHandler(_LOG_PATH)
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)s [sofascore_bridge] %(message)s")
-    )
+    formatter = logging.Formatter("%(asctime)s %(levelname)s [sofascore_bridge] %(message)s")
+    formatter.converter = _log_time_converter
+    handler.setFormatter(formatter)
     logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
@@ -838,7 +853,7 @@ def debug_player_lineup_context(
                 "[lineup-debug] Non-future kickoff for player %s status=%s kickoff=%s event=%s",
                 fantrax_player_id,
                 lineup_status,
-                kickoff,
+                _format_log_dt(kickoff),
                 snapshot_event_id,
             )
         if snapshot_event_id is not None and snapshot_event_id not in allowed_event_ids:
@@ -991,7 +1006,7 @@ def build_lineup_info_by_player(
                 getattr(snapshot, "sofascore_id", None) if snapshot else None,
                 event_id,
                 getattr(snapshot, "source_path", None),
-                kickoff,
+                _format_log_dt(kickoff),
             )
         if event_id is not None and schedule_kickoff:
             # If we have a scheduled event and still no SofaScore status (not in starters/subs/missing),

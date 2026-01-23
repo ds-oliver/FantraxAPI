@@ -43,11 +43,15 @@ from fantraxapi.lineups.conditional_swaps import (
     get_available_periods,
 )
 from fantraxapi.lineups.lineup_resolver import resolve_lineup_info
-from fantraxapi.lineups.fantrax_lineup_bridge import global_status_path_for_user
+from fantraxapi.lineups.fantrax_lineup_bridge import (
+    fetch_fa_status_map,
+    global_status_path_for_user,
+)
 from fantraxapi.lineups.sofascore_bridge import infer_current_gameweek
 from fantraxapi.subs import SubsService
 from fantraxapi.player_mapping import PlayerMappingManager
 from fantraxapi.objs import RosterRow
+from fantraxapi.waivers import WaiversService
 
 from utils.conditional_rule_store import (
     DEFAULT_RULES_PATH,
@@ -67,7 +71,12 @@ except Exception:
 
 LOG_PATH = Path("data/logs/conditional_runner.log")
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-logging.Formatter.converter = time.gmtime
+LOG_TIMEZONE = "America/Los_Angeles"
+
+def _log_time_converter(*_args):
+    return datetime.now(ZoneInfo(LOG_TIMEZONE)).timetuple()
+
+logging.Formatter.converter = _log_time_converter
 logging.basicConfig(
     filename=LOG_PATH,
     level=logging.INFO,
@@ -76,6 +85,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 PROJECTIONS_PATH = Path("data/derived/projections.parquet")
 AUTO_MAX_BACKUPS = 3
+AUTO_MAX_FA_CANDIDATES = 3
+FA_POOL_LIMIT = 200
+ENABLE_AUTO_CLAIMS = False
+CLAIMS_TEST_LEAGUE_ID = "0z7r5871mc1yqc0s"
 CONFIRM_WINDOW_MINUTES = 60
 LOCK_DIR = Path("data/locks/conditional_runner")
 LOCK_DIR.mkdir(parents=True, exist_ok=True)
@@ -91,7 +104,7 @@ def _format_datetime_for_user(dt: Optional[datetime], tz_name: str) -> Optional[
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     try:
-        zone = ZoneInfo(tz_name or "UTC")
+        zone = ZoneInfo(tz_name or LOG_TIMEZONE)
     except Exception:
         zone = timezone.utc
     try:
@@ -102,12 +115,12 @@ def _format_datetime_for_user(dt: Optional[datetime], tz_name: str) -> Optional[
 
 def _resolve_user_timezone(user_mgr: Optional[UserManager], user_id: Optional[str]) -> str:
     if not user_mgr or not user_id:
-        return "UTC"
+        return LOG_TIMEZONE
     try:
         tz = user_mgr.get_timezone(str(user_id))
     except Exception:
         tz = None
-    return tz or "UTC"
+    return tz or LOG_TIMEZONE
 
 
 def _sanitize_lock_segment(value: Optional[Any]) -> str:
@@ -196,6 +209,14 @@ def _run_lock(
             _release_run_lock(path)
 
 
+def _rule_action_type(rule: Dict[str, Any]) -> str:
+    return str(rule.get("action_type") or "").lower()
+
+
+def _is_fa_action(rule: Dict[str, Any]) -> bool:
+    return _rule_action_type(rule) in {"fa_claim_drop", "fa_add_only", "drop_only"}
+
+
 def _eligible(rule: Dict[str, Any]) -> bool:
     """
     Determine if a rule is eligible to be executed.
@@ -212,6 +233,31 @@ def _eligible(rule: Dict[str, Any]) -> bool:
     if not rule.get("active_id") or not rule.get("reserve_id"):
         return False
     return True
+
+
+def _eligible_fa_rule(rule: Dict[str, Any]) -> bool:
+    """
+    Determine if a FA claim/drop rule is eligible to be executed.
+    """
+    if not _is_fa_action(rule):
+        return False
+    state = str(rule.get("state") or "").lower()
+    if state == "fired":
+        return False
+    if state in {"disabled", "inactive", "off"}:
+        return False
+    fired_count = int(rule.get("fired_count") or 0)
+    max_fires = int(rule.get("max_fires") or 1)
+    if fired_count >= max_fires:
+        return False
+    action_type = _rule_action_type(rule)
+    add_id = rule.get("fa_add_scorer_id") or rule.get("fa_add_id")
+    drop_id = rule.get("drop_player_id") or rule.get("active_id")
+    if action_type == "drop_only":
+        return bool(drop_id)
+    if action_type == "fa_add_only":
+        return bool(add_id)
+    return bool(add_id and drop_id)
 
 
 def _normalize_player_name(name: Optional[str]) -> Optional[str]:
@@ -360,6 +406,50 @@ def _load_projections_map(path: Path = PROJECTIONS_PATH) -> Dict[Tuple[str, str]
     return proj_map
 
 
+def _update_never_drop_auto(
+    *,
+    user_mgr: Optional[UserManager],
+    user_id: Optional[str],
+    league_id: str,
+    team_id: str,
+    roster: Any,
+    waivers_service: WaiversService,
+) -> set[str]:
+    if not user_mgr or not user_id:
+        return set()
+    if str(league_id) != CLAIMS_TEST_LEAGUE_ID:
+        return set(user_mgr.get_never_drop(str(user_id), str(league_id)) or [])
+    try:
+        top_players = waivers_service.list_top_players_by_fpts(limit=50, status="ALL")
+    except Exception as exc:
+        logger.info("Failed to refresh never-drop list: %s", exc)
+        return set(user_mgr.get_never_drop(str(user_id), str(league_id)) or [])
+    top_ids = {str(p.get("id")) for p in top_players if p.get("id")}
+    auto_ids: list[str] = []
+    for row in roster.rows:
+        player = getattr(row, "player", None)
+        if not player or not getattr(player, "id", None):
+            continue
+        pid = str(player.id)
+        if pid in top_ids:
+            auto_ids.append(pid)
+    state = user_mgr.get_never_drop_state(str(user_id), str(league_id))
+    manual_add = list(state.get("manual_add") or [])
+    manual_remove = list(state.get("manual_remove") or [])
+    stored_auto = set(state.get("auto") or [])
+    auto_set = set(auto_ids)
+    if stored_auto != auto_set:
+        user_mgr.set_never_drop_state(
+            user_id=str(user_id),
+            league_id=str(league_id),
+            auto_ids=auto_ids,
+            manual_add=manual_add,
+            manual_remove=manual_remove,
+            team_id=str(team_id),
+        )
+    return (auto_set - set(manual_remove)) | set(manual_add)
+
+
 def _build_kos_index_map(
     lineup_info_by_player: Dict[str, Any],
 ) -> Tuple[Dict[str, int], Optional[datetime], Optional[datetime]]:
@@ -501,6 +591,7 @@ def _summarize_candidates(candidates: List[Dict[str, Any]], user_timezone: str =
     summary: List[Dict[str, Any]] = []
     for c in candidates:
         kickoff = c.get("kickoff")
+        kickoff_local = _format_datetime_for_user(kickoff, user_timezone)
         summary.append(
             {
                 "reserve_id": c.get("reserve_id"),
@@ -509,8 +600,8 @@ def _summarize_candidates(candidates: List[Dict[str, Any]], user_timezone: str =
                 "kos_index": c.get("kos_index"),
                 "locked": c.get("locked"),
                 "lock_bypass": c.get("lock_bypass"),
-                "kickoff": kickoff.isoformat() if kickoff else None,
-                "kickoff_local": _format_datetime_for_user(kickoff, user_timezone),
+                "kickoff": kickoff_local,
+                "kickoff_local": kickoff_local,
             }
         )
     return summary
@@ -685,6 +776,81 @@ def _projection_for_row(row: RosterRow, projections: Dict[Tuple[str, str], dict]
     return proj, proj_gs
 
 
+def _projection_for_name_and_team(
+    name: Optional[str],
+    team: Optional[str],
+    projections: Dict[Tuple[str, str], dict],
+) -> Tuple[float, int]:
+    """
+    Get the projection for a free agent candidate by name/team.
+    """
+    name_key = _normalize_player_name(name)
+    if not name_key:
+        return 0.0, 0
+    team_code = _canonical_team_code(team)
+    proj_row = projections.get((name_key, team_code)) or projections.get((name_key, ""))
+    if not proj_row:
+        return 0.0, 0
+    proj = 0.0
+    proj_gs = 0
+    try:
+        proj = float(proj_row.get("ProjFPts"))
+    except Exception:
+        proj = 0.0
+    try:
+        proj_gs = int(proj_row.get("ProjGS"))
+    except Exception:
+        proj_gs = 0
+    return proj, proj_gs
+
+
+def _fa_position_matches_slot(fa_pos: Optional[str], slot_pos: str) -> bool:
+    """
+    Check if an FA candidate's position list can fill the target slot.
+    """
+    if not slot_pos:
+        return True
+    raw = str(fa_pos or "").upper()
+    if not raw:
+        return True
+    tokens = {tok.strip() for tok in raw.replace("/", ",").split(",") if tok.strip()}
+    return slot_pos.upper() in tokens if tokens else True
+
+
+def _drop_would_keep_roster_legal(roster_view: RosterView, drop_id: str, *, min_gks: int = 1) -> bool:
+    """
+    Quick local invariant: do not drop to zero goalkeepers.
+    """
+    gk_count = 0
+    for row in roster_view.roster.rows:
+        if not getattr(row, "player", None):
+            continue
+        pid = str(row.player.id)
+        if pid == drop_id:
+            continue
+        pos = _pos_short(row).upper()
+        if pos == "G":
+            gk_count += 1
+    return gk_count >= min_gks
+
+
+def _open_roster_slots(roster: Any) -> tuple[list[RosterRow], list[RosterRow]]:
+    """
+    Return (open_active_slots, open_reserve_slots) from the roster payload.
+    """
+    open_active: list[RosterRow] = []
+    open_reserve: list[RosterRow] = []
+    for row in roster.rows:
+        if getattr(row, "player", None):
+            continue
+        pos_id = str(getattr(row, "pos_id", "0"))
+        if pos_id != "0":
+            open_active.append(row)
+        else:
+            open_reserve.append(row)
+    return open_active, open_reserve
+
+
 def _sort_players_by_projection(players: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Sort players by projection.
@@ -840,6 +1006,162 @@ def _generate_auto_swap_rules(
     return rules
 
 
+def _generate_auto_claim_rules(
+    *,
+    roster: Any,
+    roster_view: RosterView,
+    lineup_info_by_player: Dict[str, Any],
+    kos_index_map: Dict[str, int],
+    league_id: str,
+    team_id: str,
+    period_id: Optional[int],
+    projections: Dict[Tuple[str, str], dict],
+    waivers_service: WaiversService,
+    fa_status_map: Dict[str, Any],
+    never_drop_ids: set[str],
+    max_candidates: int = AUTO_MAX_FA_CANDIDATES,
+) -> List[Dict[str, Any]]:
+    """
+    Generate auto FA claim/drop rules for active players.
+    """
+    id_to_row: Dict[str, RosterRow] = {}
+    for row in roster.rows:
+        player = getattr(row, "player", None)
+        if player and getattr(player, "id", None) is not None:
+            id_to_row[str(player.id)] = row
+
+    try:
+        fa_pool = waivers_service.list_players_by_name(
+            limit=FA_POOL_LIMIT,
+            status="ALL_AVAILABLE",
+        )
+    except Exception as exc:
+        logger.info("Auto claims: failed to load FA pool: %s", exc)
+        return []
+
+    fa_candidates: List[Dict[str, Any]] = []
+    now = _now()
+    for p in fa_pool:
+        sid = str(p.get("id") or "")
+        if not sid:
+            continue
+        snapshot = fa_status_map.get(sid)
+        if not snapshot:
+            continue
+        status_val = getattr(snapshot, "status", None)
+        is_starting = status_val == LineupStatus.STARTING or str(status_val).lower() == LineupStatus.STARTING.value
+        if not is_starting:
+            continue
+        kickoff = getattr(snapshot, "kickoff", None)
+        if kickoff and kickoff <= now:
+            continue
+        proj_fpts, proj_gs = _projection_for_name_and_team(
+            p.get("name"),
+            p.get("team"),
+            projections,
+        )
+        fa_candidates.append(
+            {
+                "id": sid,
+                "name": p.get("name") or "",
+                "team": p.get("team") or "",
+                "position": p.get("position") or "",
+                "default_pos_id": p.get("default_pos_id"),
+                "kickoff": kickoff,
+                "proj_fpts": proj_fpts,
+                "proj_gs": proj_gs,
+            }
+        )
+
+    if not fa_candidates:
+        return []
+
+    rules: List[Dict[str, Any]] = []
+    for active_id in roster_view.active_player_ids():
+        drop_id = str(active_id)
+        if drop_id in never_drop_ids:
+            continue
+        if roster_view.is_locked(drop_id, now=now, lineup_info_by_player=lineup_info_by_player):
+            continue
+        row = id_to_row.get(drop_id)
+        if not row:
+            continue
+        active_info = lineup_info_by_player.get(drop_id)
+        active_kickoff = getattr(active_info, "kickoff", None) if active_info else None
+        if not active_kickoff:
+            continue
+        slot_pos = _pos_short(row).upper()
+        slot_pos_id = str(getattr(row, "pos_id", "") or "")
+        eligible = []
+        for cand in fa_candidates:
+            if slot_pos and not _fa_position_matches_slot(cand.get("position"), slot_pos):
+                continue
+            if cand.get("kickoff") and active_kickoff and cand["kickoff"] < active_kickoff:
+                continue
+            eligible.append(cand)
+        eligible.sort(
+            key=lambda c: (
+                -(c.get("proj_fpts") or 0.0),
+                -(c.get("proj_gs") or 0),
+                str(c.get("name") or ""),
+            )
+        )
+        for idx, cand in enumerate(eligible[:max_candidates]):
+            rules.append(
+                {
+                    "action_type": "fa_claim_drop",
+                    "active_id": drop_id,
+                    "fa_add_scorer_id": cand["id"],
+                    "fa_add_position_id": slot_pos_id or str(cand.get("default_pos_id") or ""),
+                    "fa_claim_to_status_id": "1",
+                    "fa_bid_amount": 0.0,
+                    "fa_add_display_name": cand["name"],
+                    "priority": idx + 1,
+                    "period": period_id,
+                    "trigger": "confirmed_lineup",
+                    "proj_fpts": cand.get("proj_fpts"),
+                    "proj_gs": cand.get("proj_gs"),
+                    "league_id": league_id,
+                    "team_id": team_id,
+                    "source": "auto_claims",
+                }
+            )
+    return rules
+
+
+def _merge_auto_claim_rules(
+    rules: List[Dict[str, Any]],
+    *,
+    league_id: str,
+    team_id: str,
+    new_auto_rules: List[Dict[str, Any]],
+    user_id: Optional[str],
+) -> List[Dict[str, Any]]:
+    """
+    Merge auto claim rules with existing rules.
+    """
+    filtered = [
+        r
+        for r in rules
+        if not (
+            str(r.get("source")) == "auto_claims"
+            and str(r.get("league_id")) == str(league_id)
+            and str(r.get("team_id")) == str(team_id)
+        )
+    ]
+    ts = datetime.now(timezone.utc).isoformat()
+    for r in new_auto_rules:
+        r.setdefault("rule_id", uuid.uuid4().hex)
+        r.setdefault("created_at", ts)
+        r.setdefault("state", "pending")
+        r.setdefault("fired_count", 0)
+        r.setdefault("source", "auto_claims")
+        r.setdefault("source_type", 2)
+        if user_id:
+            r["user_id"] = user_id
+    return filtered + new_auto_rules
+
+
 def _merge_auto_rules(
     rules: List[Dict[str, Any]],
     *,
@@ -958,9 +1280,10 @@ def _collect_runs(args) -> List[Tuple[Optional[str], Path, List[Dict[str, Any]],
                 continue
             rules_path = rules_path_for_user(user_id)
             rules, player_locks = load_rules_for_user_with_locks(user_id)
-            pending = [r for r in rules if _eligible(r)]
+            pending = [r for r in rules if _eligible(r) or _eligible_fa_rule(r)]
             auto_combos = _auto_enabled_combos(user_mgr, user_id, "lineup_swaps")
-            if not pending and not auto_combos:
+            auto_claim_combos = _auto_enabled_combos(user_mgr, user_id, "claims")
+            if not pending and not auto_combos and not auto_claim_combos:
                 continue
             session = _build_session_from_user(user_mgr, user_id)
             if session is None:
@@ -970,7 +1293,7 @@ def _collect_runs(args) -> List[Tuple[Optional[str], Path, List[Dict[str, Any]],
 
     rules_path = Path(args.rules_path)
     rules, player_locks = load_rules_with_locks(rules_path)
-    pending = [r for r in rules if _eligible(r)]
+    pending = [r for r in rules if _eligible(r) or _eligible_fa_rule(r)]
     session = _build_session_from_artifacts(Path(args.auth_artifacts))
     if session is None:
         return []
@@ -1008,7 +1331,7 @@ def main() -> None:
         """
         Process runs for a given user.
         """
-        pending = [r for r in rules if _eligible(r)]
+        pending = [r for r in rules if _eligible(r) or _eligible_fa_rule(r)]
         combos = set()
         if args.league_id and args.team_id:
             combos.add((args.league_id, args.team_id))
@@ -1021,6 +1344,8 @@ def main() -> None:
             if user_id and user_mgr:
                 for lid, tid in _auto_enabled_combos(user_mgr, str(user_id), "lineup_swaps"):
                     combos.add((lid, tid))
+                for lid, tid in _auto_enabled_combos(user_mgr, str(user_id), "claims"):
+                    combos.add((lid, tid))
 
         if not combos:
             logger.error("No league/team context provided or found in rules (user=%s).", user_id)
@@ -1031,6 +1356,8 @@ def main() -> None:
         for league_id, team_id in combos:
             api = FantraxAPI(league_id=league_id, session=session)
             subs_service = SubsService(session=session, league_id=league_id)
+            waivers_service = api.waivers
+            drops_service = api.drops
             try:
                 roster = api.roster_info(team_id)
             except Exception as exc:
@@ -1130,6 +1457,15 @@ def main() -> None:
 
                 kos_index_map, _first_kos, last_kos = _build_kos_index_map(lineup_info_by_player)
 
+                never_drop_ids: set[str] = _update_never_drop_auto(
+                    user_mgr=user_mgr,
+                    user_id=user_id,
+                    league_id=str(league_id),
+                    team_id=str(team_id),
+                    roster=roster,
+                    waivers_service=waivers_service,
+                )
+
                 if (
                     user_id
                     and user_mgr
@@ -1171,6 +1507,58 @@ def main() -> None:
                         user_id,
                     )
 
+                fa_status_map: Dict[str, Any] = {}
+                if (
+                    ENABLE_AUTO_CLAIMS
+                    and user_id
+                    and user_mgr
+                    and user_mgr.is_auto_rules_enabled(str(user_id), str(league_id), "claims")
+                    and projections
+                    and str(league_id) == CLAIMS_TEST_LEAGUE_ID
+                ):
+                    try:
+                        fa_status_map = fetch_fa_status_map(session=session, league_id=league_id)
+                    except Exception as exc:
+                        logger.info("Auto claims: failed to load FA statuses: %s", exc)
+                        fa_status_map = {}
+                    if fa_status_map:
+                        roster_view = RosterView(roster)
+                        had_auto_rules = any(
+                            str(r.get("source")) == "auto_claims"
+                            and str(r.get("league_id")) == str(league_id)
+                            and str(r.get("team_id")) == str(team_id)
+                            for r in rules
+                        )
+                        auto_claim_rules = _generate_auto_claim_rules(
+                            roster=roster,
+                            roster_view=roster_view,
+                            lineup_info_by_player=lineup_info_by_player,
+                            kos_index_map=kos_index_map,
+                            league_id=league_id,
+                            team_id=team_id,
+                            period_id=auto_period_id,
+                            projections=projections,
+                            waivers_service=waivers_service,
+                            fa_status_map=fa_status_map,
+                            never_drop_ids=never_drop_ids,
+                        )
+                        rules = _merge_auto_claim_rules(
+                            rules,
+                            league_id=league_id,
+                            team_id=team_id,
+                            new_auto_rules=auto_claim_rules,
+                            user_id=str(user_id) if user_id else None,
+                        )
+                        if auto_claim_rules or had_auto_rules:
+                            updated = True
+                        logger.info(
+                            "Generated %s auto claim rules for league=%s team=%s user=%s",
+                            len(auto_claim_rules),
+                            league_id,
+                            team_id,
+                            user_id,
+                        )
+
                 if _apply_inverse_rule_guard(rules, league_id=league_id, team_id=team_id):
                     updated = True
 
@@ -1180,6 +1568,276 @@ def main() -> None:
                     base_do_not_move = set(user_mgr.get_do_not_move(str(user_id), str(league_id)) or [])
                 if user_id and user_mgr and hasattr(user_mgr, "get_late_kos_policy"):
                     late_kos_policy = user_mgr.get_late_kos_policy(str(user_id), str(league_id)) or "trust"
+
+                fa_action_executed = False
+                fa_pending = [
+                    r
+                    for r in rules
+                    if _eligible_fa_rule(r)
+                    and str(r.get("league_id")) == str(league_id)
+                    and str(r.get("team_id")) == str(team_id)
+                ]
+                if fa_pending and str(league_id) != CLAIMS_TEST_LEAGUE_ID:
+                    logger.info(
+                        "Skipping FA rules for league=%s; claims locked to test league.",
+                        league_id,
+                    )
+                    fa_pending = []
+                if fa_pending and (not user_id or not user_mgr or not user_mgr.get_claims_ack(str(user_id), str(league_id))):
+                    logger.info(
+                        "Skipping FA rules for league=%s; user has not acknowledged claims.",
+                        league_id,
+                    )
+                    fa_pending = []
+                if fa_pending:
+                    if not fa_status_map:
+                        try:
+                            fa_status_map = fetch_fa_status_map(session=session, league_id=league_id)
+                        except Exception as exc:
+                            logger.info("FA rules: failed to load FA statuses: %s", exc)
+                            fa_status_map = {}
+                    roster_view = RosterView(roster)
+                    now = _now()
+                    open_active_slots, open_reserve_slots = _open_roster_slots(roster)
+
+                    grouped_fa: Dict[str, List[Dict[str, Any]]] = {}
+                    for r in fa_pending:
+                        drop_id = str(r.get("drop_player_id") or r.get("active_id") or "")
+                        key = drop_id or str(r.get("rule_id") or "")
+                        grouped_fa.setdefault(key, []).append(r)
+
+                    def _group_priority(item: tuple[str, List[Dict[str, Any]]]) -> tuple:
+                        _key, ruleset = item
+                        if not ruleset:
+                            return (999, "", "")
+                        return _rule_priority_key(sorted(ruleset, key=_rule_priority_key)[0])
+
+                    for _group_key, group_rules in sorted(grouped_fa.items(), key=_group_priority):
+                        group_rules = sorted(group_rules, key=_rule_priority_key)
+                        for rule in group_rules:
+                            if str(rule.get("source") or "") == "auto_claims":
+                                continue
+                            if (
+                                user_id
+                                and user_mgr
+                                and str(rule.get("source")) == "auto_claims"
+                                and not user_mgr.is_auto_rules_enabled(str(user_id), str(league_id), "claims")
+                            ):
+                                continue
+                            rule_period = rule.get("period")
+                            if rule_period is not None and chosen_period is not None:
+                                if str(rule_period) != str(chosen_period):
+                                    continue
+                            action_type = _rule_action_type(rule)
+                            drop_id = str(rule.get("drop_player_id") or rule.get("active_id") or "")
+                            add_id = str(rule.get("fa_add_scorer_id") or rule.get("fa_add_id") or "")
+                            override_never = bool(rule.get("override_never_drop"))
+                            if drop_id and drop_id in never_drop_ids and not override_never:
+                                logger.info(
+                                    "FA rule %s skipped: drop in never-drop list (%s)",
+                                    rule.get("rule_id"),
+                                    drop_id,
+                                )
+                                continue
+
+                            info_drop = lineup_info_by_player.get(drop_id) if drop_id else None
+                            drop_kickoff = getattr(info_drop, "kickoff", None) if info_drop else None
+
+                            if action_type == "drop_only":
+                                if not drop_id:
+                                    continue
+                                if not roster_view.get_row(drop_id):
+                                    continue
+                                if roster_view.is_locked(drop_id, now=now, lineup_info_by_player=lineup_info_by_player):
+                                    continue
+                                if not _drop_would_keep_roster_legal(roster_view, drop_id):
+                                    continue
+                                if not args.force_trigger:
+                                    drop_status = _confirmed_status_kind(info_drop)
+                                    if drop_status != "not_starting":
+                                        continue
+                                    if drop_kickoff and now >= drop_kickoff:
+                                        continue
+                                if args.dry_run:
+                                    logger.info("FA rule %s DRY RUN: would drop %s", rule.get("rule_id"), drop_id)
+                                    fa_action_executed = True
+                                    break
+                                try:
+                                    drops_service.drop_player(
+                                        team_id=team_id,
+                                        scorer_id=drop_id,
+                                        period=int(rule_period) if rule_period is not None else None,
+                                    )
+                                    rule["state"] = "fired"
+                                    rule["fired_at"] = _now().isoformat()
+                                    rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
+                                    rule["result"] = "drop_executed"
+                                    updated = True
+                                    fa_action_executed = True
+                                    logger.info(
+                                        "FA rule %s executed: dropped %s",
+                                        rule.get("rule_id"),
+                                        drop_id,
+                                    )
+                                except Exception as exc:
+                                    logger.info("FA rule %s drop failed: %s", rule.get("rule_id"), exc)
+                                break
+
+                            if action_type == "fa_add_only":
+                                if not add_id:
+                                    continue
+                                if not open_active_slots and not open_reserve_slots:
+                                    continue
+                            else:
+                                if not drop_id or not add_id:
+                                    continue
+                                if not roster_view.get_row(drop_id):
+                                    continue
+                                if roster_view.is_locked(drop_id, now=now, lineup_info_by_player=lineup_info_by_player):
+                                    continue
+                                if not _drop_would_keep_roster_legal(roster_view, drop_id):
+                                    continue
+                                if not args.force_trigger:
+                                    drop_status = _confirmed_status_kind(info_drop)
+                                    if drop_status != "not_starting":
+                                        continue
+                                    if drop_kickoff and now >= drop_kickoff:
+                                        continue
+
+                            if not args.force_trigger:
+                                fa_snapshot = fa_status_map.get(add_id) if fa_status_map else None
+                                if not fa_snapshot:
+                                    continue
+                                status_val = getattr(fa_snapshot, "status", None)
+                                is_starting = (
+                                    status_val == LineupStatus.STARTING
+                                    or str(status_val).lower() == LineupStatus.STARTING.value
+                                )
+                                if not is_starting:
+                                    continue
+                                fa_kickoff = getattr(fa_snapshot, "kickoff", None)
+                                if fa_kickoff and now >= fa_kickoff:
+                                    continue
+                                if fa_kickoff and drop_kickoff and fa_kickoff < drop_kickoff:
+                                    continue
+
+                            claim_to_status = str(rule.get("fa_claim_to_status_id") or "2")
+                            claim_pos_id = str(rule.get("fa_add_position_id") or "").strip() or None
+                            post_swap_out = str(rule.get("post_claim_swap_out_id") or "").strip() or None
+
+                            if claim_to_status == "1" and not claim_pos_id:
+                                logger.info(
+                                    "FA rule %s skipped: missing active position id",
+                                    rule.get("rule_id"),
+                                )
+                                continue
+                            if action_type == "fa_add_only" and claim_to_status == "1" and not open_active_slots:
+                                continue
+                            if claim_to_status == "2" and not post_swap_out:
+                                logger.info(
+                                    "FA rule %s skipped: missing post-claim swap target",
+                                    rule.get("rule_id"),
+                                )
+                                continue
+
+                            if post_swap_out:
+                                if not roster_view.get_row(post_swap_out):
+                                    continue
+                                if roster_view.is_locked(post_swap_out, now=now, lineup_info_by_player=lineup_info_by_player):
+                                    continue
+                                period_id = rule_period if rule_period is not None else chosen_period
+                                try:
+                                    period_int = int(period_id) if period_id is not None else None
+                                except Exception:
+                                    period_int = None
+                                if period_int is not None:
+                                    legal = can_swap_in_period(
+                                        subs_service=subs_service,
+                                        roster=roster,
+                                        league_id=league_id,
+                                        team_id=team_id,
+                                        active_id=post_swap_out,
+                                        reserve_id=add_id,
+                                        period_id=period_int,
+                                    )
+                                    if not legal:
+                                        continue
+
+                            if args.dry_run:
+                                logger.info(
+                                    "FA rule %s DRY RUN: would claim %s drop=%s",
+                                    rule.get("rule_id"),
+                                    add_id,
+                                    drop_id or "none",
+                                )
+                                fa_action_executed = True
+                                break
+
+                            try:
+                                resp = waivers_service.submit_claim(
+                                    team_id=team_id,
+                                    claim_scorer_id=add_id,
+                                    bid_amount=float(rule.get("fa_bid_amount") or 0.0),
+                                    drop_scorer_id=drop_id or None,
+                                    to_position_id=claim_pos_id,
+                                    to_status_id=claim_to_status,
+                                )
+                                error_msg = None
+                                if isinstance(resp, dict):
+                                    error_msg = resp.get("error") or resp.get("errorMsg") or resp.get("pageError")
+                                if error_msg:
+                                    logger.info(
+                                        "FA rule %s claim rejected: %s",
+                                        rule.get("rule_id"),
+                                        error_msg,
+                                    )
+                                    continue
+                                rule["state"] = "fired"
+                                rule["fired_at"] = _now().isoformat()
+                                rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
+                                rule["result"] = "claim_submitted"
+                                updated = True
+                                fa_action_executed = True
+                                logger.info(
+                                    "FA rule %s submitted claim add=%s drop=%s",
+                                    rule.get("rule_id"),
+                                    add_id,
+                                    drop_id or "none",
+                                )
+                                if post_swap_out:
+                                    try:
+                                        refreshed = api.roster_info(team_id)
+                                        if any(
+                                            getattr(r, "player", None)
+                                            and str(r.player.id) == add_id
+                                            for r in refreshed.rows
+                                        ):
+                                            subs_service.swap_players(
+                                                team_id=team_id,
+                                                out_player_id=post_swap_out,
+                                                in_player_id=add_id,
+                                                period=int(rule_period) if rule_period is not None else None,
+                                            )
+                                            logger.info(
+                                                "FA rule %s moved claim to active via swap (out=%s in=%s)",
+                                                rule.get("rule_id"),
+                                                post_swap_out,
+                                                add_id,
+                                            )
+                                        roster = refreshed
+                                    except Exception as exc:
+                                        logger.info("FA rule %s post-claim swap failed: %s", rule.get("rule_id"), exc)
+                            except Exception as exc:
+                                logger.info("FA rule %s claim failed: %s", rule.get("rule_id"), exc)
+                            break
+
+                        if fa_action_executed:
+                            break
+
+                if fa_action_executed:
+                    if updated or updated_locks:
+                        save_rules(rules, path=rules_path, player_locks=player_locks)
+                    continue
 
                 iteration = 0
                 max_iterations = max(

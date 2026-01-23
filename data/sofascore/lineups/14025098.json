@@ -210,12 +210,6 @@
     "subs": [],
     "missing": [
       {
-        "id": 1084356,
-        "name": "Toby Collyer",
-        "position": "M",
-        "reason": 1
-      },
-      {
         "id": 803031,
         "name": "Matthijs de Ligt",
         "position": "D",
@@ -229,5 +223,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-01-22 19:00:48+0000"
+  "fetched_at_utc": "2026-01-23 20:01:30+0000"
 }
