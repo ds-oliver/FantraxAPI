@@ -1,0 +1,239 @@
+{
+  "event_id": 14025140,
+  "confirmed": false,
+  "home": {
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 964753,
+        "name": "Senne Lammens",
+        "position": "G",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 843200,
+        "name": "Diogo Dalot",
+        "position": "M",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 149380,
+        "name": "Harry Maguire",
+        "position": "D",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 859999,
+        "name": "Lisandro Martínez",
+        "position": "D",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 190839,
+        "name": "Luke Shaw",
+        "position": "D",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 122951,
+        "name": "Casemiro",
+        "position": "M",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142175,
+        "name": "Kobbie Mainoo",
+        "position": "M",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 971037,
+        "name": "Amad Diallo",
+        "position": "F",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 288205,
+        "name": "Bruno Fernandes",
+        "position": "M",
+        "team_id": 35,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 886363,
+        "name": "Matheus Cunha",
+        "position": "F",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927083,
+        "name": "Bryan Mbeumo",
+        "position": "M",
+        "team_id": 35,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [],
+    "missing": [
+      {
+        "id": 917007,
+        "name": "Joshua Zirkzee",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 803031,
+        "name": "Matthijs de Ligt",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1397168,
+        "name": "Patrick Dorgu",
+        "position": "M",
+        "reason": 1
+      }
+    ]
+  },
+  "away": {
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 103335,
+        "name": "Bernd Leno",
+        "position": "G",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 329417,
+        "name": "Timothy Castagne",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 362682,
+        "name": "Joachim Andersen",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 868715,
+        "name": "Jorge Cuenca",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 803174,
+        "name": "Antonee Robinson",
+        "position": "D",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 352770,
+        "name": "Alex Iwobi",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 793167,
+        "name": "Sander Berge",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 355528,
+        "name": "Harry Wilson",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 867445,
+        "name": "Emile Smith Rowe",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1112879,
+        "name": "Kevin",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 192442,
+        "name": "Raúl Jiménez",
+        "position": "F",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [],
+    "missing": [
+      {
+        "id": 1015256,
+        "name": "Rodrigo Muniz",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 190877,
+        "name": "Kenny Tete",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 371222,
+        "name": "Saša Lukić",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1065216,
+        "name": "Oscar Bobb",
+        "position": "M",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-02-01 08:00:21+0000"
+}

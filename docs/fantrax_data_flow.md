@@ -18,7 +18,7 @@ Returns `Roster` and `RosterRow` objects with:
 
 Usage:
 - Parsed in `fantraxapi/lineups/sofascore_bridge._kickoff_from_fantrax_row` to get `fantrax_kickoff`.
-- `fantraxapi/lineups/fantrax_lineup_bridge._derive_fx_status_and_kickoff`:
+- `fantraxapi/lineups/fantrax_lineup_bridge._derive_fx_statuses_and_kickoff`:
   - `disableLineupChange` + finished marker → `fx_status = OUT`
   - `icons` typeId 12/32 → `STARTING`
   - `upcomingEventStatusId=="2"` → `STARTING`

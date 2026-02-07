@@ -38,9 +38,6 @@ st.set_page_config(page_title="Trade Opportunities", page_icon="🔄", layout="w
 
 def main():
 	"""Main function for Trade Opportunities page."""
-	st.title("Trade Opportunities")
-	st.markdown("**Division-aware roster composition analysis to find ideal trade partners**")
-	
 	# Check for authentication
 	if "auth_artifacts" not in st.session_state:
 		st.error("Please authenticate first")
@@ -52,6 +49,9 @@ def main():
 		3. Return here to analyze trade opportunities
 		""")
 		st.stop()
+
+	st.title("Trade Opportunities")
+	st.markdown("**Division-aware roster composition analysis to find ideal trade partners**")
 	
 	# Build session from artifacts if needed
 	try:

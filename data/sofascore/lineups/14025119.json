@@ -1,6 +1,6 @@
 {
   "event_id": 14025119,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
     "formation": "4-3-3",
     "starters": [
@@ -18,7 +18,7 @@
         "position": "D",
         "team_id": 39,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 1014286,
@@ -45,8 +45,8 @@
         "captain": false
       },
       {
-        "id": 866469,
-        "name": "Bruno Guimarães",
+        "id": 1400650,
+        "name": "Lewis Miley",
         "position": "M",
         "team_id": 39,
         "substitute": false,
@@ -93,18 +93,85 @@
         "captain": false
       }
     ],
-    "subs": [],
-    "missing": [
+    "subs": [
       {
-        "id": 153444,
-        "name": "Jamaal Lascelles",
+        "id": 975937,
+        "name": "Jacob Ramsey",
+        "position": "M",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 980623,
+        "name": "Nick Woltemade",
+        "position": "F",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 979232,
+        "name": "Anthony Elanga",
+        "position": "M",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 888550,
+        "name": "Joe Willock",
+        "position": "M",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 839410,
+        "name": "Aaron Ramsdale",
+        "position": "G",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 99090,
+        "name": "Dan Burn",
         "position": "D",
-        "reason": 1
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1125214,
+        "name": "Alex Murphy",
+        "position": "D",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1479682,
+        "name": "Leo Shahar",
+        "position": "D",
+        "team_id": 43511,
+        "substitute": true,
+        "captain": false
       },
       {
         "id": 1122603,
         "name": "William Osula",
         "position": "F",
+        "team_id": 39,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 153444,
+        "name": "Jamaal Lascelles",
+        "position": "D",
         "reason": 1
       },
       {
@@ -117,12 +184,6 @@
         "id": 372336,
         "name": "Jacob Murphy",
         "position": "F",
-        "reason": 1
-      },
-      {
-        "id": 99090,
-        "name": "Dan Burn",
-        "position": "D",
         "reason": 1
       },
       {
@@ -170,11 +231,11 @@
         "position": "D",
         "team_id": 40,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
-        "id": 143334,
-        "name": "Victor Lindelöf",
+        "id": 864169,
+        "name": "Pau Torres",
         "position": "D",
         "team_id": 40,
         "substitute": false,
@@ -189,9 +250,9 @@
         "captain": false
       },
       {
-        "id": 1089388,
-        "name": "Lamare Bogarde",
-        "position": "D",
+        "id": 923973,
+        "name": "Amadou Onana",
+        "position": "M",
         "team_id": 40,
         "substitute": false,
         "captain": false
@@ -205,9 +266,9 @@
         "captain": false
       },
       {
-        "id": 930245,
-        "name": "Evann Guessand",
-        "position": "F",
+        "id": 851100,
+        "name": "Jadon Sancho",
+        "position": "M",
         "team_id": 40,
         "substitute": false,
         "captain": false
@@ -237,17 +298,84 @@
         "captain": false
       }
     ],
-    "subs": [],
-    "missing": [
+    "subs": [
       {
-        "id": 98435,
-        "name": "Ross Barkley",
+        "id": 808590,
+        "name": "Leon Bailey",
         "position": "M",
-        "reason": 1
+        "team_id": 40,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1089388,
+        "name": "Lamare Bogarde",
+        "position": "D",
+        "team_id": 40,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 96538,
+        "name": "Lucas Digne",
+        "position": "D",
+        "team_id": 40,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 303638,
+        "name": "Tyrone Mings",
+        "position": "D",
+        "team_id": 40,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 143334,
+        "name": "Victor Lindelöf",
+        "position": "D",
+        "team_id": 40,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 100390,
+        "name": "Marco Bizot",
+        "position": "G",
+        "team_id": 40,
+        "substitute": true,
+        "captain": false
       },
       {
         "id": 955245,
         "name": "Harvey Elliott",
+        "position": "M",
+        "team_id": 40,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1398204,
+        "name": "George Hemmings",
+        "position": "M",
+        "team_id": 36541,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 930245,
+        "name": "Evann Guessand",
+        "position": "F",
+        "team_id": 40,
+        "substitute": true,
+        "captain": false
+      }
+    ],
+    "missing": [
+      {
+        "id": 98435,
+        "name": "Ross Barkley",
         "position": "M",
         "reason": 1
       },
@@ -260,18 +388,6 @@
       {
         "id": 250223,
         "name": "John McGinn",
-        "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 923973,
-        "name": "Amadou Onana",
-        "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 808590,
-        "name": "Leon Bailey",
         "position": "M",
         "reason": 1
       },
@@ -289,5 +405,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-01-23 20:01:29+0000"
+  "fetched_at_utc": "2026-01-26 21:03:40+0000"
 }

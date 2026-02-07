@@ -35,11 +35,13 @@ def resolve_lineup_info(
     session: requests.Session,
     league_id: str,
     period: Optional[int],
-    strategy: LineupSourceStrategy,
+    strategy: Optional[LineupSourceStrategy],
     mapping_manager: Optional[PlayerMappingManager] = None,
     round_hint: Optional[str] = None,
     global_status_path: Optional[Path] = None,
 ) -> Dict[str, PlayerLineupInfo]:
+    if strategy is None:
+        strategy = LineupSourceStrategy.FANTRAX_PRIMARY
     mapping_manager = mapping_manager or PlayerMappingManager()
     try:
         sofa_map = build_lineup_info_by_player(
@@ -70,6 +72,23 @@ def resolve_lineup_info(
         logger.warning("Fantrax lineup fetch failed: %s", exc)
         fantrax_map = {}
 
+    ss_confirmed = sum(
+        1
+        for info in sofa_map.values()
+        if info.ss_status and info.ss_status != LineupStatus.UNKNOWN
+    )
+    fx_confirmed = sum(
+        1
+        for info in fantrax_map.values()
+        if info.fx_conf_status and info.fx_conf_status != LineupStatus.UNKNOWN
+    )
+    if ss_confirmed or fx_confirmed:
+        logger.info(
+            "[lineup-resolver] confirmed statuses discovered (SofaScore=%d, Fantrax=%d)",
+            ss_confirmed,
+            fx_confirmed,
+        )
+
     merged: Dict[str, PlayerLineupInfo] = {}
     for row in roster.rows:
         player = getattr(row, "player", None)
@@ -87,8 +106,10 @@ def resolve_lineup_info(
 
         # Apply global fantrax snapshot first if available
         if global_fx:
-            if getattr(base, "fx_status", None) in (None, LineupStatus.UNKNOWN):
-                base.fx_status = global_fx.status
+            if getattr(base, "fx_conf_status", None) in (None, LineupStatus.UNKNOWN):
+                base.fx_conf_status = global_fx.status if global_fx.status != LineupStatus.UNKNOWN else None
+            if getattr(base, "fx_pred_status", None) is None and global_fx.expected_status:
+                base.fx_pred_status = global_fx.expected_status
             if getattr(base, "fx_kickoff", None) is None and global_fx.kickoff:
                 base.fx_kickoff = global_fx.kickoff
             if getattr(base, "team_name", None) is None and global_fx.team_name:
@@ -99,11 +120,16 @@ def resolve_lineup_info(
                 base.is_home = global_fx.is_home
 
         # carry fx fields
-        base.fx_status = (
-            getattr(base, "fx_status", None)
+        base.fx_conf_status = (
+            getattr(base, "fx_conf_status", None)
+            or (getattr(fantrax_info, "fx_conf_status", None) if fantrax_info else None)
             or (getattr(fantrax_info, "fx_status", None) if fantrax_info else None)
-            or (getattr(fantrax_info, "status", None) if fantrax_info else None)
         )
+        base.fx_pred_status = (
+            getattr(base, "fx_pred_status", None)
+            or (getattr(fantrax_info, "fx_pred_status", None) if fantrax_info else None)
+        )
+        base.fx_status = base.fx_conf_status or LineupStatus.UNKNOWN
         base.fx_kickoff = (
             getattr(base, "fx_kickoff", None)
             or (getattr(fantrax_info, "fx_kickoff", None) if fantrax_info else None)
@@ -146,23 +172,43 @@ def resolve_lineup_info(
 
         # choose effective
         if strategy == LineupSourceStrategy.FANTRAX_PRIMARY:
-            effective_status = base.fx_status or base.ss_status or LineupStatus.UNKNOWN
-            status_source = "fantrax" if base.fx_status and base.fx_status != LineupStatus.UNKNOWN else (
+            effective_status = base.fx_conf_status or base.ss_status or LineupStatus.UNKNOWN
+            status_source = "fantrax" if base.fx_conf_status and base.fx_conf_status != LineupStatus.UNKNOWN else (
                 "sofascore" if base.ss_status and base.ss_status != LineupStatus.UNKNOWN else None
             )
+            effective_kickoff = base.fx_kickoff or base.ss_kickoff
         else:
-            effective_status = base.ss_status or base.fx_status or LineupStatus.UNKNOWN
+            effective_status = base.ss_status or base.fx_conf_status or LineupStatus.UNKNOWN
             status_source = "sofascore" if base.ss_status and base.ss_status != LineupStatus.UNKNOWN else (
-                "fantrax" if base.fx_status and base.fx_status != LineupStatus.UNKNOWN else None
+                "fantrax" if base.fx_conf_status and base.fx_conf_status != LineupStatus.UNKNOWN else None
             )
-
-        effective_kickoff = base.ss_kickoff or base.fx_kickoff
+            effective_kickoff = base.ss_kickoff or base.fx_kickoff
 
         base.status = effective_status or LineupStatus.UNKNOWN
         base.kickoff = effective_kickoff or base.kickoff
         base.status_source = status_source
 
         merged[pid] = base
+
+    fallback_pids = []
+    fallback_events: set[int] = set()
+    for pid, info in merged.items():
+        sofa_has_confirmed = (
+            info.ss_status is not None and info.ss_status != LineupStatus.UNKNOWN
+        )
+        fantrax_has_confirmed = (
+            info.fx_conf_status is not None and info.fx_conf_status != LineupStatus.UNKNOWN
+        )
+        if fantrax_has_confirmed and not sofa_has_confirmed:
+            fallback_pids.append(pid)
+            if info.event_id:
+                fallback_events.add(info.event_id)
+    if fallback_pids:
+        logger.info(
+            "[lineup-resolver] falling back to Fantrax confirmed flags for %d players (events=%s)",
+            len(fallback_pids),
+            sorted(fallback_events),
+        )
 
     return merged
 

@@ -7,7 +7,7 @@
 - Verify fresh data: check `data/sofascore/schedules/*_upcoming.csv` and `data/sofascore/lineups/*.json` are present for the coming gameweek.
 - Keep mappings current: regenerate `config/player_mappings.yaml` when new players appear (listener with `--with-mappings` or `scripts/update_player_mappings.py`). Extend `TEAM_NAME_ALIASES` in `fantraxapi/lineups/sofascore_bridge.py` if new club name variants appear.
 - Check Fantrax session health: ensure cookies/session headers are valid so `roster_info` and FXPA calls succeed; re-auth if calls start failing.
-- Monitor logs: `data/logs/conditional_swaps.log` for `[unknown-status]`, missing kickoff, or alias warnings. If many `fx_status=UNKNOWN`, revisit `_derive_fx_status_and_kickoff` in `fantraxapi/lineups/fantrax_lineup_bridge.py`.
+- Monitor logs: `data/logs/conditional_swaps.log` for `[unknown-status]`, missing kickoff, or alias warnings. If many `fx_status=UNKNOWN`, revisit `_derive_fx_statuses_and_kickoff` in `fantraxapi/lineups/fantrax_lineup_bridge.py`.
 - Optional cleanup: prune stale lineups/schedules from `data/sofascore` to avoid collisions with old events.
 
 ## Component / Data Flow

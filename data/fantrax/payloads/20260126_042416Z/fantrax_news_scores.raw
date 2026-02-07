@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta charset="utf-8"/>
+    <title>Fantrax - The Home of Fantasy Sports</title>
+    <base href="/"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1"/>
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <meta name="description" content="Fantrax offers the most customizable fantasy league management service in the industry, with free offerings in baseball, football, basketball, hockey, soccer, golf, and racing. Fantrax Commissioner is the industry leader when it comes to dynasty leagues, but our redraft and keeper leagues also beat the competition. Switch your leagues over today!">
+    <link rel="manifest" href="/assets/manifest.webmanifest"/>
+    <meta name="application-name" content="Fantrax"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-title" content="Fantrax"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="twitter:site" content="@fantrax"/>
+    <meta name="twitter:app:id:iphone" content="1463442455"/>
+    <meta name="twitter:app:id:ipad" content="1463442455"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="Fantrax, the Home of Fantasy Sports"/>
+    <meta property="og:description" content="The most powerful fantasy sports platform - customizable leagues, advanced commissioner tools, and games for every fan"/>
+    <meta property="og:url" content="https://www.fantrax.com/"/>
+    <meta property="og:image" content="https://fantraximg.com/assets/images/headers/2023/fantrax-share-card.jpg"/>
+    <link rel="apple-touch-icon" sizes="180x180" href="https://fantraximg.com/assets/images/icons/fantrax/apple-touch-icon-180x180.png"/>
+    <link rel="icon" type="image/png" sizes="32x32" href="https://fantraximg.com/assets/images/icons/fantrax/favicon-32x32.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" href="https://fantraximg.com/assets/images/icons/fantrax/favicon-16x16.png"/>
+    <link rel="mask-icon" href="https://fantraximg.com/assets/images/icons/fantrax/safari-pinned-tab.svg" color="hsl(212,94%,33%)"/>
+    <link rel="shortcut icon" href="https://fantraximg.com/assets/images/icons/fantrax/favicon.ico"/>
+    <meta name="google-site-verification" content="-u6oSvM9hd1O2mKcuBvfiPRFTNTwhjy-qo-8_zmIqp8"/>
+    <style>@font-face{font-family:'Material Symbols Rounded';font-style:normal;font-weight:400;font-display:block;src:url(https://fonts.gstatic.com/s/materialsymbolsrounded/v313/syl7-zNym6YjUruM-QrEh7-nyTnjDwKNJ_190FjpZIvLgyidOK7BDB_Qb9vUdV6_gjDK-P3JuF_Zs-obHph2-jOcZTKPqw.woff2) format('woff2');}@font-face{font-family:'Poppins';font-style:italic;font-weight:400;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiGyp8kv8JHgFVrJJLucXtAKPY.woff2) format('woff2');unicode-range:U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;}@font-face{font-family:'Poppins';font-style:italic;font-weight:400;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiGyp8kv8JHgFVrJJLufntAKPY.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;}@font-face{font-family:'Poppins';font-style:italic;font-weight:400;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiGyp8kv8JHgFVrJJLucHtA.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}@font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJbecmNE.woff2) format('woff2');unicode-range:U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;}@font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJnecmNE.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;}@font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecg.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}@font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z11lFc-K.woff2) format('woff2');unicode-range:U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;}@font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1JlFc-K.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;}@font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}@font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z11lFc-K.woff2) format('woff2');unicode-range:U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;}@font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1JlFc-K.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;}@font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}@font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z11lFc-K.woff2) format('woff2');unicode-range:U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;}@font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1JlFc-K.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;}@font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:block;src:url(https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}.material-symbols-rounded{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:'liga';-webkit-font-smoothing:antialiased;}</style>
+    <meta name="google-adsense-account" content="ca-pub-7254309391003887">
+    <style>
+      html{font-size:10px}.splash-screen{display:flex;justify-content:center;align-items:center;font-family:'Poppins',sans-serif;flex-direction:column;position:fixed;top:0;right:0;bottom:0;left:0;z-index:10000;background-color:hsl(214 16% 93.5%);will-change:opacity;transition-property:opacity;transition-duration:.34s;transition-timing-function:linear;padding:2rem}.splash-screen svg{position:absolute;width:7rem;height:7rem;will-change:transform;animation-name:x-fan-bounce;animation-duration:1.2s;animation-fill-mode:forwards;animation-direction:alternate;animation-iteration-count:infinite;animation-timing-function:cubic-bezier(0.4,0,0.6,1)}.splash-screen button{margin:1.2rem;border:none;border-radius:8px;color:#fff;padding:.9rem 2.2rem;font-size:1.5rem;line-height:1;background-color:#054fa3;}.splash-screen h3{font-weight:500;max-width:82%}.splash-screen__base{fill:#054fa3}.splash-screen__accent{fill:#2fc118}.splash-screen.hide{opacity:0}.splash-screen.hide svg>*{opacity:0;transform:scale(.3);transition-property:opacity,transform;transition-duration:.2s,.38s;transform-origin:center}@media (prefers-color-scheme:dark){.splash-screen{background-color:hsl(212 12% 4%);color:#fff}.splash-screen__base{fill:#054fa3}.splash-screen__accent{fill:#46e82e}}@keyframes x-fan-bounce{0%,2%{transform:translateY(-5rem) scaleX(1) scaleY(.95)}100%,20%{transform:translateY(0) scaleX(1) scaleY(1)}40%{transform:translateY(1.5rem) scaleX(1.15) scaleY(.8)}60%{transform:translateY(-.7rem) scaleX(.9) scaleY(1.05)}80%{transform:translateY(.2rem) scaleX(1.06) scaleY(.95)}}
+    </style>
+  <link rel="stylesheet" href="styles-6WQ2KTET.css"></head>
+  <body>
+    <app-root></app-root>
+    <div class="splash-screen">
+      <svg viewBox="0 0 87 89" version="1.1" space="preserve">
+        <path class="splash-screen__accent" d="M45.69,27.975c5.241,0 10.179,-4.334 10.885,-9.575c0.706,-5.241 -3.024,-9.575 -8.265,-9.575c-5.241,0 -10.179,4.334 -10.885,9.575c-0.706,5.241 2.923,9.575 8.265,9.575Z"/>
+        <path class="splash-screen__base" d="M26.7,2.4l0.2,-1.8l-14.4,0l-0.2,1.8c-2.7,19.4 4.5,31.7 11.1,38.6c7,7.4 14.8,10.3 15.2,10.4l0.2,0.1c25.6,8.2 21.5,33.9 21.3,35l-0.3,1.8l7.2,0.1l7.2,0l0.3,-1.8c0.3,-2.3 1.3,-10.5 -1.2,-19.9c-2.6,-9.9 -9.6,-23 -28.3,-29c-1.3,-0.5 -21.9,-9.1 -18.3,-35.3Z"/>
+        <path class="splash-screen__base" d="M86.1,2.4l0.2,-1.8l-14.4,0l-0.2,1.8c-2,14.4 -9.6,23.5 -16.8,29c5,1.9 9.1,4.3 12.4,7.1c7.8,-7.3 16.4,-18.9 18.8,-36.1Z"/>
+        <path class="splash-screen__base" d="M30.6,58.4c-0.3,-0.1 -5.7,-2.1 -11.5,-6.9c-4.7,4.4 -8.6,9.5 -11.7,15.2c-5,9.3 -6.4,17.6 -6.6,19.9l-0.2,1.8l14.4,0l0.2,-1.9c0.1,-0.7 1.9,-16.9 16.3,-27.8c-0.2,-0.1 -0.4,-0.1 -0.6,-0.2l-0.3,-0.1Z"/>
+      </svg>
+    </div>
+
+    <!-- Detect Angular -->
+    <script>
+      // ========== DIAGNOSTIC SYSTEM FOR ANDROID APP ==========
+      // Collects errors and storage info for debugging PWA init failures
+      window.fxDiagnostics = {
+        errors: [],
+        stages: [],
+        startTime: Date.now(),
+        addStage: function(name) {
+          this.stages.push(name + ': +' + (Date.now() - this.startTime) + 'ms');
+        },
+        addError: function(type, message, stack) {
+          this.errors.push({
+            type: type,
+            message: (message || '').substring(0, 500),
+            stack: (stack || '').substring(0, 1000),
+            time: '+' + (Date.now() - this.startTime) + 'ms'
+          });
+          // Send to Android immediately if available
+          if (window.Android && window.Android.reportDiagnostic) {
+            window.Android.reportDiagnostic(JSON.stringify(this.errors[this.errors.length - 1]));
+          }
+        },
+        getStorageInfo: async function() {
+          var info = { localStorage: 'N/A', indexedDB: 'N/A', cacheStorage: 'N/A', quota: 'N/A' };
+          try {
+            // localStorage size estimate
+            var lsSize = 0;
+            for (var key in localStorage) {
+              if (localStorage.hasOwnProperty(key)) {
+                lsSize += (localStorage[key].length + key.length) * 2; // UTF-16
+              }
+            }
+            info.localStorage = (lsSize / 1024).toFixed(1) + 'KB';
+          } catch (e) { info.localStorage = 'Error: ' + e.message; }
+
+          try {
+            // IndexedDB databases and sizes
+            if (indexedDB.databases) {
+              var dbs = await indexedDB.databases();
+              var dbInfo = [];
+              for (var i = 0; i < dbs.length; i++) {
+                dbInfo.push(dbs[i].name);
+              }
+              info.indexedDB = dbInfo.length + ' DBs: ' + dbInfo.join(', ');
+            } else {
+              info.indexedDB = 'databases() not supported';
+            }
+          } catch (e) { info.indexedDB = 'Error: ' + e.message; }
+
+          try {
+            // Cache Storage
+            if (typeof caches !== 'undefined') {
+              var keys = await caches.keys();
+              info.cacheStorage = keys.length + ' caches: ' + keys.join(', ');
+            }
+          } catch (e) { info.cacheStorage = 'Error: ' + e.message; }
+
+          try {
+            // Storage quota estimate
+            if (navigator.storage && navigator.storage.estimate) {
+              var estimate = await navigator.storage.estimate();
+              var usedMB = (estimate.usage / (1024 * 1024)).toFixed(1);
+              var quotaMB = (estimate.quota / (1024 * 1024)).toFixed(0);
+              var pct = ((estimate.usage / estimate.quota) * 100).toFixed(1);
+              info.quota = usedMB + 'MB / ' + quotaMB + 'MB (' + pct + '%)';
+            }
+          } catch (e) { info.quota = 'Error: ' + e.message; }
+
+          return info;
+        },
+        getSWInfo: async function() {
+          var info = { state: 'N/A', scriptURL: 'N/A', updateFound: false };
+          try {
+            if ('serviceWorker' in navigator) {
+              var reg = await navigator.serviceWorker.getRegistration();
+              if (reg) {
+                var sw = reg.active || reg.waiting || reg.installing;
+                info.state = sw ? sw.state : 'no worker';
+                info.scriptURL = sw ? sw.scriptURL.split('/').pop() : 'none';
+                info.scope = reg.scope;
+              } else {
+                info.state = 'not registered';
+              }
+            } else {
+              info.state = 'not supported';
+            }
+          } catch (e) { info.state = 'Error: ' + e.message; }
+          return info;
+        },
+        getFullReport: async function() {
+          var storage = await this.getStorageInfo();
+          var sw = await this.getSWInfo();
+          return {
+            errors: this.errors,
+            stages: this.stages,
+            storage: storage,
+            serviceWorker: sw,
+            userAgent: navigator.userAgent,
+            online: navigator.onLine,
+            url: location.href
+          };
+        }
+      };
+
+      // Capture all JavaScript errors
+      window.onerror = function(message, source, lineno, colno, error) {
+        var stack = error && error.stack ? error.stack : (source + ':' + lineno + ':' + colno);
+        window.fxDiagnostics.addError('JS Error', message, stack);
+        return false; // Let error propagate
+      };
+
+      // Capture unhandled promise rejections
+      window.addEventListener('unhandledrejection', function(event) {
+        var message = event.reason ? (event.reason.message || String(event.reason)) : 'Unknown rejection';
+        var stack = event.reason && event.reason.stack ? event.reason.stack : '';
+        window.fxDiagnostics.addError('Promise Rejection', message, stack);
+      });
+
+      // Signal to Android app that WebView is alive (backup call)
+      document.addEventListener('DOMContentLoaded', function() {
+        window.fxDiagnostics.addStage('DOMContentLoaded');
+        if (window.Android && window.Android.webViewAlive) {
+          window.Android.webViewAlive();
+        }
+      });
+
+      window.addEventListener('load', () => {
+        window.fxDiagnostics.addStage('windowLoad');
+
+        // Skip error handling in dev mode (Vite dev server has timing issues)
+        if (location.port === '4200') return;
+
+        // Backup call to onDomReady in case Angular's call didn't fire
+        if (window.Android && window.Android.onDomReady) {
+          window.Android.onDomReady();
+        }
+
+        try {
+          if (window.fxLoaded) {
+            localStorage.removeItem('ng-load-failed');
+          } else {
+            if (localStorage.getItem('ng-load-failed')) {
+              localStorage.removeItem('ng-load-failed');
+              showFxError("<h2>Hmm... something's not loading</h2><h3>A connection issue is preventing the page from loading. Please check your internet and try again. If the issue persists, please contact us [support@fantrax.net].</h3>");
+            } else {
+              localStorage.setItem('ng-load-failed', '1');
+              unregisterServiceWorkerAndReload();
+            }
+          }
+        } catch (err) {
+          showFxError("We cannot load the page because you are blocking cookies. <br> Please allow cookies for Fantrax.com and reload the page. <br>If you are still experiencing the same issue, please contact support@fantrax.com.")
+        }
+      });
+      function showFxError(msg) {
+        const splash = document.querySelector('.splash-screen');
+        const button = document.createElement('button');
+        button.onclick = unregisterServiceWorkerAndReload;
+        button.innerHTML = 'Reload';
+        splash.innerHTML = msg;
+        splash.appendChild(button);
+      }
+      function unregisterServiceWorkerAndReload() {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            Promise.all(registrations.map((registration) => registration.unregister())).then(() => clearCacheAndReload());
+          });
+        } else {
+          clearCacheAndReload();
+        }
+      }
+      function clearCacheAndReload() {
+        if (typeof caches !== 'undefined') {
+          caches
+            .keys()
+            .then((keyList) => Promise.all(keyList.map((key) => caches.delete(key))).then(() => location.reload(true)));
+        } else {
+          location.reload(true);
+        }
+      }
+      // Google Analytics
+      window.global = window;
+      window.ga =
+        window.ga ||
+        function () {
+          (ga.q = ga.q || []).push(arguments);
+        };
+      ga.l = +new Date();
+      ga('create', 'UA-5393701-1', 'auto');
+    </script>
+    <script async="" src="https://www.google-analytics.com/analytics.js"></script>
+    <script async="" src="https://www.google.com/recaptcha/api.js?render=6LdDq7EUAAAAAMEuxaY-OFMCGx2orUsrbTI33F9v"></script>
+    <noscript>Please enable JavaScript to continue using Fantrax.</noscript>
+  <link rel="modulepreload" href="chunk-X3TZI4LE.js"><link rel="modulepreload" href="chunk-YMAXONUW.js"><link rel="modulepreload" href="chunk-G6QV5WUK.js"><link rel="modulepreload" href="chunk-QRCXJ3QT.js"><link rel="modulepreload" href="chunk-LCHHBKKO.js"><script src="main-24OOB2MT.js" type="module"></script></body>
+</html>

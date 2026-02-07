@@ -1,0 +1,98 @@
+{
+  "displayed_period": 24,
+  "fxpa_all": {
+    "kickoff_count": 0,
+    "stats_table_len": 0,
+    "status_counts": {}
+  },
+  "fxpa_all_available": {
+    "kickoff_count": 0,
+    "stats_table_len": 0,
+    "status_counts": {}
+  },
+  "fxpa_all_available_no_period": {
+    "kickoff_count": 0,
+    "stats_table_len": 0,
+    "status_counts": {}
+  },
+  "fxpa_all_no_period": {
+    "kickoff_count": 0,
+    "stats_table_len": 0,
+    "status_counts": {}
+  },
+  "fxpa_available_plus": {
+    "kickoff_count": 0,
+    "stats_table_len": 0,
+    "status_counts": {},
+    "status_filter": "AVAILABLE_PLUS_3uxxpgpemc719rep"
+  },
+  "fxpa_fantasy_team": {
+    "kickoff_count": 0,
+    "stats_table_len": 0,
+    "status_counts": {},
+    "status_filter": "FANTASY_TEAM_3uxxpgpemc719rep"
+  },
+  "league_id": "o90qdw15mc719reh",
+  "roster_default": {
+    "cell0_eventId_rows": 16,
+    "disableLineupChange_rows": 0,
+    "nextKickoff_rows": 0,
+    "rows": 22,
+    "scorer_keys_seen": {
+      "defaultPosId": 16,
+      "headshotUrl": 16,
+      "icons": 15,
+      "minorsEligible": 16,
+      "name": 16,
+      "posIds": 16,
+      "posIdsNoFlex": 16,
+      "posShortNames": 16,
+      "rookie": 16,
+      "scorerId": 16,
+      "shortName": 16,
+      "team": 16,
+      "teamId": 16,
+      "teamLogo": 16,
+      "teamName": 16,
+      "teamShortName": 16,
+      "urlName": 16
+    },
+    "table_counts": [
+      2,
+      20
+    ],
+    "upcomingEventStatusId_rows": 0
+  },
+  "roster_period": {
+    "cell0_eventId_rows": 16,
+    "disableLineupChange_rows": 0,
+    "nextKickoff_rows": 0,
+    "rows": 22,
+    "scorer_keys_seen": {
+      "defaultPosId": 16,
+      "headshotUrl": 16,
+      "icons": 15,
+      "minorsEligible": 16,
+      "name": 16,
+      "posIds": 16,
+      "posIdsNoFlex": 16,
+      "posShortNames": 16,
+      "rookie": 16,
+      "scorerId": 16,
+      "shortName": 16,
+      "team": 16,
+      "teamId": 16,
+      "teamLogo": 16,
+      "teamName": 16,
+      "teamShortName": 16,
+      "urlName": 16
+    },
+    "table_counts": [
+      2,
+      20
+    ],
+    "upcomingEventStatusId_rows": 0
+  },
+  "run_id": "20260126_040451Z",
+  "team_id": "3uxxpgpemc719rep"
+}

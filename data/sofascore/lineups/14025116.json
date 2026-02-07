@@ -1,6 +1,6 @@
 {
   "event_id": 14025116,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
     "formation": "4-1-4-1",
     "starters": [
@@ -69,19 +69,37 @@
         "captain": false
       },
       {
-        "id": 859765,
-        "name": "Phil Foden",
+        "id": 331209,
+        "name": "Bernardo Silva",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 979128,
+        "name": "Rayan Cherki",
         "position": "M",
         "team_id": 17,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 934386,
-        "name": "Jérémy Doku",
-        "position": "M",
+        "id": 873554,
+        "name": "Omar Marmoush",
+        "position": "F",
         "team_id": 17,
         "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [
+      {
+        "id": 859765,
+        "name": "Phil Foden",
+        "position": "M",
+        "team_id": 17,
+        "substitute": true,
         "captain": false
       },
       {
@@ -89,11 +107,66 @@
         "name": "Erling Haaland",
         "position": "F",
         "team_id": 17,
-        "substitute": false,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 934386,
+        "name": "Jérémy Doku",
+        "position": "M",
+        "team_id": 17,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 980643,
+        "name": "James Trafford",
+        "position": "G",
+        "team_id": 17,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 149663,
+        "name": "Nathan Aké",
+        "position": "D",
+        "team_id": 17,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1168513,
+        "name": "Max Alleyne",
+        "position": "D",
+        "team_id": 17,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1136731,
+        "name": "Rico Lewis",
+        "position": "D",
+        "team_id": 17,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 931278,
+        "name": "Rayan Aït-Nouri",
+        "position": "M",
+        "team_id": 17,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1467990,
+        "name": "Divine Mukasa",
+        "position": "M",
+        "team_id": 36544,
+        "substitute": true,
         "captain": false
       }
     ],
-    "subs": [],
     "missing": [
       {
         "id": 136710,
@@ -165,8 +238,8 @@
         "captain": false
       },
       {
-        "id": 1013842,
-        "name": "Emmanuel Agbadou",
+        "id": 846308,
+        "name": "Santiago Bueno",
         "position": "D",
         "team_id": 3,
         "substitute": false,
@@ -205,9 +278,9 @@
         "captain": false
       },
       {
-        "id": 1899647,
-        "name": "Mateus Mané",
-        "position": "F",
+        "id": 844096,
+        "name": "Jhon Arias",
+        "position": "M",
         "team_id": 3,
         "substitute": false,
         "captain": false
@@ -221,8 +294,8 @@
         "captain": false
       },
       {
-        "id": 987734,
-        "name": "Tolu Arokodare",
+        "id": 1899647,
+        "name": "Mateus Mané",
         "position": "F",
         "team_id": 3,
         "substitute": false,
@@ -237,7 +310,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1006073,
+        "name": "Rodrigo Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 876599,
+        "name": "Jørgen Strand Larsen",
+        "position": "F",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 987734,
+        "name": "Tolu Arokodare",
+        "position": "F",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 98427,
+        "name": "Sam Johnstone",
+        "position": "G",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 143047,
+        "name": "Matt Doherty",
+        "position": "D",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1031283,
+        "name": "David Möller Wolfe",
+        "position": "D",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1013842,
+        "name": "Emmanuel Agbadou",
+        "position": "D",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1597270,
+        "name": "Pedro Lima",
+        "position": "D",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1526628,
+        "name": "Fer López",
+        "position": "M",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 845273,
@@ -246,18 +392,18 @@
         "reason": 1
       },
       {
-        "id": 1005725,
-        "name": "Tawanda Chirewa",
-        "position": "M",
-        "reason": 2
-      },
-      {
         "id": 973418,
         "name": "Toti Gomes",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 1005725,
+        "name": "Tawanda Chirewa",
+        "position": "M",
+        "reason": 2
       }
     ]
   },
-  "fetched_at_utc": "2026-01-23 20:01:25+0000"
+  "fetched_at_utc": "2026-01-26 05:41:47+0000"
 }

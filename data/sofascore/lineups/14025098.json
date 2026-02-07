@@ -1,6 +1,6 @@
 {
   "event_id": 14025098,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
     "formation": "4-3-3",
     "starters": [
@@ -13,8 +13,8 @@
         "captain": false
       },
       {
-        "id": 846036,
-        "name": "Ben White",
+        "id": 958959,
+        "name": "Jurriën Timber",
         "position": "D",
         "team_id": 42,
         "substitute": false,
@@ -37,8 +37,8 @@
         "captain": false
       },
       {
-        "id": 958959,
-        "name": "Jurriën Timber",
+        "id": 1002837,
+        "name": "Piero Hincapié",
         "position": "D",
         "team_id": 42,
         "substitute": false,
@@ -77,8 +77,8 @@
         "captain": false
       },
       {
-        "id": 804508,
-        "name": "Viktor Gyökeres",
+        "id": 794839,
+        "name": "Gabriel Jesus",
         "position": "F",
         "team_id": 42,
         "substitute": false,
@@ -93,7 +93,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 846036,
+        "name": "Ben White",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 592010,
+        "name": "Mikel Merino",
+        "position": "M",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 864921,
+        "name": "Eberechi Eze",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 804508,
+        "name": "Viktor Gyökeres",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 966547,
+        "name": "Noni Madueke",
+        "position": "M",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 232422,
+        "name": "Kepa Arrizabalaga",
+        "position": "G",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1144630,
+        "name": "Cristhian Mosquera",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1423711,
+        "name": "Myles Lewis-Skelly",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 922573,
+        "name": "Gabriel Martinelli",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 1917626,
@@ -104,12 +177,6 @@
       {
         "id": 957602,
         "name": "Riccardo Calafiori",
-        "position": "D",
-        "reason": 1
-      },
-      {
-        "id": 1002837,
-        "name": "Piero Hincapié",
         "position": "D",
         "reason": 1
       }
@@ -207,7 +274,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 886363,
+        "name": "Matheus Cunha",
+        "position": "F",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 986397,
+        "name": "Benjamin Šeško",
+        "position": "F",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 847030,
+        "name": "Noussair Mazraoui",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 815890,
+        "name": "Altay Bayındır",
+        "position": "G",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1445799,
+        "name": "Ayden Heaven",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 825839,
+        "name": "Tyrell Malacia",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1153315,
+        "name": "Leny Yoro",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 846425,
+        "name": "Manuel Ugarte",
+        "position": "M",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 836694,
+        "name": "Mason Mount",
+        "position": "M",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 803031,
@@ -220,8 +360,14 @@
         "name": "Joshua Zirkzee",
         "position": "F",
         "reason": 1
+      },
+      {
+        "id": 1084356,
+        "name": "Toby Collyer",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-01-23 20:01:30+0000"
+  "fetched_at_utc": "2026-01-26 05:41:51+0000"
 }

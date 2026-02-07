@@ -1,0 +1,76 @@
+{
+  "fxpa": {
+    "all_available_count": 0,
+    "all_available_kickoff_count": 0,
+    "all_available_status_counts": {}
+  },
+  "league_id": "o90qdw15mc719reh",
+  "period": 1,
+  "roster": {
+    "cell0_eventId_rows": 16,
+    "disableLineupChange_rows": 16,
+    "icon_type_counts": {
+      "1": 2,
+      "35": 3,
+      "6": 1,
+      "8": 4,
+      "9": 3
+    },
+    "next_kickoff_rows": 0,
+    "row_count": 16,
+    "sample_rows": [
+      {
+        "cell0": "WHU 0<br/>@SUN 3 F",
+        "disableLineupChange": true,
+        "icons": [],
+        "name": "Mads Hermansen",
+        "next_kickoff": null,
+        "player_id": "06mga",
+        "upcomingEventStatusId": null
+      },
+      {
+        "cell0": "CRY 0<br/>@CHE 0 F",
+        "disableLineupChange": true,
+        "icons": [],
+        "name": "Trevoh Chalobah",
+        "next_kickoff": null,
+        "player_id": "04mup",
+        "upcomingEventStatusId": null
+      },
+      {
+        "cell0": "EVE 0<br/>@LEE 1 F",
+        "disableLineupChange": true,
+        "icons": [
+          "6"
+        ],
+        "name": "Michael Keane",
+        "next_kickoff": null,
+        "player_id": "0327r",
+        "upcomingEventStatusId": null
+      },
+      {
+        "cell0": "WHU 0<br/>@SUN 3 F",
+        "disableLineupChange": true,
+        "icons": [],
+        "name": "Max Kilman",
+        "next_kickoff": null,
+        "player_id": "04yey",
+        "upcomingEventStatusId": null
+      },
+      {
+        "cell0": "MCI 4<br/>@WOL 0 F",
+        "disableLineupChange": true,
+        "icons": [
+          "9"
+        ],
+        "name": "Bernardo Silva",
+        "next_kickoff": null,
+        "player_id": "04fk6",
+        "upcomingEventStatusId": null
+      }
+    ],
+    "upcomingEventStatusId_rows": 0
+  },
+  "run_id": "20260126_040227Z",
+  "team_id": "3uxxpgpemc719rep"
+}

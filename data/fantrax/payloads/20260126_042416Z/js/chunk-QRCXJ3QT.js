@@ -1,0 +1,1 @@
+var s=(function(r){return r[r.Standalone=0]="Standalone",r[r.Leagues=1]="Leagues",r[r.Games=2]="Games",r[r.Sports=3]="Sports",r[r.Players=4]="Players",r[r.Forum=5]="Forum",r[r.User=6]="User",r[r.Picks=7]="Picks",r})(s||{});export{s as a};

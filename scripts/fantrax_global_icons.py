@@ -44,6 +44,7 @@ def build_players_dict(statuses: dict) -> dict:
         result[pid] = {
             "status": st.status.value if hasattr(st.status, "value") else str(st.status),
             "icons": st.icons,
+            "expected_status": st.expected_status.value if st.expected_status else None,
             "event_id": st.event_id,
             "kickoff": st.kickoff.isoformat() if st.kickoff else None,
             "team_name": st.team_name,

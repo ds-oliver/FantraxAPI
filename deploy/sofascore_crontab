@@ -1,10 +1,27 @@
 SHELL=/bin/bash
-PYTHON_BIN=${PYTHON_BIN:-/usr/bin/python3}
-ROOT_DIR=/Users/hogan/FantraxAPI
-LOG_DIR=/Users/hogan/FantraxAPI/logs
+
+# This crontab is intended for the VPS deployment.
+# If you install it locally, update ROOT_DIR/LOG_DIR/PYTHON_BIN accordingly.
+#
+# Common gotcha: cron runs with a minimal environment. Always use absolute paths.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Repo root on VPS
+ROOT_DIR=/opt/FantraxAPI
+LOG_DIR=/opt/FantraxAPI/logs
+
+# Prefer the repo venv python on VPS (avoid system python missing deps).
+PYTHON_BIN=/opt/FantraxAPI/.venv/bin/python
+
+# Chrome/Chromium binary for ESD/Playwright when it needs a real browser.
+# Update if your VPS uses a different path.
+CHROME_BIN=/usr/bin/google-chrome
 
 # Daily predictions + mappings (refreshes schedule/lineups + cached schedule)
 0 2 * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_listener.sh --mode predictions --horizon-days 7 --with-mappings >> "$LOG_DIR/sofascore_predictions.log" 2>&1
 
 # High-frequency confirmed watcher (uses cached schedule; internal 10s polling)
-*/5 * * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_watcher.sh --window-minutes 80 --min-window-minutes 70 --poll-interval-seconds 10 --max-watch-minutes 15 >> "$LOG_DIR/sofascore_kickoff_watcher.log" 2>&1
+*/5 * * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_watcher.sh --window-minutes 80 --min-window-minutes 70 --poll-interval-seconds 10 --max-watch-minutes 15 --browser-path "$CHROME_BIN" >> "$LOG_DIR/sofascore_kickoff_watcher.log" 2>&1
+
+# Conditional runner (auto swaps every 5 minutes)
+*/5 * * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHONPATH="$ROOT_DIR" "$PYTHON_BIN" scripts/conditional_runner.py --all-users >> "$LOG_DIR/conditional_runner.cron.out" 2>&1

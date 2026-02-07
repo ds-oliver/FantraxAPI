@@ -25,6 +25,7 @@ import argparse
 import json
 import logging
 import os
+from logging.handlers import RotatingFileHandler
 import time
 import uuid
 from contextlib import contextmanager
@@ -42,7 +43,7 @@ from fantraxapi.lineups.conditional_swaps import (
     can_swap_in_period,
     get_available_periods,
 )
-from fantraxapi.lineups.lineup_resolver import resolve_lineup_info
+from fantraxapi.lineups.lineup_resolver import LineupSourceStrategy, resolve_lineup_info
 from fantraxapi.lineups.fantrax_lineup_bridge import (
     fetch_fa_status_map,
     global_status_path_for_user,
@@ -72,16 +73,23 @@ except Exception:
 LOG_PATH = Path("data/logs/conditional_runner.log")
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 LOG_TIMEZONE = "America/Los_Angeles"
+LOG_MAX_BYTES = 2_000_000  # 2 MB
+LOG_BACKUP_COUNT = 5
 
 def _log_time_converter(*_args):
     return datetime.now(ZoneInfo(LOG_TIMEZONE)).timetuple()
 
 logging.Formatter.converter = _log_time_converter
-logging.basicConfig(
-    filename=LOG_PATH,
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s [runner] %(message)s",
-)
+_root = logging.getLogger()
+_fmt = logging.Formatter("%(asctime)s %(levelname)s [runner] %(message)s")
+if not any(
+    isinstance(h, RotatingFileHandler) and getattr(h, "baseFilename", "") == str(LOG_PATH)
+    for h in _root.handlers
+):
+    _fh = RotatingFileHandler(LOG_PATH, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUP_COUNT)
+    _fh.setFormatter(_fmt)
+    _root.addHandler(_fh)
+_root.setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 PROJECTIONS_PATH = Path("data/derived/projections.parquet")
 AUTO_MAX_BACKUPS = 3
@@ -491,29 +499,39 @@ def _status_kind(info: Optional[Any]) -> str:
 
 def _confirmed_status(info: Optional[Any]) -> Optional[LineupStatus]:
     """
-    Return a confirmed lineup status when available (SofaScore confirmed lineups).
-    Falls back to Fantrax status only when no SofaScore mapping exists.
+    Return a confirmed lineup status when available.
+
+    NOTE: For automation we want the `confirmed_lineup` trigger to be able to run
+    on the VPS without requiring synced SofaScore lineup snapshots. Therefore we
+    treat Fantrax confirmed flags as a first-class confirmed source (primary),
+    and use SofaScore confirmed status as a fallback when Fantrax doesn't have a
+    signal.
     """
     if not info:
         return None
-    conf = getattr(info, "ss_conf_status", None)
-    if conf is not None:
-        if isinstance(conf, LineupStatus):
-            return conf if conf != LineupStatus.UNKNOWN else None
-        try:
-            norm = LineupStatus(str(conf).lower())
-            return norm if norm != LineupStatus.UNKNOWN else None
-        except Exception:
-            return None
-    if getattr(info, "sofascore_player_id", None):
+
+    # Prefer Fantrax "confirmed" flags (icons / FXPA status list).
+    fx_status = getattr(info, "fx_conf_status", None) or getattr(info, "fx_status", None)
+    if fx_status is not None:
+        if isinstance(fx_status, LineupStatus):
+            if fx_status != LineupStatus.UNKNOWN:
+                return fx_status
+        else:
+            try:
+                norm = LineupStatus(str(fx_status).lower())
+                if norm != LineupStatus.UNKNOWN:
+                    return norm
+            except Exception:
+                pass
+
+    # Fall back to SofaScore confirmed status when Fantrax doesn't have a signal.
+    ss_conf = getattr(info, "ss_conf_status", None)
+    if ss_conf is None:
         return None
-    fx_status = getattr(info, "fx_status", None) or getattr(info, "status", None)
-    if fx_status is None:
-        return None
-    if isinstance(fx_status, LineupStatus):
-        return fx_status if fx_status != LineupStatus.UNKNOWN else None
+    if isinstance(ss_conf, LineupStatus):
+        return ss_conf if ss_conf != LineupStatus.UNKNOWN else None
     try:
-        norm = LineupStatus(str(fx_status).lower())
+        norm = LineupStatus(str(ss_conf).lower())
         return norm if norm != LineupStatus.UNKNOWN else None
     except Exception:
         return None
@@ -1311,10 +1329,16 @@ def main() -> None:
     parser.add_argument("--user-id", help="Run rules for a single user_id (uses data/auth/ cookies + data/conditional_rules)")
     parser.add_argument("--all-users", action="store_true", help="Run rules for all users with stored cookies")
     parser.add_argument("--dry-run", action="store_true", help="Do not execute swaps; log only")
+    parser.add_argument("--kos", type=int, default=None, help="Limit rule execution to a single KOS index (e.g., 1).")
     parser.add_argument(
         "--force-trigger",
         action="store_true",
         help="Skip lineup-status trigger checks (treat all rules as eligible).",
+    )
+    parser.add_argument(
+        "--simulate-lineups",
+        action="store_true",
+        help="Simulate lineup confirmations: treat actives as not starting and reserves as starting.",
     )
     parser.add_argument("--trace", action="store_true", help="Log detailed per-rule trace information.")
     args = parser.parse_args()
@@ -1446,7 +1470,7 @@ def main() -> None:
                         session=session,
                         league_id=league_id,
                         period=lineup_period,
-                        strategy=None,
+                        strategy=LineupSourceStrategy.FANTRAX_PRIMARY,
                         mapping_manager=mapping_manager,
                         round_hint=round_hint,
                         global_status_path=global_status_path_for_user(user_id),
@@ -1698,9 +1722,6 @@ def main() -> None:
                                 if not _drop_would_keep_roster_legal(roster_view, drop_id):
                                     continue
                                 if not args.force_trigger:
-                                    drop_status = _confirmed_status_kind(info_drop)
-                                    if drop_status != "not_starting":
-                                        continue
                                     if drop_kickoff and now >= drop_kickoff:
                                         continue
 
@@ -1718,7 +1739,7 @@ def main() -> None:
                                 fa_kickoff = getattr(fa_snapshot, "kickoff", None)
                                 if fa_kickoff and now >= fa_kickoff:
                                     continue
-                                if fa_kickoff and drop_kickoff and fa_kickoff < drop_kickoff:
+                                if fa_kickoff and drop_kickoff and drop_kickoff < fa_kickoff:
                                     continue
 
                             claim_to_status = str(rule.get("fa_claim_to_status_id") or "2")
@@ -1972,28 +1993,40 @@ def main() -> None:
                     swap_executed = False
                     for active in active_candidates:
                         active_id = active["active_id"]
-                        active_rules = rules_by_active.get(active_id)
-                        if not active_rules:
+                        active_rules_all = rules_by_active.get(active_id)
+                        if not active_rules_all:
                             continue
-                        active_rules = sorted(active_rules, key=lambda r: r.get("priority") or 999)
+                        active_rules_sorted = sorted(active_rules_all, key=lambda r: r.get("priority") or 999)
+                        reserve_first_rules = [
+                            r
+                            for r in active_rules_sorted
+                            if str(r.get("condition") or "") == "reserve_starting"
+                        ]
+                        active_first_rules = [
+                            r
+                            for r in active_rules_sorted
+                            if str(r.get("condition") or "") != "reserve_starting"
+                        ]
+                        base_rule = active_rules_sorted[0]
+                        head_rule = active_first_rules[0] if active_first_rules else base_rule
                         if (
                             user_id
                             and user_mgr
-                            and str(active_rules[0].get("source")) == "auto_lineup_swaps"
+                            and str(base_rule.get("source")) == "auto_lineup_swaps"
                             and not user_mgr.is_auto_rules_enabled(str(user_id), str(league_id), "lineup_swaps")
                         ):
                             logger.info(
                                 "Rule %s skipped: auto lineup swaps disabled for league=%s user=%s",
-                                active_rules[0].get("rule_id"),
+                                base_rule.get("rule_id"),
                                 league_id,
                                 user_id,
                             )
                             continue
-                        is_auto_rule = str(active_rules[0].get("source")) == "auto_lineup_swaps"
+                        is_auto_rule = str(base_rule.get("source")) == "auto_lineup_swaps"
                         if is_auto_rule:
                             period_id = auto_period_id
                         else:
-                            period_id = active_rules[0].get("period")
+                            period_id = base_rule.get("period")
                             if period_id is None:
                                 period_id = args.period or roster_period
                         try:
@@ -2003,16 +2036,28 @@ def main() -> None:
                         if period_id is None:
                             logger.info(
                                 "Rule %s proceeding without explicit period; deferring to Fantrax.",
-                                active_rules[0].get("rule_id"),
+                                base_rule.get("rule_id"),
                             )
-                        trigger = active_rules[0].get("trigger") or "confirmed_lineup"
+                        trigger = head_rule.get("trigger") or "confirmed_lineup"
 
                         active_info = lineup_info_by_player.get(active_id)
                         status_kind_fn = _status_kind
                         if not args.force_trigger and trigger == "confirmed_lineup":
                             status_kind_fn = _confirmed_status_kind
-                        active_status = status_kind_fn(active_info)
-                        active_confirmed_status = _confirmed_status_kind(active_info)
+
+                        def _sim_status_kind(player_id: str) -> str:
+                            if roster_view.is_reserve(player_id):
+                                return "starting"
+                            if roster_view.is_active(player_id):
+                                return "not_starting"
+                            return "unconfirmed"
+
+                        if args.simulate_lineups:
+                            active_status = _sim_status_kind(active_id)
+                            active_confirmed_status = active_status
+                        else:
+                            active_status = status_kind_fn(active_info)
+                            active_confirmed_status = _confirmed_status_kind(active_info)
                         active_kos_index = kos_index_map.get(active_id)
                         active_kickoff = getattr(active_info, "kickoff", None) if active_info else None
                         active_proj_fpts = next(
@@ -2028,7 +2073,7 @@ def main() -> None:
                             "league_id": league_id,
                             "team_id": team_id,
                             "period_id": period_id,
-                            "rule_id": active_rules[0].get("rule_id"),
+                            "rule_id": head_rule.get("rule_id"),
                             "active_id": active_id,
                             "trigger": trigger,
                             "active_status": active_status,
@@ -2041,12 +2086,136 @@ def main() -> None:
                             "user_timezone": user_timezone,
                         }
 
+                        if args.kos is not None and active_kos_index != args.kos:
+                            _log_trace(
+                                args.trace,
+                                logger=logger,
+                                meta=trace_meta,
+                                ready=False,
+                                skip_reason="kos_filter",
+                            )
+                            logger.info(
+                                "Rule %s skipped: KOS filter (wanted=%s got=%s).",
+                                head_rule.get("rule_id"),
+                                args.kos,
+                                active_kos_index,
+                            )
+                            continue
+
                         lock_bucket = _lock_bucket(
                             player_locks,
                             league_id=league_id,
                             team_id=team_id,
                             period_id=period_id,
                         )
+
+                        if reserve_first_rules:
+                            reserve_executed = False
+                            for r in reserve_first_rules:
+                                reserve_id = str(r.get("reserve_id"))
+                                if reserve_id in used_reserves:
+                                    continue
+                                if active_id in do_not_move and active_confirmed_status != "not_starting":
+                                    logger.info(
+                                        "Rule %s skipped: do-not-move active.",
+                                        r.get("rule_id"),
+                                    )
+                                    continue
+                                if roster_view.is_locked(
+                                    active_id,
+                                    now=now,
+                                    lineup_info_by_player=lineup_info_by_player,
+                                ):
+                                    logger.info(
+                                        "Rule %s skipped: active locked (%s).",
+                                        r.get("rule_id"),
+                                        _player_label(roster_view, active_id),
+                                    )
+                                    continue
+                                if active_kickoff and now >= active_kickoff:
+                                    logger.info(
+                                        "Rule %s skipped: active kickoff passed (%s).",
+                                        r.get("rule_id"),
+                                        _player_label(roster_view, active_id),
+                                    )
+                                    continue
+                                reserve_info = lineup_info_by_player.get(reserve_id)
+                                reserve_trigger = r.get("trigger") or "confirmed_lineup"
+                                reserve_status_fn = _status_kind
+                                if not args.force_trigger and reserve_trigger == "confirmed_lineup":
+                                    reserve_status_fn = _confirmed_status_kind
+                                if args.simulate_lineups:
+                                    reserve_status = _sim_status_kind(reserve_id)
+                                else:
+                                    reserve_status = reserve_status_fn(reserve_info)
+                                if reserve_status != "starting":
+                                    continue
+                                reserve_kickoff = getattr(reserve_info, "kickoff", None) if reserve_info else None
+                                if reserve_kickoff and now >= reserve_kickoff:
+                                    continue
+                                if (
+                                    active_kickoff
+                                    and reserve_kickoff
+                                    and active_kickoff < reserve_kickoff - timedelta(hours=1.25)
+                                ):
+                                    continue
+                                if roster_view.is_locked(
+                                    reserve_id,
+                                    now=now,
+                                    lineup_info_by_player=lineup_info_by_player,
+                                ):
+                                    continue
+                                legal = True
+                                if period_id is not None:
+                                    legal = can_swap_in_period(
+                                        subs_service=subs_service,
+                                        roster=roster,
+                                        league_id=league_id,
+                                        team_id=team_id,
+                                        active_id=active_id,
+                                        reserve_id=reserve_id,
+                                        period_id=period_id,
+                                    )
+                                if not legal:
+                                    continue
+                                if args.dry_run:
+                                    logger.info(
+                                        "Rule %s DRY RUN ok: would swap %s -> %s (period %s)",
+                                        r.get("rule_id"),
+                                        _player_label(roster_view, active_id),
+                                        _player_label(roster_view, reserve_id),
+                                        period_id,
+                                    )
+                                    reserve_executed = True
+                                    used_reserves.add(reserve_id)
+                                    break
+                                try:
+                                    result = subs_service.swap_players(
+                                        team_id=team_id,
+                                        out_player_id=active_id,
+                                        in_player_id=reserve_id,
+                                        period=int(period_id) if period_id is not None else None,
+                                    )
+                                    if result and result.get("success"):
+                                        logger.info(
+                                            "Rule %s fired: swapped %s -> %s (period %s)",
+                                            r.get("rule_id"),
+                                            _player_label(roster_view, active_id),
+                                            _player_label(roster_view, reserve_id),
+                                            period_id,
+                                        )
+                                        reserve_executed = True
+                                        used_reserves.add(reserve_id)
+                                        break
+                                except Exception:
+                                    logger.exception("Rule %s failed during reserve-starting swap", r.get("rule_id"))
+                            if reserve_executed:
+                                swap_executed = True
+                                continue
+
+                        active_rules = active_first_rules
+                        if not active_rules:
+                            continue
                         if _is_player_locked(lock_bucket, active_id) and active_confirmed_status != "not_starting":
                             _log_trace(
                                 args.trace,
@@ -2057,7 +2226,7 @@ def main() -> None:
                             )
                             logger.info(
                                 "Rule %s skipped: active locked (%s).",
-                                active_rules[0].get("rule_id"),
+                                head_rule.get("rule_id"),
                                 _player_label(roster_view, active_id),
                             )
                             continue
@@ -2072,7 +2241,7 @@ def main() -> None:
                             )
                             logger.info(
                                 "Rule %s skipped: active swapped in this run and is %s (%s).",
-                                active_rules[0].get("rule_id"),
+                                head_rule.get("rule_id"),
                                 active_status,
                                 _player_label(roster_view, active_id),
                             )
@@ -2086,7 +2255,7 @@ def main() -> None:
                                 ready=False,
                                 skip_reason="do_not_move",
                             )
-                            logger.info("Rule %s skipped: do-not-move active.", active_rules[0].get("rule_id"))
+                            logger.info("Rule %s skipped: do-not-move active.", head_rule.get("rule_id"))
                             continue
 
                         if not args.force_trigger:
@@ -2101,7 +2270,7 @@ def main() -> None:
                                     )
                                     logger.info(
                                         "Rule %s skipped: active lineup not confirmed (%s).",
-                                        active_rules[0].get("rule_id"),
+                                        head_rule.get("rule_id"),
                                         _player_label(roster_view, active_id),
                                     )
                                     continue
@@ -2115,7 +2284,7 @@ def main() -> None:
                                     )
                                     logger.info(
                                         "Rule %s skipped: active confirmed starter (%s).",
-                                        active_rules[0].get("rule_id"),
+                                        head_rule.get("rule_id"),
                                         _player_label(roster_view, active_id),
                                     )
                                     continue
@@ -2129,13 +2298,13 @@ def main() -> None:
                                 )
                                 logger.info(
                                     "Rule %s skipped: active unconfirmed outside window.",
-                                    active_rules[0].get("rule_id"),
+                                    head_rule.get("rule_id"),
                                 )
                                 continue
                         # TODO: additional triggers (e.g., kickoff_passed, injury_flag) can be added here.
 
                         if roster_view.is_locked(active_id, now=now, lineup_info_by_player=lineup_info_by_player):
-                            for r in active_rules:
+                            for r in active_rules_sorted:
                                 r["state"] = "disabled"
                                 r["disabled_at"] = _now().isoformat()
                                 r["disabled_reason"] = "active_locked"
@@ -2149,7 +2318,7 @@ def main() -> None:
                             )
                             logger.info(
                                 "Rule %s disabled: active locked (%s).",
-                                active_rules[0].get("rule_id"),
+                                head_rule.get("rule_id"),
                                 _player_label(roster_view, active_id),
                             )
                             continue
@@ -2159,7 +2328,10 @@ def main() -> None:
                             if reserve_id in used_reserves:
                                 continue
                             reserve_info = lineup_info_by_player.get(reserve_id)
-                            reserve_confirmed_status = _confirmed_status_kind(reserve_info)
+                            if args.simulate_lineups:
+                                reserve_confirmed_status = _sim_status_kind(reserve_id)
+                            else:
+                                reserve_confirmed_status = _confirmed_status_kind(reserve_info)
                             locked = _is_player_locked(lock_bucket, reserve_id)
                             lock_bypass = False
                             if locked:
@@ -2189,7 +2361,9 @@ def main() -> None:
                                 {
                                     "rule": r,
                                     "reserve_id": reserve_id,
-                                    "status": status_kind_fn(reserve_info),
+                                    "status": _sim_status_kind(reserve_id)
+                                    if args.simulate_lineups
+                                    else status_kind_fn(reserve_info),
                                     "proj_fpts": proj_val,
                                     "kos_index": kos_index_map.get(reserve_id),
                                     "kickoff": getattr(reserve_info, "kickoff", None) if reserve_info else None,

@@ -1,6 +1,6 @@
 {
   "event_id": 14025049,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
     "formation": "3-4-2-1",
     "starters": [
@@ -45,8 +45,8 @@
         "captain": false
       },
       {
-        "id": 371222,
-        "name": "Saša Lukić",
+        "id": 793167,
+        "name": "Sander Berge",
         "position": "M",
         "team_id": 43,
         "substitute": false,
@@ -86,14 +86,87 @@
       },
       {
         "id": 192442,
-        "name": "Raúl Jiménez",
+        "name": "Ra\u00fal Jim\u00e9nez",
         "position": "F",
         "team_id": 43,
         "substitute": false,
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1112879,
+        "name": "Kevin",
+        "position": "M",
+        "team_id": 43,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 836698,
+        "name": "Ryan Sessegnon",
+        "position": "D",
+        "team_id": 43,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 371222,
+        "name": "Sa\u0161a Luki\u0107",
+        "position": "M",
+        "team_id": 43,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 365802,
+        "name": "Harrison Reed",
+        "position": "M",
+        "team_id": 43,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 286165,
+        "name": "Adama Traor\u00e9",
+        "position": "F",
+        "team_id": 43,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 123207,
+        "name": "Benjamin Lecomte",
+        "position": "G",
+        "team_id": 43,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1514221,
+        "name": "Samuel Amissah",
+        "position": "D",
+        "team_id": 36548,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1899771,
+        "name": "Seth Ridgeon",
+        "position": "M",
+        "team_id": 764724,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1503757,
+        "name": "Jonah Kusi-Asare",
+        "position": "F",
+        "team_id": 43,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 190877,
@@ -102,21 +175,9 @@
         "reason": 1
       },
       {
-        "id": 868715,
-        "name": "Jorge Cuenca",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 1546231,
         "name": "Joshua King",
         "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 836698,
-        "name": "Ryan Sessegnon",
-        "position": "D",
         "reason": 1
       },
       {
@@ -149,16 +210,16 @@
     "formation": "4-2-3-1",
     "starters": [
       {
-        "id": 962053,
-        "name": "Filip Jørgensen",
+        "id": 920546,
+        "name": "Robert S\u00e1nchez",
         "position": "G",
         "team_id": 38,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 1403050,
-        "name": "Josh Acheampong",
+        "id": 996958,
+        "name": "Malo Gusto",
         "position": "D",
         "team_id": 38,
         "substitute": false,
@@ -173,40 +234,32 @@
         "captain": false
       },
       {
-        "id": 904827,
-        "name": "Benoît Badiashile",
+        "id": 352668,
+        "name": "Tosin Adarabioyo",
         "position": "D",
         "team_id": 38,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 996958,
-        "name": "Malo Gusto",
+        "id": 794939,
+        "name": "Marc Cucurella",
         "position": "D",
         "team_id": 38,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 885908,
-        "name": "Reece James",
-        "position": "D",
-        "team_id": 38,
-        "substitute": false,
-        "captain": true
-      },
-      {
-        "id": 974505,
-        "name": "Enzo Fernández",
+        "id": 1105779,
+        "name": "Andrey Santos",
         "position": "M",
         "team_id": 38,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 1597265,
-        "name": "Estêvão",
+        "id": 987650,
+        "name": "Mois\u00e9s Caicedo",
         "position": "M",
         "team_id": 38,
         "substitute": false,
@@ -221,6 +274,14 @@
         "captain": false
       },
       {
+        "id": 974505,
+        "name": "Enzo Fern\u00e1ndez",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": true
+      },
+      {
         "id": 879349,
         "name": "Pedro Neto",
         "position": "M",
@@ -229,15 +290,88 @@
         "captain": false
       },
       {
-        "id": 975079,
-        "name": "João Pedro",
+        "id": 997087,
+        "name": "Liam Delap",
         "position": "F",
         "team_id": 38,
         "substitute": false,
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1153079,
+        "name": "Jorrel Hato",
+        "position": "D",
+        "team_id": 38,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 885908,
+        "name": "Reece James",
+        "position": "D",
+        "team_id": 38,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 975079,
+        "name": "Jo\u00e3o Pedro",
+        "position": "F",
+        "team_id": 38,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1403050,
+        "name": "Josh Acheampong",
+        "position": "D",
+        "team_id": 38,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 962053,
+        "name": "Filip J\u00f8rgensen",
+        "position": "G",
+        "team_id": 38,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 923894,
+        "name": "Wesley Fofana",
+        "position": "D",
+        "team_id": 38,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1597265,
+        "name": "Est\u00eav\u00e3o",
+        "position": "M",
+        "team_id": 38,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1140599,
+        "name": "Jamie Gittens",
+        "position": "M",
+        "team_id": 38,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1135873,
+        "name": "Alejandro Garnacho",
+        "position": "F",
+        "team_id": 38,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 958966,
@@ -253,35 +387,16 @@
       },
       {
         "id": 1110006,
-        "name": "Dário Essugo",
+        "name": "D\u00e1rio Essugo",
         "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 794939,
-        "name": "Marc Cucurella",
-        "position": "D",
         "reason": 1
       },
       {
         "id": 1069488,
-        "name": "Roméo Lavia",
+        "name": "Rom\u00e9o Lavia",
         "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 920546,
-        "name": "Robert Sánchez",
-        "position": "G",
-        "reason": 1
-      },
-      {
-        "id": 923894,
-        "name": "Wesley Fofana",
-        "position": "D",
         "reason": 1
       }
     ]
-  },
-  "fetched_at_utc": "2026-01-06 04:13:16+0000"
+  }
 }

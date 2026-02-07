@@ -3,8 +3,7 @@ Bridge Fantrax FXPA player listings into the LineupStatus model.
 
 This module fetches the "Players" table via /fxpa/req, inspects the icons
 Fantrax renders (typeId 12 == starting, 32 == expected, 15 == not starting),
-and produces
-fantrax_player_id -> LineupStatus mappings that can be merged with SofaScore.
+and produces confirmed/expected signals that can be merged with SofaScore.
 """
 
 from __future__ import annotations
@@ -14,6 +13,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from typing import Dict, Optional, Tuple
 
 import requests
@@ -25,6 +25,21 @@ from fantraxapi.lineups.sofascore_bridge import _kickoff_from_fantrax_row, _team
 logger = logging.getLogger(__name__)
 FXPA_URL = "https://www.fantrax.com/fxpa/req"
 DEFAULT_GLOBAL_STATUS_PATH = Path("data/fantrax/global_icons.json")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+_LOG_PATH = REPO_ROOT / "data" / "logs" / "fantrax_lineup_bridge.log"
+LOG_TIMEZONE = "America/Los_Angeles"
+
+def _log_time_converter(*_args):
+    return datetime.now(ZoneInfo(LOG_TIMEZONE)).timetuple()
+
+if not any(getattr(h, "baseFilename", None) == str(_LOG_PATH) for h in logger.handlers):
+    _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    handler = logging.FileHandler(_LOG_PATH)
+    formatter = logging.Formatter("%(asctime)s %(levelname)s [fantrax_bridge] %(message)s")
+    formatter.converter = _log_time_converter
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 def global_status_path_for_user(user_id: Optional[str]) -> Path:
@@ -76,6 +91,7 @@ def fetch_fantrax_player_status_snapshot(
     misc_display_type:
         1 -> Standard listing
         10 -> Starting (default)
+        12 -> Expected/projection
     """
     base_data = {
         "view": "STATS",
@@ -115,13 +131,22 @@ def fetch_fantrax_player_status_snapshot(
     return _fxpa_post(session, league_id, payload=payload)
 
 
-def _status_from_icons(scorer: dict) -> LineupStatus:
+def _extract_displayed_misc_display_type(payload: dict) -> Optional[str]:
+    responses = payload.get("responses") or []
+    first = responses[0] if responses else {}
+    data = first.get("data") or {}
+    value = data.get("displayedMiscDisplayType")
+    if value is None:
+        return None
+    return str(value)
+
+
+def _confirmed_status_from_icons(scorer: dict) -> Optional[LineupStatus]:
     # Explicit server-side lock usually means the match is over / slot cannot change
     if scorer.get("disableLineupChange") is True:
         return LineupStatus.OUT
 
     icons = scorer.get("icons") or []
-    icons = icons or []
     for ic in icons:
         tooltip = (ic.get("tooltip") or "").lower()
         type_id = str(ic.get("typeId"))
@@ -132,19 +157,26 @@ def _status_from_icons(scorer: dict) -> LineupStatus:
         type_id = str(ic.get("typeId"))
         if type_id == "12" or "starting in upcoming" in tooltip:
             return LineupStatus.STARTING
+    return None
+
+
+def _expected_status_from_icons(scorer: dict) -> Optional[LineupStatus]:
+    icons = scorer.get("icons") or []
     for ic in icons:
         tooltip = (ic.get("tooltip") or "").lower()
         type_id = str(ic.get("typeId"))
         if type_id == "32" or "expected to play" in tooltip:
             return LineupStatus.STARTING
-    return LineupStatus.UNKNOWN
+    if str(scorer.get("upcomingEventStatusId")) == "2":
+        return LineupStatus.STARTING
+    return None
 
 
-def _derive_fx_status_and_kickoff(
+def _derive_fx_statuses_and_kickoff(
     row: RosterRow,
     *,
     now: Optional[datetime] = None,
-) -> tuple[LineupStatus, Optional[datetime]]:
+) -> tuple[Optional[LineupStatus], Optional[LineupStatus], Optional[datetime]]:
     if now is None:
         now = datetime.now(timezone.utc)
 
@@ -165,7 +197,7 @@ def _derive_fx_status_and_kickoff(
             finished_flag = True
 
     if locked_flag and finished_flag:
-        return LineupStatus.OUT, kickoff
+        return LineupStatus.OUT, None, kickoff
 
     has_starting_icon = any(str(icon.get("typeId")) == "12" for icon in icons)
     has_expected_icon = any(str(icon.get("typeId")) == "32" for icon in icons)
@@ -174,17 +206,17 @@ def _derive_fx_status_and_kickoff(
         for icon in icons
     )
 
-    if has_starting_icon:
-        return LineupStatus.STARTING, kickoff
     if has_not_starting_icon:
-        return LineupStatus.BENCH, kickoff
+        return LineupStatus.BENCH, None, kickoff
+    if has_starting_icon:
+        return LineupStatus.STARTING, None, kickoff
     if has_expected_icon:
-        return LineupStatus.STARTING, kickoff
+        return None, LineupStatus.STARTING, kickoff
 
     if str(upcoming) == "2":
-        return LineupStatus.STARTING, kickoff
+        return None, LineupStatus.STARTING, kickoff
 
-    return LineupStatus.UNKNOWN, kickoff
+    return None, None, kickoff
 
 
 def _parse_fx_cell_opponent_kickoff(
@@ -230,6 +262,7 @@ class FantraxPlayerStatus:
     fantrax_player_id: str
     status: LineupStatus
     icons: list[dict]
+    expected_status: Optional[LineupStatus] = None
     event_id: Optional[str] = None
     kickoff: Optional[datetime] = None
     team_name: Optional[str] = None
@@ -237,11 +270,24 @@ class FantraxPlayerStatus:
     is_home: Optional[bool] = None
 
 
-def parse_fantrax_player_statuses(payload: dict) -> dict[str, FantraxPlayerStatus]:
+def parse_fantrax_player_statuses(
+    payload: dict,
+    *,
+    misc_display_type: Optional[str] = None,
+) -> dict[str, FantraxPlayerStatus]:
+    """
+    Parse a Fantrax FXPA payload into confirmed/expected status objects.
+
+    misc_display_type:
+        10 -> starting (confirmed) list, treat presence as confirmed STARTING
+        12 -> expected/projection list, treat presence as expected STARTING
+    """
     responses = payload.get("responses") or []
     first = responses[0] if responses else {}
     data = first.get("data") or {}
     stats_table = data.get("statsTable") or []
+    misc_display_type = misc_display_type or _extract_displayed_misc_display_type(payload)
+    misc_display_type = str(misc_display_type) if misc_display_type is not None else None
     results: Dict[str, FantraxPlayerStatus] = {}
 
     for row in stats_table:
@@ -250,7 +296,17 @@ def parse_fantrax_player_statuses(payload: dict) -> dict[str, FantraxPlayerStatu
         if not fantrax_id:
             continue
         icons = scorer.get("icons") or []
-        status = _status_from_icons(scorer)
+        confirmed_status = _confirmed_status_from_icons(scorer)
+        expected_status = _expected_status_from_icons(scorer)
+        if confirmed_status is None:
+            if misc_display_type == "10":
+                confirmed_status = LineupStatus.STARTING
+            elif misc_display_type == "12":
+                expected_status = expected_status or LineupStatus.STARTING
+        if confirmed_status is not None:
+            expected_status = None
+
+        status = confirmed_status or LineupStatus.UNKNOWN
 
         event_id = None
         cells = row.get("cells") or []
@@ -272,6 +328,7 @@ def parse_fantrax_player_statuses(payload: dict) -> dict[str, FantraxPlayerStatu
         results[str(fantrax_id)] = FantraxPlayerStatus(
             fantrax_player_id=str(fantrax_id),
             status=status,
+            expected_status=expected_status,
             icons=icons,
             event_id=event_id,
             kickoff=kickoff,
@@ -328,6 +385,32 @@ def build_lineup_info_by_player_fantrax(
     mapping: Dict[str, PlayerLineupInfo] = {}
     unknown_logged = 0
     now = datetime.now(timezone.utc)
+    confirmed_starting_ids: set[str] = set()
+    expected_logged = 0
+    sample_confirmed: list[str] = []
+    sample_expected: list[str] = []
+    sample_unknown: list[str] = []
+
+    try:
+        payload = fetch_fantrax_player_status_snapshot(
+            session=session,
+            league_id=league_id,
+            status_filter="ALL",
+            misc_display_type=misc_display_type,
+            max_results=600,
+            period=period,
+        )
+        statuses = parse_fantrax_player_statuses(payload, misc_display_type=misc_display_type)
+        confirmed_starting_ids = {
+            pid for pid, status_obj in statuses.items() if status_obj.status == LineupStatus.STARTING
+        }
+        logger.info(
+            "[fantrax-status] FXPA confirmed list fetched: count=%d miscDisplayType=%s",
+            len(confirmed_starting_ids),
+            misc_display_type,
+        )
+    except Exception as exc:
+        logger.warning("[fantrax-status] confirmed list fetch failed: %s", exc)
 
     for row in roster.rows:
         player = getattr(row, "player", None)
@@ -335,9 +418,23 @@ def build_lineup_info_by_player_fantrax(
             continue
         fantrax_id = str(player.id)
 
-        fx_status, fx_kickoff = _derive_fx_status_and_kickoff(row, now=now)
+        conf_status, pred_status, fx_kickoff = _derive_fx_statuses_and_kickoff(row, now=now)
+        if (
+            fantrax_id in confirmed_starting_ids
+            and conf_status not in (LineupStatus.BENCH, LineupStatus.OUT, LineupStatus.DOUBTFUL)
+        ):
+            conf_status = LineupStatus.STARTING
 
-        if fx_status == LineupStatus.UNKNOWN and unknown_logged < 5:
+        fx_conf_status = conf_status
+        fx_pred_status = pred_status if conf_status is None else None
+        fx_status = fx_conf_status or LineupStatus.UNKNOWN
+
+        if fx_conf_status == LineupStatus.STARTING and len(sample_confirmed) < 5:
+            sample_confirmed.append(getattr(player, "name", fantrax_id))
+        if fx_pred_status == LineupStatus.STARTING and expected_logged < 5:
+            sample_expected.append(getattr(player, "name", fantrax_id))
+            expected_logged += 1
+        if fx_conf_status is None and fx_pred_status is None and unknown_logged < 5:
             scorer = getattr(row, "_raw", {}).get("scorer", {}) if getattr(row, "_raw", None) else {}
             icons = scorer.get("icons") or []
             logger.info(
@@ -348,6 +445,8 @@ def build_lineup_info_by_player_fantrax(
                 scorer.get("disableLineupChange"),
             )
             unknown_logged += 1
+            if len(sample_unknown) < 5:
+                sample_unknown.append(getattr(player, "name", fantrax_id))
 
         pli = mapping.get(fantrax_id)
         if pli is None:
@@ -358,6 +457,8 @@ def build_lineup_info_by_player_fantrax(
             mapping[fantrax_id] = pli
 
         pli.fx_status = fx_status
+        pli.fx_conf_status = fx_conf_status
+        pli.fx_pred_status = fx_pred_status
         pli.fx_kickoff = fx_kickoff
         # Only populate display fixture metadata if SofaScore hasn't already done so
         raw = getattr(row, "_raw", {}) or {}
@@ -404,6 +505,24 @@ def build_lineup_info_by_player_fantrax(
                 opp_val,
             )
 
+    if mapping:
+        conf_count = sum(1 for p in mapping.values() if p.fx_conf_status == LineupStatus.STARTING)
+        pred_count = sum(1 for p in mapping.values() if p.fx_pred_status == LineupStatus.STARTING)
+        unknown_count = sum(
+            1
+            for p in mapping.values()
+            if p.fx_conf_status is None and p.fx_pred_status is None
+        )
+        logger.info(
+            "[fantrax-status] roster scan summary confirmed=%d expected=%d unknown=%d samples_confirmed=%s samples_expected=%s samples_unknown=%s",
+            conf_count,
+            pred_count,
+            unknown_count,
+            sample_confirmed,
+            sample_expected,
+            sample_unknown,
+        )
+
     return mapping
 
 
@@ -418,7 +537,7 @@ def debug_fx_lineup_context(roster: Roster, fantrax_player_id: str) -> Optional[
         return None
 
     now = datetime.now(timezone.utc)
-    fx_status, fx_kickoff = _derive_fx_status_and_kickoff(row_match, now=now)
+    conf_status, pred_status, fx_kickoff = _derive_fx_statuses_and_kickoff(row_match, now=now)
 
     raw = getattr(row_match, "_raw", {}) or {}
     scorer = raw.get("scorer") or {}
@@ -430,7 +549,8 @@ def debug_fx_lineup_context(roster: Roster, fantrax_player_id: str) -> Optional[
         "disableLineupChange": scorer.get("disableLineupChange"),
         "icons": scorer.get("icons"),
         "first_cell_content": cells[0].get("content") if cells else None,
-        "fx_status": fx_status.value,
+        "fx_conf_status": conf_status.value if conf_status else None,
+        "fx_pred_status": pred_status.value if pred_status else None,
         "fx_kickoff": fx_kickoff.isoformat() if fx_kickoff else None,
     }
 
@@ -443,6 +563,7 @@ def debug_fantrax_player_status(payload: dict, fantrax_player_id: str) -> Option
     return {
         "fantrax_player_id": status.fantrax_player_id,
         "status": status.status.value,
+        "expected_status": status.expected_status.value if status.expected_status else None,
         "event_id": status.event_id,
         "icons": status.icons,
     }
@@ -489,6 +610,9 @@ def load_global_status_snapshot(
                 fantrax_player_id=pid,
                 status=LineupStatus(entry.get("status", LineupStatus.UNKNOWN.value)),
                 icons=entry.get("icons") or [],
+                expected_status=LineupStatus(entry["expected_status"])
+                if entry.get("expected_status")
+                else None,
                 event_id=entry.get("event_id"),
                 kickoff=datetime.fromisoformat(entry["kickoff"])
                 if entry.get("kickoff")

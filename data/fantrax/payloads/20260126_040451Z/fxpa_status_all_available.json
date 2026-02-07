@@ -1,0 +1,1172 @@
+{
+  "data": {
+    "adrt": 45,
+    "sDate": 1769400292759,
+    "up": "182.0.1"
+  },
+  "responses": [
+    {
+      "data": {
+        "claimsDropsAllowed": true,
+        "commissioner": true,
+        "displayedDivisionId": "v21nt4bmmc719rei",
+        "displayedLists": {
+          "displayedSeasonOrProjections": [
+            {
+              "code": "PROJECTION_0_925_EVENT_PROJECTED_WEEKLY",
+              "endDate": 1779681599000,
+              "name": "Projected - Per Game",
+              "shortName": "Proj - Per Game",
+              "startDate": 1755230400000,
+              "timeframeTypeCode": "PROJECTED_WEEKLY"
+            },
+            {
+              "code": "PROJECTION_0_925_SEASON",
+              "endDate": 1779681599000,
+              "name": "Projected - Season",
+              "shortName": "Proj - Season",
+              "startDate": 1755230400000,
+              "timeframeTypeCode": "PROJECTED_SEASON"
+            },
+            {
+              "code": "SEASON_925_YEAR_TO_DATE",
+              "endDate": 1779681599000,
+              "name": "2025-26 - YTD",
+              "shortName": "2025-26 Reg - YTD",
+              "showGoBackDays": true,
+              "startDate": 1755230400000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_925_BY_PERIOD",
+              "endDate": 1779681599000,
+              "name": "2025-26 - Game Week",
+              "shortName": "2025-26 Reg - Game Week",
+              "showGoBackDays": true,
+              "startDate": 1755230400000,
+              "timeframeTypeCode": "BY_PERIOD"
+            },
+            {
+              "code": "SEASON_925_BY_DATE",
+              "endDate": 1779681599000,
+              "name": "2025-26 - Dates",
+              "shortName": "2025-26 Reg - Dates",
+              "showGoBackDays": true,
+              "startDate": 1755230400000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_924_YEAR_TO_DATE",
+              "endDate": 1748231999000,
+              "name": "2024-25 - YTD",
+              "shortName": "2024-25 Reg - YTD",
+              "startDate": 1723780800000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_924_BY_DATE",
+              "endDate": 1748231999000,
+              "name": "2024-25 - Dates",
+              "shortName": "2024-25 Reg - Dates",
+              "startDate": 1723780800000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_923_YEAR_TO_DATE",
+              "endDate": 1716177599000,
+              "name": "2023-24 - YTD",
+              "shortName": "2023-24 Reg - YTD",
+              "startDate": 1691726400000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_923_BY_DATE",
+              "endDate": 1716177599000,
+              "name": "2023-24 - Dates",
+              "shortName": "2023-24 Reg - Dates",
+              "startDate": 1691726400000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_922_YEAR_TO_DATE",
+              "endDate": 1685332799000,
+              "name": "2022-23 - YTD",
+              "shortName": "2022-23 Reg - YTD",
+              "startDate": 1659672000000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_922_BY_DATE",
+              "endDate": 1685332799000,
+              "name": "2022-23 - Dates",
+              "shortName": "2022-23 Reg - Dates",
+              "startDate": 1659672000000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_921_YEAR_TO_DATE",
+              "endDate": 1653278399000,
+              "name": "2021-22 - YTD",
+              "shortName": "2021-22 Reg - YTD",
+              "startDate": 1628827200000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_921_BY_DATE",
+              "endDate": 1653278399000,
+              "name": "2021-22 - Dates",
+              "shortName": "2021-22 Reg - Dates",
+              "startDate": 1628827200000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_920_YEAR_TO_DATE",
+              "endDate": 1621828799000,
+              "name": "2020-21 - YTD",
+              "shortName": "2020-21 Reg - YTD",
+              "startDate": 1599883200000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_920_BY_DATE",
+              "endDate": 1621828799000,
+              "name": "2020-21 - Dates",
+              "shortName": "2020-21 Reg - Dates",
+              "startDate": 1599883200000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_919_YEAR_TO_DATE",
+              "endDate": 1595822399000,
+              "name": "2019-20 - YTD",
+              "shortName": "2019-20 Reg - YTD",
+              "startDate": 1565323200000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_919_BY_DATE",
+              "endDate": 1595822399000,
+              "name": "2019-20 - Dates",
+              "shortName": "2019-20 Reg - Dates",
+              "startDate": 1565323200000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_918_YEAR_TO_DATE",
+              "endDate": 1557719999000,
+              "name": "2018-19 - YTD",
+              "shortName": "2018-19 Reg - YTD",
+              "startDate": 1533873600000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_918_BY_DATE",
+              "endDate": 1557719999000,
+              "name": "2018-19 - Dates",
+              "shortName": "2018-19 Reg - Dates",
+              "startDate": 1533873600000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_917_YEAR_TO_DATE",
+              "endDate": 1526443199000,
+              "name": "2017-18 - YTD",
+              "shortName": "2017-18 Reg - YTD",
+              "startDate": 1502424000000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_917_BY_DATE",
+              "endDate": 1526443199000,
+              "name": "2017-18 - Dates",
+              "shortName": "2017-18 Reg - Dates",
+              "startDate": 1502424000000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_916_YEAR_TO_DATE",
+              "endDate": 1495425599000,
+              "name": "2016-17 - YTD",
+              "shortName": "2016-17 Reg - YTD",
+              "startDate": 1471060800000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_916_BY_DATE",
+              "endDate": 1495425599000,
+              "name": "2016-17 - Dates",
+              "shortName": "2016-17 Reg - Dates",
+              "startDate": 1471060800000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_915_YEAR_TO_DATE",
+              "endDate": 1463543999000,
+              "name": "2015-16 - YTD",
+              "shortName": "2015-16 Reg - YTD",
+              "startDate": 1439006400000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_915_BY_DATE",
+              "endDate": 1463543999000,
+              "name": "2015-16 - Dates",
+              "shortName": "2015-16 Reg - Dates",
+              "startDate": 1439006400000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_914_YEAR_TO_DATE",
+              "endDate": 1432526399000,
+              "name": "2014-15 - YTD",
+              "shortName": "2014-15 Reg - YTD",
+              "startDate": 1408161600000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_914_BY_DATE",
+              "endDate": 1432526399000,
+              "name": "2014-15 - Dates",
+              "shortName": "2014-15 Reg - Dates",
+              "startDate": 1408161600000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_913_YEAR_TO_DATE",
+              "endDate": 1399867199000,
+              "name": "2013-14 - YTD",
+              "shortName": "2013-14 Reg - YTD",
+              "startDate": 1376712000000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_913_BY_DATE",
+              "endDate": 1399867199000,
+              "name": "2013-14 - Dates",
+              "shortName": "2013-14 Reg - Dates",
+              "startDate": 1376712000000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_912_YEAR_TO_DATE",
+              "endDate": 1369022399000,
+              "name": "2012-13 - YTD",
+              "shortName": "2012-13 Reg - YTD",
+              "startDate": 1345262400000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_912_BY_DATE",
+              "endDate": 1369022399000,
+              "name": "2012-13 - Dates",
+              "shortName": "2012-13 Reg - Dates",
+              "startDate": 1345262400000,
+              "timeframeTypeCode": "BY_DATE"
+            },
+            {
+              "code": "SEASON_911_YEAR_TO_DATE",
+              "endDate": 1336967999000,
+              "name": "2011-12 - YTD",
+              "shortName": "2011-12 Reg - YTD",
+              "startDate": 1313208000000,
+              "timeframeTypeCode": "YEAR_TO_DATE"
+            },
+            {
+              "code": "SEASON_911_BY_DATE",
+              "endDate": 1336967999000,
+              "name": "2011-12 - Dates",
+              "shortName": "2011-12 Reg - Dates",
+              "startDate": 1313208000000,
+              "timeframeTypeCode": "BY_DATE"
+            }
+          ],
+          "divisions": [
+            {
+              "id": "v21nt4bmmc719rei",
+              "name": "Division 1"
+            },
+            {
+              "id": "4arm9h8emc719rei",
+              "name": "Division 2"
+            },
+            {
+              "id": "4eibqgsxmdnxlcbx",
+              "name": "Division 3"
+            }
+          ],
+          "goBackDays": [
+            1,
+            7,
+            14,
+            30,
+            60
+          ],
+          "scoringCategoryTypes": [
+            {
+              "key": "5",
+              "value": "Tracked"
+            },
+            {
+              "key": "1",
+              "value": "Standard"
+            },
+            {
+              "key": "2",
+              "value": "Extra"
+            }
+          ]
+        },
+        "displayedMiscDisplayType": "10",
+        "displayedPeriod": 23,
+        "displayedPosOrGroup": "ALL",
+        "displayedSchedulePageAdj": 0,
+        "displayedScoringCategoryType": "5",
+        "displayedSeasonOrProjection": {
+          "code": "SEASON_925_YEAR_TO_DATE",
+          "endDate": 1779681599000,
+          "name": "2025-26 - YTD",
+          "shortName": "2025-26 Reg - YTD",
+          "showGoBackDays": true,
+          "startDate": 1755230400000,
+          "timeframeTypeCode": "YEAR_TO_DATE"
+        },
+        "displayedSelections": {
+          "displayedEndDate": 1769317200000,
+          "displayedMiscDisplayType": "10",
+          "displayedScoringCategoryType": "5",
+          "displayedSeasonOrProjection": {
+            "code": "SEASON_925_YEAR_TO_DATE",
+            "endDate": 1779681599000,
+            "name": "2025-26 - YTD",
+            "shortName": "2025-26 Reg - YTD",
+            "showGoBackDays": true,
+            "startDate": 1755230400000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          "displayedStartDate": 1755230400000,
+          "displayedView": "STATS",
+          "myTeamId": "3uxxpgpemc719rep",
+          "searchName": ""
+        },
+        "displayedSortType": "SCORE",
+        "displayedStatusOrTeam": "ALL_AVAILABLE",
+        "displayedTimeStartType": "PERIOD_ONLY",
+        "displayedView": "STATS",
+        "goBackDays": [
+          1,
+          7,
+          14,
+          30,
+          60
+        ],
+        "hideStatsFilter": true,
+        "miscData": {
+          "allowMultipleClaimPerStatus": {
+            "4": false,
+            "5": true
+          },
+          "claimProcessingUsed": true,
+          "claimTypePerStatus": {
+            "4": "FREE_FOR_ALL",
+            "5": "BIDDING"
+          },
+          "displayedMaxDate": 1779681599000,
+          "displayedMinDate": 1755230400000,
+          "pageTitle": "Players",
+          "periodName": "Gameweek",
+          "showPendingTransactions": true,
+          "transactionSalaryBudgetInfo": [
+            {
+              "display": "$1.00",
+              "key": "claimBudget",
+              "name": "Claim Budget Remaining",
+              "tradeName": "Claim Budget",
+              "tradeable": true,
+              "value": "1.00"
+            }
+          ]
+        },
+        "miscDisplayTypes": [
+          {
+            "key": "1",
+            "value": "All"
+          },
+          {
+            "key": "10",
+            "value": "Starting"
+          },
+          {
+            "key": "12",
+            "value": "Expected to play"
+          },
+          {
+            "key": "11",
+            "value": "Bench"
+          }
+        ],
+        "nextSchedPageAllowed": true,
+        "noResultsMessage": "There were no results found for the specified criteria.",
+        "numPeriods": 38,
+        "paginatedResultSet": {
+          "maxResultsPerPage": 500,
+          "pageNumber": 1,
+          "totalNumPages": 0,
+          "totalNumResults": 0
+        },
+        "periodList": [
+          "1 (Aug 15 - Aug 21)",
+          "2 (Aug 22 - Aug 28)",
+          "3 (Aug 29 - Sep 11)",
+          "4 (Sep 12 - Sep 18)",
+          "5 (Sep 19 - Sep 25)",
+          "6 (Sep 26 - Oct 2)",
+          "7 (Oct 3 - Oct 16)",
+          "8 (Oct 17 - Oct 23)",
+          "9 (Oct 24 - Oct 30)",
+          "10 (Oct 31 - Nov 6)",
+          "11 (Nov 7 - Nov 20)",
+          "12 (Nov 21 - Nov 27)",
+          "13 (Nov 28 - Dec 1)",
+          "14 (Dec 2 - Dec 4)",
+          "15 (Dec 5 - Dec 11)",
+          "16 (Dec 12 - Dec 18)",
+          "17 (Dec 19 - Dec 25)",
+          "18 (Dec 26 - Dec 28)",
+          "19 (Dec 29 - Jan 1)",
+          "20 (Jan 2 - Jan 5)",
+          "21 (Jan 6 - Jan 15)",
+          "22 (Jan 16 - Jan 22)",
+          "23 (Jan 23 - Jan 29)",
+          "24 (Jan 30 - Feb 5)",
+          "25 (Feb 6 - Feb 9)",
+          "26 (Feb 10 - Feb 19)",
+          "27 (Feb 20 - Feb 26)",
+          "28 (Feb 27 - Mar 2)",
+          "29 (Mar 3 - Mar 12)",
+          "30 (Mar 13 - Mar 19)",
+          "31 (Mar 20 - Apr 9)",
+          "32 (Apr 10 - Apr 16)",
+          "33 (Apr 17 - Apr 23)",
+          "34 (Apr 24 - Apr 30)",
+          "35 (May 1 - May 7)",
+          "36 (May 8 - May 14)",
+          "37 (May 15 - May 21)",
+          "38 (May 22 - May 24)"
+        ],
+        "playerNewsIconRecencyLegend": [
+          {
+            "PLAYER_NEWS_HOT": "News was posted within the past <b>8</b> hours"
+          },
+          {
+            "PLAYER_NEWS_RECENT": "News was posted within the past <b>24</b> hours"
+          },
+          {
+            "PLAYER_NEWS": "News was posted within the past <b>5</b> days"
+          }
+        ],
+        "posOrGroupList": [
+          {
+            "id": "ALL",
+            "name": "All Players",
+            "shortName": "All"
+          },
+          {
+            "id": "SOCCER_NON_GOALIE",
+            "name": "Outfielders",
+            "shortName": "OF"
+          },
+          {
+            "id": "POS_703",
+            "name": "Defender",
+            "shortName": "D"
+          },
+          {
+            "id": "POS_702",
+            "name": "Midfielder",
+            "shortName": "M"
+          },
+          {
+            "id": "POS_701",
+            "name": "Forward",
+            "shortName": "F"
+          },
+          {
+            "id": "POS_704",
+            "name": "Goalkeeper",
+            "shortName": "G"
+          }
+        ],
+        "prevSchedPageAllowed": true,
+        "scoringCategoryTypes": [
+          {
+            "key": "5",
+            "value": "Tracked"
+          },
+          {
+            "key": "1",
+            "value": "Standard"
+          },
+          {
+            "key": "2",
+            "value": "Extra"
+          }
+        ],
+        "seasonOrProjections": [
+          {
+            "code": "PROJECTION_0_925_EVENT_PROJECTED_WEEKLY",
+            "endDate": 1779681599000,
+            "name": "Projected - Per Game",
+            "shortName": "Proj - Per Game",
+            "startDate": 1755230400000,
+            "timeframeTypeCode": "PROJECTED_WEEKLY"
+          },
+          {
+            "code": "PROJECTION_0_925_SEASON",
+            "endDate": 1779681599000,
+            "name": "Projected - Season",
+            "shortName": "Proj - Season",
+            "startDate": 1755230400000,
+            "timeframeTypeCode": "PROJECTED_SEASON"
+          },
+          {
+            "code": "SEASON_925_YEAR_TO_DATE",
+            "endDate": 1779681599000,
+            "name": "2025-26 - YTD",
+            "shortName": "2025-26 Reg - YTD",
+            "showGoBackDays": true,
+            "startDate": 1755230400000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_925_BY_PERIOD",
+            "endDate": 1779681599000,
+            "name": "2025-26 - Game Week",
+            "shortName": "2025-26 Reg - Game Week",
+            "showGoBackDays": true,
+            "startDate": 1755230400000,
+            "timeframeTypeCode": "BY_PERIOD"
+          },
+          {
+            "code": "SEASON_925_BY_DATE",
+            "endDate": 1779681599000,
+            "name": "2025-26 - Dates",
+            "shortName": "2025-26 Reg - Dates",
+            "showGoBackDays": true,
+            "startDate": 1755230400000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_924_YEAR_TO_DATE",
+            "endDate": 1748231999000,
+            "name": "2024-25 - YTD",
+            "shortName": "2024-25 Reg - YTD",
+            "startDate": 1723780800000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_924_BY_DATE",
+            "endDate": 1748231999000,
+            "name": "2024-25 - Dates",
+            "shortName": "2024-25 Reg - Dates",
+            "startDate": 1723780800000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_923_YEAR_TO_DATE",
+            "endDate": 1716177599000,
+            "name": "2023-24 - YTD",
+            "shortName": "2023-24 Reg - YTD",
+            "startDate": 1691726400000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_923_BY_DATE",
+            "endDate": 1716177599000,
+            "name": "2023-24 - Dates",
+            "shortName": "2023-24 Reg - Dates",
+            "startDate": 1691726400000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_922_YEAR_TO_DATE",
+            "endDate": 1685332799000,
+            "name": "2022-23 - YTD",
+            "shortName": "2022-23 Reg - YTD",
+            "startDate": 1659672000000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_922_BY_DATE",
+            "endDate": 1685332799000,
+            "name": "2022-23 - Dates",
+            "shortName": "2022-23 Reg - Dates",
+            "startDate": 1659672000000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_921_YEAR_TO_DATE",
+            "endDate": 1653278399000,
+            "name": "2021-22 - YTD",
+            "shortName": "2021-22 Reg - YTD",
+            "startDate": 1628827200000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_921_BY_DATE",
+            "endDate": 1653278399000,
+            "name": "2021-22 - Dates",
+            "shortName": "2021-22 Reg - Dates",
+            "startDate": 1628827200000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_920_YEAR_TO_DATE",
+            "endDate": 1621828799000,
+            "name": "2020-21 - YTD",
+            "shortName": "2020-21 Reg - YTD",
+            "startDate": 1599883200000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_920_BY_DATE",
+            "endDate": 1621828799000,
+            "name": "2020-21 - Dates",
+            "shortName": "2020-21 Reg - Dates",
+            "startDate": 1599883200000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_919_YEAR_TO_DATE",
+            "endDate": 1595822399000,
+            "name": "2019-20 - YTD",
+            "shortName": "2019-20 Reg - YTD",
+            "startDate": 1565323200000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_919_BY_DATE",
+            "endDate": 1595822399000,
+            "name": "2019-20 - Dates",
+            "shortName": "2019-20 Reg - Dates",
+            "startDate": 1565323200000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_918_YEAR_TO_DATE",
+            "endDate": 1557719999000,
+            "name": "2018-19 - YTD",
+            "shortName": "2018-19 Reg - YTD",
+            "startDate": 1533873600000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_918_BY_DATE",
+            "endDate": 1557719999000,
+            "name": "2018-19 - Dates",
+            "shortName": "2018-19 Reg - Dates",
+            "startDate": 1533873600000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_917_YEAR_TO_DATE",
+            "endDate": 1526443199000,
+            "name": "2017-18 - YTD",
+            "shortName": "2017-18 Reg - YTD",
+            "startDate": 1502424000000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_917_BY_DATE",
+            "endDate": 1526443199000,
+            "name": "2017-18 - Dates",
+            "shortName": "2017-18 Reg - Dates",
+            "startDate": 1502424000000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_916_YEAR_TO_DATE",
+            "endDate": 1495425599000,
+            "name": "2016-17 - YTD",
+            "shortName": "2016-17 Reg - YTD",
+            "startDate": 1471060800000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_916_BY_DATE",
+            "endDate": 1495425599000,
+            "name": "2016-17 - Dates",
+            "shortName": "2016-17 Reg - Dates",
+            "startDate": 1471060800000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_915_YEAR_TO_DATE",
+            "endDate": 1463543999000,
+            "name": "2015-16 - YTD",
+            "shortName": "2015-16 Reg - YTD",
+            "startDate": 1439006400000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_915_BY_DATE",
+            "endDate": 1463543999000,
+            "name": "2015-16 - Dates",
+            "shortName": "2015-16 Reg - Dates",
+            "startDate": 1439006400000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_914_YEAR_TO_DATE",
+            "endDate": 1432526399000,
+            "name": "2014-15 - YTD",
+            "shortName": "2014-15 Reg - YTD",
+            "startDate": 1408161600000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_914_BY_DATE",
+            "endDate": 1432526399000,
+            "name": "2014-15 - Dates",
+            "shortName": "2014-15 Reg - Dates",
+            "startDate": 1408161600000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_913_YEAR_TO_DATE",
+            "endDate": 1399867199000,
+            "name": "2013-14 - YTD",
+            "shortName": "2013-14 Reg - YTD",
+            "startDate": 1376712000000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_913_BY_DATE",
+            "endDate": 1399867199000,
+            "name": "2013-14 - Dates",
+            "shortName": "2013-14 Reg - Dates",
+            "startDate": 1376712000000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_912_YEAR_TO_DATE",
+            "endDate": 1369022399000,
+            "name": "2012-13 - YTD",
+            "shortName": "2012-13 Reg - YTD",
+            "startDate": 1345262400000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_912_BY_DATE",
+            "endDate": 1369022399000,
+            "name": "2012-13 - Dates",
+            "shortName": "2012-13 Reg - Dates",
+            "startDate": 1345262400000,
+            "timeframeTypeCode": "BY_DATE"
+          },
+          {
+            "code": "SEASON_911_YEAR_TO_DATE",
+            "endDate": 1336967999000,
+            "name": "2011-12 - YTD",
+            "shortName": "2011-12 Reg - YTD",
+            "startDate": 1313208000000,
+            "timeframeTypeCode": "YEAR_TO_DATE"
+          },
+          {
+            "code": "SEASON_911_BY_DATE",
+            "endDate": 1336967999000,
+            "name": "2011-12 - Dates",
+            "shortName": "2011-12 Reg - Dates",
+            "startDate": 1313208000000,
+            "timeframeTypeCode": "BY_DATE"
+          }
+        ],
+        "sortOptions": [
+          {
+            "object1": "Fantasy Points",
+            "object2": "SCORE"
+          },
+          {
+            "object1": "Fantasy Points per Game",
+            "object2": "FPTS_PER_GAME"
+          }
+        ],
+        "statisticsTimeframeTypes": [
+          {
+            "code": "YEAR_TO_DATE",
+            "id": "1",
+            "name": "Year to date",
+            "shortName": "YTD"
+          },
+          {
+            "code": "BY_PERIOD",
+            "id": "2",
+            "name": "Period",
+            "shortName": "Period"
+          }
+        ],
+        "statisticsViewTypeIds": [
+          "1",
+          "3"
+        ],
+        "statsTable": [],
+        "statusOrTeamList": [
+          {
+            "id": "ALL",
+            "name": "All players in the league in this category",
+            "shortName": "All"
+          },
+          {
+            "id": "ALL_AVAILABLE",
+            "name": "All players who are not on any fantasy team in this league",
+            "shortName": "All Available Players"
+          },
+          {
+            "id": "AVAILABLE_PLUS_3uxxpgpemc719rep",
+            "name": "Available players plus those on the fantasy team 1 - Yoro wizard, Harry! (hogan_m)",
+            "shortName": "Available + 1 - Yoro wizard, Harry! (hogan_m)"
+          },
+          {
+            "id": "WATCH_LIST_PLUS_3uxxpgpemc719rep",
+            "name": "All players that youve added to your watch list plus those on the fantasy team {0}",
+            "shortName": "Watch List + 1 - Yoro wizard, Harry! (hogan_m)"
+          },
+          {
+            "id": "ALL_TAKEN",
+            "name": "All players who are currently on a fantasy team in this league",
+            "shortName": "All Taken Players"
+          },
+          {
+            "id": "FREE_AGENT",
+            "name": "",
+            "shortName": "Free Agent"
+          },
+          {
+            "id": "WAIVER_WIRE",
+            "name": "???playersStatistics.status.waiverWire.description: en_US???",
+            "shortName": "Waiver Wire"
+          },
+          {
+            "id": "TRADE_BLOCK",
+            "name": "???playersStatistics.status.tradeBlock.description: en_US???",
+            "shortName": "Trade Block"
+          },
+          {
+            "id": "ACTIVE_AVAILABLE",
+            "name": "Active players who are not on any fantasy team in this league",
+            "shortName": "Active - Available"
+          },
+          {
+            "id": "ACTIVE_TAKEN",
+            "name": "Active players who are currently on a fantasy team in this league",
+            "shortName": "Active - Taken"
+          },
+          {
+            "id": "INJURED_AVAILABLE",
+            "name": "Injured players who are not on any fantasy team in this league",
+            "shortName": "Injured - Available"
+          },
+          {
+            "id": "INJURED_TAKEN",
+            "name": "Injured players who are currently on a fantasy team in this league",
+            "shortName": "Injured - Taken"
+          },
+          {
+            "id": "WATCH_LIST",
+            "name": "All players that you've added to your watch list",
+            "shortName": "Watch List"
+          },
+          {
+            "id": "COMPARE_LIST",
+            "name": "Shows players you've added to your Compare list.",
+            "shortName": "Compare List"
+          },
+          {
+            "id": "ALL_EXCEPT_MINE",
+            "name": "All players except ones that I own",
+            "shortName": "All Except Mine"
+          },
+          {
+            "separator": true
+          },
+          {
+            "id": "TEAM_110000",
+            "shortName": "Arsenal"
+          },
+          {
+            "id": "TEAM_110011",
+            "shortName": "Aston Villa"
+          },
+          {
+            "id": "TEAM_110034",
+            "shortName": "Bournemouth"
+          },
+          {
+            "id": "TEAM_110237",
+            "shortName": "Brentford"
+          },
+          {
+            "id": "TEAM_110240",
+            "shortName": "Brighton"
+          },
+          {
+            "id": "TEAM_110223",
+            "shortName": "Burnley"
+          },
+          {
+            "id": "TEAM_110040",
+            "shortName": "Chelsea"
+          },
+          {
+            "id": "TEAM_110045",
+            "shortName": "Crystal Palace"
+          },
+          {
+            "id": "TEAM_110050",
+            "shortName": "Everton"
+          },
+          {
+            "id": "TEAM_110063",
+            "shortName": "Fulham"
+          },
+          {
+            "id": "TEAM_110261",
+            "shortName": "Leeds United"
+          },
+          {
+            "id": "TEAM_110070",
+            "shortName": "Liverpool"
+          },
+          {
+            "id": "TEAM_110080",
+            "shortName": "Manchester City"
+          },
+          {
+            "id": "TEAM_110090",
+            "shortName": "Manchester United"
+          },
+          {
+            "id": "TEAM_110101",
+            "shortName": "Newcastle United"
+          },
+          {
+            "id": "TEAM_110105",
+            "shortName": "Nottingham Forest"
+          },
+          {
+            "id": "TEAM_110141",
+            "shortName": "Sunderland"
+          },
+          {
+            "id": "TEAM_110160",
+            "shortName": "Tottenham Hotspur"
+          },
+          {
+            "id": "TEAM_110175",
+            "shortName": "West Ham United"
+          },
+          {
+            "id": "TEAM_110191",
+            "shortName": "Wolverhampton"
+          },
+          {
+            "separator": true
+          },
+          {
+            "id": "FANTASY_TEAM_3uxxpgpemc719rep",
+            "shortName": "1 - Yoro wizard, Harry! (hogan_m)"
+          },
+          {
+            "id": "FANTASY_TEAM_4kktj7fqmc719rep",
+            "shortName": "1 - Baby Jesus (plisterud)"
+          },
+          {
+            "id": "FANTASY_TEAM_4w3svguhmc719rep",
+            "shortName": "1 - Boomsakalaka (kingeric7.)"
+          },
+          {
+            "id": "FANTASY_TEAM_e1zcwbwfmc719rep",
+            "shortName": "1 - Cucu Diddler Rella (idesofmarz)"
+          },
+          {
+            "id": "FANTASY_TEAM_3soymulymc719reo",
+            "shortName": "1 - Danny Carve a Hole (aokelly94)"
+          },
+          {
+            "id": "FANTASY_TEAM_h61uavhqmc719rep",
+            "shortName": "1 - Dark Arts FC (joshtradamus)"
+          },
+          {
+            "id": "FANTASY_TEAM_ew8egddsmc719rep",
+            "shortName": "1 - Darth Fernandes FC (jacobnorman14)"
+          },
+          {
+            "id": "FANTASY_TEAM_0cyx6ukymc719rep",
+            "shortName": "1 - scout skegghorst (trouttreghorst)"
+          },
+          {
+            "id": "FANTASY_TEAM_5kp58voomc719rep",
+            "shortName": "1 - Start Dowman (zach082826)"
+          },
+          {
+            "id": "FANTASY_TEAM_xwd21t85mc719rep",
+            "shortName": "1 - Troy McClure's Fish Fetish (ramgorn)"
+          },
+          {
+            "id": "FANTASY_TEAM_vcoi0x4rmdkxg3tv",
+            "shortName": "2 - Andrew (Andreww2217)"
+          },
+          {
+            "id": "FANTASY_TEAM_5ghrt3npmdm40cxy",
+            "shortName": "2 - Bastard Munich (ooolee)"
+          },
+          {
+            "id": "FANTASY_TEAM_qdsu6ri7mdjmj7y9",
+            "shortName": "2 - DT2705 (dt27.)"
+          },
+          {
+            "id": "FANTASY_TEAM_rf2myo8lmc719rep",
+            "shortName": "2 - FC Supertato (sanders77192)"
+          },
+          {
+            "id": "FANTASY_TEAM_dieoyc15mdafuo9i",
+            "shortName": "2 - Hakuna Mateta (bairdeagle)"
+          },
+          {
+            "id": "FANTASY_TEAM_jerktxtqmc719rep",
+            "shortName": "2 - InSalah (macdennis.)"
+          },
+          {
+            "id": "FANTASY_TEAM_1h3hsjn1mdafuo9y",
+            "shortName": "2 - kadeworld (kadeworld)"
+          },
+          {
+            "id": "FANTASY_TEAM_qwtdvj3hmc719reo",
+            "shortName": "2 - The Empire (noirmattdamon)"
+          },
+          {
+            "id": "FANTASY_TEAM_7tpnq9npmdm7ylay",
+            "shortName": "2 - Tottenham Hotspur (Ginstwin)"
+          },
+          {
+            "id": "FANTASY_TEAM_jassfpe6mc719rep",
+            "shortName": "2 - Work of Arteta (zachb017)"
+          },
+          {
+            "id": "FANTASY_TEAM_xy9dje79mdnxksiq",
+            "shortName": "3 - Blue Moon FC (drtill)"
+          },
+          {
+            "id": "FANTASY_TEAM_wo9qvga0mdnxksiq",
+            "shortName": "3 - Botman Begins (st0soaf)"
+          },
+          {
+            "id": "FANTASY_TEAM_90uyakudmdnxksiq",
+            "shortName": "3 - Gamblerz (Andrew)"
+          },
+          {
+            "id": "FANTASY_TEAM_s10j44bqmdnxksiq",
+            "shortName": "3 - Natan (fartchitecture)"
+          },
+          {
+            "id": "FANTASY_TEAM_8apzyh9lmdnxksiq",
+            "shortName": "3 - Petrodollar Plaything (dulli99)"
+          },
+          {
+            "id": "FANTASY_TEAM_vpl9aqulmdnxksiq",
+            "shortName": "3 - RealBrutus (RealBrutus)"
+          },
+          {
+            "id": "FANTASY_TEAM_govyv4cpmdou1cb7",
+            "shortName": "3 - Tar Heels (b_underwood19)"
+          },
+          {
+            "id": "FANTASY_TEAM_wwlneehhmdnxksiq",
+            "shortName": "3 - the_lewinho (the_lewinho)"
+          },
+          {
+            "id": "FANTASY_TEAM_dq347bmqmdnxksiq",
+            "shortName": "3 - Wirtz Behaviour (TALDO)"
+          },
+          {
+            "id": "FANTASY_TEAM_r9nyezk4mdoppxa9",
+            "shortName": "3 - Wkm3n3 (Wkm3n3)"
+          }
+        ],
+        "tableHeader": {
+          "cells": [
+            {
+              "key": "rankOv",
+              "name": "Ranking based on fantasy points among all players",
+              "shortName": "Rk",
+              "sortDirection": 1,
+              "width": 4.0
+            },
+            {
+              "key": "status",
+              "name": "Status",
+              "shortName": "Sta",
+              "sortDirection": 1,
+              "sortKey": "STATUS",
+              "sortType": "STATUS",
+              "width": 1.5
+            },
+            {
+              "eventStr": true,
+              "key": "opponent",
+              "name": "Opponent",
+              "shortName": "Opp",
+              "sortDirection": 1
+            },
+            {
+              "key": "fpts",
+              "shortName": "FPts",
+              "sortDirection": 1,
+              "sortKey": "SCORE",
+              "sortType": "SCORE",
+              "width": 1.5
+            },
+            {
+              "key": "fptsPerGame",
+              "shortName": "FP/G",
+              "sortDirection": 1,
+              "sortKey": "FPTS_PER_GAME",
+              "sortType": "FPTS_PER_GAME",
+              "width": 1.5
+            },
+            {
+              "name": "% of Fantrax leagues that have this player on their roster this week",
+              "shortName": "Ros",
+              "sortDirection": 1,
+              "sortKey": "OVERVIEW_PERCENT_OWNED_2",
+              "sortType": "OVERVIEW_PERCENT_OWNED_2"
+            },
+            {
+              "name": "Change in percent Rostered from previous week",
+              "shortName": "+/-",
+              "sortDirection": 1,
+              "sortKey": "OVERVIEW_PLUS_MINUS_PERCENT_OWNED_2",
+              "sortType": "OVERVIEW_PLUS_MINUS_PERCENT_OWNED_2"
+            }
+          ]
+        },
+        "tabs": [
+          {
+            "code": "STATS",
+            "text": "Stats"
+          },
+          {
+            "code": "SCHEDULE_PERIOD",
+            "text": "Schedule"
+          },
+          {
+            "code": "OVERVIEW",
+            "text": "Trends"
+          }
+        ]
+      }
+    }
+  ],
+  "roles": [
+    "02"
+  ]
+}

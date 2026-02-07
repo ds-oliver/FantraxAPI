@@ -63,6 +63,9 @@ This document captures how the Streamlit front end, runner scripts, data feeds, 
    - `logs/conditional_runner.log`: runner activity.
    - `logs/streamlit.out`: Streamlit runtime output (monitored by tail or service).
    - `logs/pull_restart.log`: git/venv steps from auto-restart script.
+   - `data/logs/`: conditional_runner, conditional_swaps, auth, lineup bridge, etc.
+
+**Log trimming:** To prevent logs from consuming too much space, run `scripts/trim_logs.py` on a schedule (e.g. weekly). It trims any `.log` or `.out` in `logs/` and `data/logs/` that exceed a size threshold to the last N lines. Example cron (Sunday 3am): `0 3 * * 0 cd /opt/FantraxAPI && .venv/bin/python scripts/trim_logs.py`. Options: `--max-size-mb 5` (default), `--keep-lines 50000`, `--dry-run`. The conditional runner also uses rotating file handlers so its log is capped at 2 MB per file with 5 backups.
 
 ## 5. Keeping App + Data Aligned (Cheatsheet)
 
@@ -107,6 +110,17 @@ This document captures how the Streamlit front end, runner scripts, data feeds, 
   - Logs (`journalctl -u fantrax-pull-restart.service`, `logs/streamlit.out`) are used for debugging.
 
 ## 6. Additional Helpers (Cheatsheet)
+
+- **Run all cron-style scripts** (SofaScore listener, kickoff watcher, conditional runner) in one go:
+  ```bash
+  cd /path/to/FantraxAPI
+  PYTHON_BIN=.venv/bin/python bin/run_all_cron_scripts.sh
+  ```
+  Or run each manually:
+  - `bin/run_sofascore_listener.sh --mode both` (or `--mode predictions` / `--mode confirmed`)
+  - `bin/run_sofascore_watcher.sh`
+  - `python scripts/conditional_runner.py --all-users` (or `--user-id <id>` / `--league-id X --team-id Y`)
+  - `python scripts/trim_logs.py` (optional; trim oversized logs)
 
 - `.gitignore` excludes runtime artifacts (`data/sofascore/*.lock`, log files).
 - `bin/pull_restart.sh` can take `BRANCH` env var for ad-hoc deployments (VPS):

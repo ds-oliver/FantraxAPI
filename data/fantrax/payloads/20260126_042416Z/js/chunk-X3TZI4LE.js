@@ -1,0 +1,1 @@
+import{ff as o}from"./chunk-LCHHBKKO.js";var a=(()=>{let t=class t{};t.notice={path:"",component:o,outlet:"notice",data:{cacheId:"notice"}},t.emptyFooter={path:"",children:[],outlet:"footer",data:{cacheId:"emptyFooter"}},t.emptyNotice={path:"",children:[],outlet:"notice",data:{cacheId:"emptyNotice"}};let e=t;return e})();export{a};

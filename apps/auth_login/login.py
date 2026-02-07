@@ -15,6 +15,23 @@ user_mgr = UserManager()
 
 
 def _set_current_user(user_id: str) -> None:
+	prev_user = st.session_state.get("current_user_id")
+	if prev_user != user_id:
+		# Clear any prior Fantrax session state when switching users.
+		for key in (
+			"auth_artifacts",
+			"session",
+			"user_id",
+			"user_email",
+			"league_id",
+			"team_id",
+			"api",
+			"api_league_id",
+			"roster",
+			"league_name",
+			"team_name",
+		):
+			st.session_state.pop(key, None)
 	st.session_state["current_user_id"] = user_id
 
 
@@ -185,4 +202,3 @@ def login_ui():
 if __name__ == "__main__":
 	# Test the login UI standalone
 	login_ui()
-

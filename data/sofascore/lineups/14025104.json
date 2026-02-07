@@ -1,6 +1,6 @@
 {
   "event_id": 14025104,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
     "formation": "3-4-2-1",
     "starters": [
@@ -93,7 +93,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 552036,
+        "name": "Josh Laurent",
+        "position": "M",
+        "team_id": 6,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 901907,
+        "name": "Lyle Foster",
+        "position": "F",
+        "team_id": 6,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1009386,
+        "name": "Hannibal Mejbri",
+        "position": "M",
+        "team_id": 6,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1128801,
+        "name": "Max Weiss",
+        "position": "G",
+        "team_id": 6,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 875360,
+        "name": "Hjalmar Ekdal",
+        "position": "D",
+        "team_id": 6,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1008456,
+        "name": "Oliver Sonne",
+        "position": "D",
+        "team_id": 6,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 809276,
+        "name": "Jacob Bruun Larsen",
+        "position": "M",
+        "team_id": 6,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 27028,
+        "name": "Ashley Barnes",
+        "position": "M",
+        "team_id": 6,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1004505,
+        "name": "Loum Tchaouna",
+        "position": "F",
+        "team_id": 6,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 990550,
@@ -102,15 +175,15 @@
         "reason": 1
       },
       {
-        "id": 875137,
-        "name": "Zian Flemming",
-        "position": "F",
-        "reason": 1
-      },
-      {
         "id": 826183,
         "name": "Mike Trésor",
         "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 875137,
+        "name": "Zian Flemming",
+        "position": "F",
         "reason": 1
       },
       {
@@ -140,7 +213,7 @@
     ]
   },
   "away": {
-    "formation": "4-2-3-1",
+    "formation": "3-4-2-1",
     "starters": [
       {
         "id": 553606,
@@ -151,8 +224,8 @@
         "captain": false
       },
       {
-        "id": 913654,
-        "name": "Pedro Porro",
+        "id": 794953,
+        "name": "Kevin Danso",
         "position": "D",
         "team_id": 33,
         "substitute": false,
@@ -175,8 +248,8 @@
         "captain": false
       },
       {
-        "id": 945798,
-        "name": "Djed Spence",
+        "id": 913654,
+        "name": "Pedro Porro",
         "position": "D",
         "team_id": 33,
         "substitute": false,
@@ -191,9 +264,17 @@
         "captain": false
       },
       {
-        "id": 1002711,
-        "name": "Pape Matar Sarr",
+        "id": 844842,
+        "name": "Yves Bissouma",
         "position": "M",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 945798,
+        "name": "Djed Spence",
+        "position": "D",
         "team_id": 33,
         "substitute": false,
         "captain": false
@@ -215,14 +296,6 @@
         "captain": false
       },
       {
-        "id": 1048888,
-        "name": "Mathys Tel",
-        "position": "F",
-        "team_id": 33,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 361420,
         "name": "Dominic Solanke",
         "position": "F",
@@ -231,7 +304,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 983572,
+        "name": "Destiny Udogie",
+        "position": "D",
+        "team_id": 33,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1142335,
+        "name": "Archie Gray",
+        "position": "D",
+        "team_id": 33,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1048888,
+        "name": "Mathys Tel",
+        "position": "F",
+        "team_id": 33,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 998772,
+        "name": "Dane Scarlett",
+        "position": "F",
+        "team_id": 33,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 997103,
+        "name": "Radu Drăguşin",
+        "position": "D",
+        "team_id": 33,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1031251,
+        "name": "Antonín Kinský",
+        "position": "G",
+        "team_id": 33,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1913038,
+        "name": "Jun'ai Byfield",
+        "position": "D",
+        "team_id": 33,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 871706,
+        "name": "Randal Kolo Muani",
+        "position": "F",
+        "team_id": 33,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1471591,
+        "name": "Luca Williams-Barnett",
+        "position": "F",
+        "team_id": 77865,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 928124,
@@ -289,5 +435,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-01-23 20:01:26+0000"
+  "fetched_at_utc": "2026-01-26 05:41:46+0000"
 }

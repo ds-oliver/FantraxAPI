@@ -71,5 +71,18 @@ def logout():
 	"""Log out the current user."""
 	if "current_user_id" in st.session_state:
 		st.session_state.pop("current_user_id")
+	for key in (
+		"auth_artifacts",
+		"session",
+		"user_id",
+		"user_email",
+		"league_id",
+		"team_id",
+		"api",
+		"api_league_id",
+		"roster",
+		"league_name",
+		"team_name",
+	):
+		st.session_state.pop(key, None)
 	st.rerun()
-

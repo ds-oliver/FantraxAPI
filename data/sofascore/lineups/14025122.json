@@ -1,6 +1,6 @@
 {
   "event_id": 14025122,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
     "formation": "4-4-1-1",
     "starters": [
@@ -37,8 +37,8 @@
         "captain": false
       },
       {
-        "id": 1471764,
-        "name": "El Hadji Malick Diouf",
+        "id": 1150952,
+        "name": "Oliver Scarles",
         "position": "M",
         "team_id": 37,
         "substitute": false,
@@ -93,7 +93,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1471764,
+        "name": "El Hadji Malick Diouf",
+        "position": "M",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 113956,
+        "name": "Callum Wilson",
+        "position": "F",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1089582,
+        "name": "Freddie Potts",
+        "position": "M",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 894474,
+        "name": "Max Kilman",
+        "position": "D",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 856640,
+        "name": "Mads Hermansen",
+        "position": "G",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 823085,
+        "name": "Kyle Walker-Peters",
+        "position": "D",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 161717,
+        "name": "James Ward-Prowse",
+        "position": "M",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1170560,
+        "name": "Soungoutou Magassa",
+        "position": "M",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1523623,
+        "name": "Mohamadou Kanté",
+        "position": "M",
+        "team_id": 36552,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 839981,
@@ -110,7 +183,7 @@
     ]
   },
   "away": {
-    "formation": "4-2-3-1",
+    "formation": "4-4-2",
     "starters": [
       {
         "id": 1012928,
@@ -153,9 +226,9 @@
         "captain": false
       },
       {
-        "id": 117777,
-        "name": "Granit Xhaka",
-        "position": "M",
+        "id": 989034,
+        "name": "Trai Hume",
+        "position": "D",
         "team_id": 41,
         "substitute": false,
         "captain": true
@@ -164,14 +237,6 @@
         "id": 1171539,
         "name": "Noah Sadiki",
         "position": "M",
-        "team_id": 41,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 989034,
-        "name": "Trai Hume",
-        "position": "D",
         "team_id": 41,
         "substitute": false,
         "captain": false
@@ -193,6 +258,14 @@
         "captain": false
       },
       {
+        "id": 1168588,
+        "name": "Eliezer Mayenda",
+        "position": "F",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
         "id": 910048,
         "name": "Brian Brobbey",
         "position": "F",
@@ -201,7 +274,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1014987,
+        "name": "Dennis Cirkin",
+        "position": "D",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1128532,
+        "name": "Habib Diarra",
+        "position": "M",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1142675,
+        "name": "Chemsdine Talbi",
+        "position": "M",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 877980,
+        "name": "Wilson Isidor",
+        "position": "F",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 365812,
+        "name": "Luke O'Nien",
+        "position": "D",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 958718,
+        "name": "Anthony Patterson",
+        "position": "G",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 856739,
+        "name": "Lutsharel Geertruida",
+        "position": "D",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1394089,
+        "name": "Chris Rigg",
+        "position": "M",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1110842,
+        "name": "Simon Adingra",
+        "position": "M",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 174975,
@@ -223,5 +369,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-01-23 20:01:24+0000"
+  "fetched_at_utc": "2026-01-26 05:41:44+0000"
 }

@@ -61,6 +61,8 @@ class PlayerLineupInfo:
     ss_conf_status: Optional[LineupStatus] = None
     ss_kickoff: Optional[datetime] = None
     fx_status: Optional[LineupStatus] = None
+    fx_conf_status: Optional[LineupStatus] = None
+    fx_pred_status: Optional[LineupStatus] = None
     fx_kickoff: Optional[datetime] = None
 
     # Fixture metadata (display-oriented)
@@ -72,6 +74,7 @@ class PlayerLineupInfo:
 
 class SwapCondition(str, Enum):
     NOT_STARTING = "not_starting"
+    RESERVE_STARTING = "reserve_starting"
 
 
 class RuleState(str, Enum):
@@ -768,17 +771,18 @@ class ConditionalSwapEngine:
             return RuleEvaluationResult(rule, False, reason="active_locked")
 
         info_active = lineup_info_by_player.get(rule.active_player_id)
-        if not info_active or info_active.status == LineupStatus.UNKNOWN:
-            return RuleEvaluationResult(rule, False, reason="status_unknown")
-
-        if info_active.status == LineupStatus.STARTING:
-            return RuleEvaluationResult(rule, False, reason="still_starting")
-
-        if not info_active.kickoff:
-            return RuleEvaluationResult(rule, False, reason="missing_active_kickoff")
-
-        if now >= info_active.kickoff:
-            return RuleEvaluationResult(rule, False, reason="active_kickoff_passed")
+        if rule.condition == SwapCondition.NOT_STARTING:
+            if not info_active or info_active.status == LineupStatus.UNKNOWN:
+                return RuleEvaluationResult(rule, False, reason="status_unknown")
+            if info_active.status == LineupStatus.STARTING:
+                return RuleEvaluationResult(rule, False, reason="still_starting")
+            if not info_active.kickoff:
+                return RuleEvaluationResult(rule, False, reason="missing_active_kickoff")
+            if now >= info_active.kickoff:
+                return RuleEvaluationResult(rule, False, reason="active_kickoff_passed")
+        elif rule.condition == SwapCondition.RESERVE_STARTING:
+            if info_active and info_active.kickoff and now >= info_active.kickoff:
+                return RuleEvaluationResult(rule, False, reason="active_kickoff_passed")
 
         chosen_backup: Optional[str] = None
         for backup in rule.sorted_backups():
@@ -796,10 +800,8 @@ class ConditionalSwapEngine:
                 continue
             if now >= info_candidate.kickoff:
                 continue
-            if (
-                rule.enforce_kickoff_order
-                and info_candidate.kickoff < info_active.kickoff
-                ):
+            if rule.enforce_kickoff_order and info_active and info_active.kickoff:
+                if info_candidate.kickoff < info_active.kickoff:
                     continue
             if would_break_mandatory_slots(
                 roster_view,
@@ -856,11 +858,7 @@ class ConditionalSwapEngine:
             return RuleEvaluationResult(rule, False, reason="drop_locked")
 
         info_drop = lineup_info_by_player.get(drop_id)
-        if not info_drop or info_drop.status == LineupStatus.UNKNOWN:
-            return RuleEvaluationResult(rule, False, reason="drop_status_unknown")
-        if info_drop.status == LineupStatus.STARTING:
-            return RuleEvaluationResult(rule, False, reason="drop_still_starting")
-        if info_drop.kickoff and now >= info_drop.kickoff:
+        if info_drop and info_drop.kickoff and now >= info_drop.kickoff:
             return RuleEvaluationResult(rule, False, reason="drop_kickoff_passed")
 
         fa_snapshot = fa_status_map.get(add_id) if fa_status_map else None
@@ -876,8 +874,8 @@ class ConditionalSwapEngine:
             return RuleEvaluationResult(rule, False, reason="fa_not_starting")
         if kickoff and now >= kickoff:
             return RuleEvaluationResult(rule, False, reason="fa_kickoff_passed")
-        if kickoff and info_drop.kickoff and kickoff < info_drop.kickoff:
-            return RuleEvaluationResult(rule, False, reason="fa_kickoff_before_active")
+        if kickoff and info_drop and info_drop.kickoff and info_drop.kickoff < kickoff:
+            return RuleEvaluationResult(rule, False, reason="drop_kickoff_before_add")
 
         if not self._drop_would_keep_roster_legal(roster_view, drop_id):
             return RuleEvaluationResult(rule, False, reason="drop_illegal_minimums")
