@@ -4922,8 +4922,8 @@
   display_name: Michail Antonio
 - fantrax_id: 06ew2
   fantrax_name: Axel Disasi
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 827243
+  sofascore_name: Axel Disasi
   ffscout_name: null
   other_names: []
   display_name: Axel Disasi
@@ -5935,3 +5935,10 @@
   ffscout_name: null
   other_names: []
   display_name: Malcom DaCosta
+- fantrax_id: 06v0a
+  fantrax_name: Tyler Fletcher
+  sofascore_id: 1402850
+  sofascore_name: Tyler Fletcher
+  ffscout_name: null
+  other_names: []
+  display_name: Tyler Fletcher

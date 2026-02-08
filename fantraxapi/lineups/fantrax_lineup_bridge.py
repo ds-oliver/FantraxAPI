@@ -29,17 +29,32 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 _LOG_PATH = REPO_ROOT / "data" / "logs" / "fantrax_lineup_bridge.log"
 LOG_TIMEZONE = "America/Los_Angeles"
 
+def _ensure_logger_handler(log: logging.Logger, log_path: Path, *, level: int, tag: str) -> None:
+    """
+    Attach a file handler when possible. If the log path is not writable (common on VPS when run
+    under a non-root user), fall back to stderr instead of crashing at import time.
+    """
+    if any(getattr(h, "baseFilename", None) == str(log_path) for h in log.handlers):
+        return
+
+    formatter = logging.Formatter(f"%(asctime)s %(levelname)s [{tag}] %(message)s")
+    formatter.converter = _log_time_converter
+
+    handler: logging.Handler
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        handler = logging.FileHandler(log_path)
+    except Exception:
+        handler = logging.StreamHandler()
+
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+    log.setLevel(level)
+
 def _log_time_converter(*_args):
     return datetime.now(ZoneInfo(LOG_TIMEZONE)).timetuple()
 
-if not any(getattr(h, "baseFilename", None) == str(_LOG_PATH) for h in logger.handlers):
-    _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    handler = logging.FileHandler(_LOG_PATH)
-    formatter = logging.Formatter("%(asctime)s %(levelname)s [fantrax_bridge] %(message)s")
-    formatter.converter = _log_time_converter
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+_ensure_logger_handler(logger, _LOG_PATH, level=logging.INFO, tag="fantrax_bridge")
 
 
 def global_status_path_for_user(user_id: Optional[str]) -> Path:
@@ -351,11 +366,17 @@ class FALineupSnapshot:
     is_home: Optional[bool] = None
 
 
-def fetch_fa_status_map(*, session: requests.Session, league_id: str, max_results: int = 500) -> Dict[str, FALineupSnapshot]:
+def fetch_fa_status_map(
+    *,
+    session: requests.Session,
+    league_id: str,
+    max_results: int = 500,
+    status_filter: str = "FREE_AGENT",
+) -> Dict[str, FALineupSnapshot]:
     payload = fetch_fantrax_player_status_snapshot(
         session=session,
         league_id=league_id,
-        status_filter="ALL_AVAILABLE",
+        status_filter=status_filter,
         misc_display_type="10",
         max_results=max_results,
     )

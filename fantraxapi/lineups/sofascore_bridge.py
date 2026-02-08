@@ -27,6 +27,28 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 _LOG_PATH = REPO_ROOT / "data" / "logs" / "conditional_swaps.log"
 LOG_TIMEZONE = "America/Los_Angeles"
 
+def _ensure_logger_handler(log: logging.Logger, log_path: Path, *, level: int, tag: str) -> None:
+    """
+    Attach a file handler when possible. If the log path is not writable (common on VPS when run
+    under a non-root user), fall back to stderr instead of crashing at import time.
+    """
+    if any(getattr(h, "baseFilename", None) == str(log_path) for h in log.handlers):
+        return
+
+    formatter = logging.Formatter(f"%(asctime)s %(levelname)s [{tag}] %(message)s")
+    formatter.converter = _log_time_converter
+
+    handler: logging.Handler
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        handler = logging.FileHandler(log_path)
+    except Exception:
+        handler = logging.StreamHandler()
+
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+    log.setLevel(level)
+
 def _log_time_converter(*_args):
     return datetime.now(ZoneInfo(LOG_TIMEZONE)).timetuple()
 
@@ -39,14 +61,7 @@ def _format_log_dt(dt: Optional[datetime]) -> Optional[str]:
         return dt.astimezone(ZoneInfo(LOG_TIMEZONE)).isoformat()
     except Exception:
         return dt.isoformat()
-if not any(getattr(h, "baseFilename", None) == str(_LOG_PATH) for h in logger.handlers):
-    _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    handler = logging.FileHandler(_LOG_PATH)
-    formatter = logging.Formatter("%(asctime)s %(levelname)s [sofascore_bridge] %(message)s")
-    formatter.converter = _log_time_converter
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
+_ensure_logger_handler(logger, _LOG_PATH, level=logging.DEBUG, tag="sofascore_bridge")
 
 DEFAULT_LINEUPS_DIR = REPO_ROOT / "data" / "sofascore" / "lineups"
 DEFAULT_SCHEDULE_PATHS = (

@@ -2,7 +2,7 @@
   "event_id": 14025161,
   "confirmed": false,
   "home": {
-    "formation": "4-3-3",
+    "formation": "4-2-3-1",
     "starters": [
       {
         "id": 994363,
@@ -37,17 +37,9 @@
         "captain": false
       },
       {
-        "id": 997152,
-        "name": "Maxim De Cuyper",
+        "id": 788784,
+        "name": "Olivier Boscagli",
         "position": "D",
-        "team_id": 30,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 1036269,
-        "name": "Yasin Ayari",
-        "position": "M",
         "team_id": 30,
         "substitute": false,
         "captain": false
@@ -69,8 +61,24 @@
         "captain": false
       },
       {
-        "id": 1400106,
-        "name": "Yankuba Minteh",
+        "id": 1065588,
+        "name": "Diego Gómez",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 946695,
+        "name": "Georginio Rutter",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 936849,
+        "name": "Kaoru Mitoma",
         "position": "M",
         "team_id": 30,
         "substitute": false,
@@ -80,14 +88,6 @@
         "id": 33902,
         "name": "Danny Welbeck",
         "position": "F",
-        "team_id": 30,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 936849,
-        "name": "Kaoru Mitoma",
-        "position": "M",
         "team_id": 30,
         "substitute": false,
         "captain": false
@@ -171,8 +171,8 @@
         "captain": false
       },
       {
-        "id": 193554,
-        "name": "Will Hughes",
+        "id": 1109771,
+        "name": "Adam Wharton",
         "position": "M",
         "team_id": 7,
         "substitute": false,
@@ -203,17 +203,17 @@
         "captain": false
       },
       {
-        "id": 1085180,
-        "name": "Brennan Johnson",
-        "position": "F",
+        "id": 984624,
+        "name": "Yéremy Pino",
+        "position": "M",
         "team_id": 7,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 984624,
-        "name": "Yéremy Pino",
-        "position": "M",
+        "id": 876599,
+        "name": "Jørgen Strand Larsen",
+        "position": "F",
         "team_id": 7,
         "substitute": false,
         "captain": false
@@ -221,12 +221,6 @@
     ],
     "subs": [],
     "missing": [
-      {
-        "id": 794338,
-        "name": "Daichi Kamada",
-        "position": "M",
-        "reason": 1
-      },
       {
         "id": 1469007,
         "name": "Rio Cardines",
@@ -237,12 +231,6 @@
         "id": 858194,
         "name": "Edward Nketiah",
         "position": "F",
-        "reason": 1
-      },
-      {
-        "id": 357584,
-        "name": "Borna Sosa",
-        "position": "M",
         "reason": 1
       },
       {
@@ -271,5 +259,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-06 02:00:19+0000"
+  "fetched_at_utc": "2026-02-08 01:00:13+0000"
 }

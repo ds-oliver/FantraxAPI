@@ -1049,9 +1049,10 @@ def _generate_auto_claim_rules(
             id_to_row[str(player.id)] = row
 
     try:
+        # Only consider true free agents (exclude waiver-wire candidates).
         fa_pool = waivers_service.list_players_by_name(
             limit=FA_POOL_LIMIT,
-            status="ALL_AVAILABLE",
+            status="FREE_AGENT",
         )
     except Exception as exc:
         logger.info("Auto claims: failed to load FA pool: %s", exc)
@@ -1071,7 +1072,8 @@ def _generate_auto_claim_rules(
         if not is_starting:
             continue
         kickoff = getattr(snapshot, "kickoff", None)
-        if kickoff and kickoff <= now:
+        # Kickoff is required for safe "already played" filtering; if missing, exclude.
+        if not kickoff or kickoff <= now:
             continue
         proj_fpts, proj_gs = _projection_for_name_and_team(
             p.get("name"),

@@ -4812,10 +4812,10 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
         fa_confirmed_rows: List[Dict[str, str]] = []
         with st.spinner("Evaluating eligible free agents..."):
             try:
-                fa_status_map = fetch_fa_status_map(session=session, league_id=league_id)
+                fa_status_map = fetch_fa_status_map(session=session, league_id=league_id, status_filter="FREE_AGENT")
                 fa_pool = waivers_service.list_players_by_name(
                     limit=150,
-                    status="ALL_AVAILABLE",
+                    status="FREE_AGENT",
                 )
             except Exception as exc:
                 st.error(f"Failed to load free agent pool: {exc}")
@@ -4828,16 +4828,12 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                 status_val = getattr(snapshot, "status", None) if snapshot else None
                 status_label = _format_status(status_val)
                 kickoff_dt = getattr(snapshot, "kickoff", None) if snapshot else None
+                # If kickoff is missing we can't reliably filter "already played"; exclude to avoid bad candidates.
+                if not kickoff_dt or kickoff_dt <= now:
+                    continue
                 is_confirmed = False
                 if status_val == LineupStatus.STARTING:
-                    if kickoff_dt and kickoff_dt <= now:
-                        is_confirmed = False
-                    elif (
-                        selected_action_type == RuleActionType.FA_CLAIM_DROP
-                        and drop_kickoff
-                        and kickoff_dt
-                        and drop_kickoff < kickoff_dt
-                    ):
+                    if selected_action_type == RuleActionType.FA_CLAIM_DROP and drop_kickoff and drop_kickoff < kickoff_dt:
                         is_confirmed = False
                     else:
                         is_confirmed = True

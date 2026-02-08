@@ -134,7 +134,7 @@
     ]
   },
   "away": {
-    "formation": "4-1-4-1",
+    "formation": "4-2-3-1",
     "starters": [
       {
         "id": 824509,
@@ -153,8 +153,8 @@
         "captain": false
       },
       {
-        "id": 1194333,
-        "name": "Abdukodir Khusanov",
+        "id": 318941,
+        "name": "Rúben Dias",
         "position": "D",
         "team_id": 17,
         "substitute": false,
@@ -185,6 +185,14 @@
         "captain": false
       },
       {
+        "id": 954056,
+        "name": "Nico González",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
         "id": 979128,
         "name": "Rayan Cherki",
         "position": "M",
@@ -195,14 +203,6 @@
       {
         "id": 859765,
         "name": "Phil Foden",
-        "position": "M",
-        "team_id": 17,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 893549,
-        "name": "Tijjani Reijnders",
         "position": "M",
         "team_id": 17,
         "substitute": false,
@@ -265,5 +265,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-06 02:00:19+0000"
+  "fetched_at_utc": "2026-02-08 01:00:13+0000"
 }
