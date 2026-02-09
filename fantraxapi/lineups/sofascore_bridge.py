@@ -13,7 +13,7 @@ import json
 import logging
 import yaml
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Set
@@ -1060,6 +1060,8 @@ def infer_current_gameweek(
 ) -> Optional[str]:
     """
     Infer the active gameweek (round) based on the upcoming SofaScore schedule.
+    A kickoff remains eligible for 1 minute after start so the inferred round does
+    not roll immediately at the exact kickoff timestamp.
 
     Returns the round as a string, or None if it cannot be determined.
     """
@@ -1078,7 +1080,9 @@ def infer_current_gameweek(
                 reader = csv.DictReader(fh)
                 for row in reader:
                     kickoff = _parse_kickoff(row.get("kickoff_utc"))
-                    if not kickoff or kickoff < now:
+                    if not kickoff:
+                        continue
+                    if kickoff + timedelta(minutes=1) < now:
                         continue
                     round_val = row.get("round") or row.get("Round")
                     if not round_val:

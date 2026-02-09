@@ -95,6 +95,8 @@ PROJECTIONS_PATH = Path("data/derived/projections.parquet")
 AUTO_MAX_BACKUPS = 3
 AUTO_MAX_FA_CANDIDATES = 3
 FA_POOL_LIMIT = 200
+FA_TRIGGER_MODE_FA_STARTING_ONLY = "fa_starting_only"
+FA_TRIGGER_MODE_DROP_AND_FA_STARTING = "drop_not_starting_and_fa_starting"
 ENABLE_AUTO_CLAIMS = False
 CLAIMS_TEST_LEAGUE_ID = "0z7r5871mc1yqc0s"
 CONFIRM_WINDOW_MINUTES = 60
@@ -219,6 +221,12 @@ def _run_lock(
 
 def _rule_action_type(rule: Dict[str, Any]) -> str:
     return str(rule.get("action_type") or "").lower()
+
+def _fa_trigger_mode(rule: Dict[str, Any]) -> str:
+    raw = str(rule.get("fa_trigger_mode") or "").strip().lower()
+    if raw == FA_TRIGGER_MODE_DROP_AND_FA_STARTING:
+        return FA_TRIGGER_MODE_DROP_AND_FA_STARTING
+    return FA_TRIGGER_MODE_FA_STARTING_ONLY
 
 
 def _is_fa_action(rule: Dict[str, Any]) -> bool:
@@ -1072,8 +1080,10 @@ def _generate_auto_claim_rules(
         if not is_starting:
             continue
         kickoff = getattr(snapshot, "kickoff", None)
-        # Kickoff is required for safe "already played" filtering; if missing, exclude.
-        if not kickoff or kickoff <= now:
+        # Exclude players we can positively identify as already played.
+        # If kickoff is missing, keep the player eligible (we may still be able to use them,
+        # but kickoff-based ordering/guardrails will be weaker).
+        if kickoff and kickoff <= now:
             continue
         proj_fpts, proj_gs = _projection_for_name_and_team(
             p.get("name"),
@@ -1132,6 +1142,7 @@ def _generate_auto_claim_rules(
                     "action_type": "fa_claim_drop",
                     "active_id": drop_id,
                     "fa_add_scorer_id": cand["id"],
+                    "fa_trigger_mode": FA_TRIGGER_MODE_FA_STARTING_ONLY,
                     "fa_add_position_id": slot_pos_id or str(cand.get("default_pos_id") or ""),
                     "fa_claim_to_status_id": "1",
                     "fa_bid_amount": 0.0,
@@ -1655,6 +1666,7 @@ def main() -> None:
                                 if str(rule_period) != str(chosen_period):
                                     continue
                             action_type = _rule_action_type(rule)
+                            fa_mode = _fa_trigger_mode(rule)
                             drop_id = str(rule.get("drop_player_id") or rule.get("active_id") or "")
                             add_id = str(rule.get("fa_add_scorer_id") or rule.get("fa_add_id") or "")
                             override_never = bool(rule.get("override_never_drop"))
@@ -1741,8 +1753,14 @@ def main() -> None:
                                 fa_kickoff = getattr(fa_snapshot, "kickoff", None)
                                 if fa_kickoff and now >= fa_kickoff:
                                     continue
-                                if fa_kickoff and drop_kickoff and drop_kickoff < fa_kickoff:
-                                    continue
+                                if action_type == "fa_claim_drop" and fa_mode == FA_TRIGGER_MODE_DROP_AND_FA_STARTING:
+                                    drop_status = _confirmed_status_kind(info_drop)
+                                    if drop_status != "not_starting":
+                                        continue
+                                    # In strict mode, the FA kickoff must not be earlier than the drop-player kickoff.
+                                    # Otherwise the FA lock can pass before we know the drop player's confirmed status.
+                                    if fa_kickoff and drop_kickoff and fa_kickoff < drop_kickoff:
+                                        continue
 
                             claim_to_status = str(rule.get("fa_claim_to_status_id") or "2")
                             claim_pos_id = str(rule.get("fa_add_position_id") or "").strip() or None

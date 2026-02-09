@@ -152,6 +152,10 @@ st.info(
 
 FA_ACTION_ADD_ONLY = "fa_add_only"
 FA_ACTION_DROP_ONLY = "drop_only"
+FA_TRIGGER_MODE_FA_STARTING_ONLY = "fa_starting_only"
+FA_TRIGGER_MODE_DROP_AND_FA_STARTING = "drop_not_starting_and_fa_starting"
+FA_SIMPLE_MODE_CLAIM_BASED = "claim_based"
+FA_SIMPLE_MODE_DROP_BASED = "drop_based"
 TEST_CLAIMS_LEAGUE_ID = "0z7r5871mc1yqc0s"
 
 readme_fields_md = """
@@ -951,6 +955,33 @@ def _service_account_path() -> Path:
     return SERVICE_ACCOUNT_DEFAULT_PATH
 
 
+def _set_projection_metadata(source: str, updated_at: Optional[datetime] = None) -> None:
+    try:
+        ts = (updated_at or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat()
+        st.session_state["projections_meta"] = {"source": source, "updated_at": ts}
+    except Exception:
+        return
+
+
+def _projection_last_updated_label() -> Optional[str]:
+    meta = st.session_state.get("projections_meta")
+    if not isinstance(meta, dict):
+        return None
+    raw_ts = meta.get("updated_at")
+    source = str(meta.get("source") or "unknown")
+    if not raw_ts:
+        return None
+    try:
+        ts = datetime.fromisoformat(str(raw_ts))
+    except Exception:
+        return None
+    source_label = {
+        "google_sheet": "Google Sheet",
+        "cache_parquet": "Parquet cache",
+    }.get(source, source)
+    return f"{ts.strftime('%Y-%m-%d %H:%M UTC')} ({source_label})"
+
+
 def _normalize_projection_columns(df: pd.DataFrame) -> pd.DataFrame:
     rename_map = {
         "projfpts": "ProjFPts",
@@ -987,6 +1018,7 @@ def _fetch_projections_from_sheet() -> Optional[pd.DataFrame]:
         if df.empty:
             raise ValueError("projections sheet returned no rows")
         logger.info("Loaded %s projection rows from Google Sheet", len(df))
+        _set_projection_metadata("google_sheet")
         try:
             PROJECTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
             df.to_parquet(PROJECTIONS_PATH, index=False)
@@ -1008,6 +1040,9 @@ def _load_projections(path: Path = PROJECTIONS_PATH) -> dict:
             df = pd.read_parquet(path)
             logger.info("Loaded projections from cache at %s", path)
             df = _normalize_projection_columns(df)
+            _set_projection_metadata(
+                "cache_parquet", datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+            )
         except Exception as exc:
             logger.warning("Unable to load projections from sheet or cache: %s", exc)
             st.warning("Projections unavailable (Google Sheet fetch failed and no cached file found).")
@@ -1032,6 +1067,9 @@ def _load_projections_df(path: Path = PROJECTIONS_PATH) -> Optional[pd.DataFrame
         try:
             df = pd.read_parquet(path)
             df = _normalize_projection_columns(df)
+            _set_projection_metadata(
+                "cache_parquet", datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+            )
         except Exception:
             return None
     return df
@@ -2029,11 +2067,12 @@ def _augment_event_kickoffs_if_empty(
 # ---------------------------------------------------------------------
 # EPL gameweek + Fantrax period selection (single source of truth)
 # ---------------------------------------------------------------------
-inferred_round = st.session_state.get("current_sofascore_round")
-if inferred_round is None:
-    inferred_round = infer_current_gameweek()
-    if inferred_round:
-        st.session_state["current_sofascore_round"] = inferred_round
+cached_round = st.session_state.get("current_sofascore_round")
+inferred_round = infer_current_gameweek()
+if inferred_round:
+    st.session_state["current_sofascore_round"] = inferred_round
+else:
+    inferred_round = cached_round
 
 periods: List[Dict[str, str]] = []
 try:
@@ -2561,6 +2600,7 @@ def _build_lineup_feed_rows(
             else:
                 ss_effective = getattr(info, "ss_status", None)
         ss_code = _status_code(ss_effective)
+        ss_pred_code = _status_code(getattr(info, "ss_pred_status", None) if info else None)
 
         fx_effective = getattr(info, "fx_conf_status", None) if info else None
         fx_code = _status_code(fx_effective)
@@ -2580,6 +2620,7 @@ def _build_lineup_feed_rows(
                 "team": team or "-",
                 "player": row.player.name,
                 "ss": ss_code,
+                "ss_pred": ss_pred_code,
                 "fx": fx_code,
                 "confirmed": ss_confirmed,
                 "tds": proj_gs,
@@ -2762,7 +2803,7 @@ if gw_meta:
         count_label = f"{len(schedule_events)} events"
         if expected_matches and len(schedule_events) != expected_matches:
             count_label += f" (expected {expected_matches})"
-        # st.caption(f"Schedule source: {source_label} | {count_label}")
+        st.caption(f"Schedule source: {source_label} | {count_label} | Round: {inferred_round or 'n/a'}")
     else:
         st.caption("Schedule fallback: derived from this roster's kickoffs only.")
 
@@ -2849,6 +2890,7 @@ feed_styles = """
 }
 .col-player { width: 34%; }
 .col-ss { width: 12%; }
+.col-sspred { width: 12%; }
 .col-fx { width: 12%; }
 .col-tds { width: 8%; }
 .col-conf { width: 8%; }
@@ -2857,6 +2899,9 @@ feed_styles = """
 """
 
 st.subheader("Roster with compiled lineup statuses")
+projection_updated_label = _projection_last_updated_label()
+if projection_updated_label:
+    st.caption(f"Projections last updated: {projection_updated_label}")
 
 if feed_rows:
     header = """
@@ -2864,6 +2909,7 @@ if feed_rows:
         <th class='col-team'>Team</th>
         <th class='col-player'>Player vs Opp</th>
         <th class='col-ss'>SofaScore</th>
+        <th class='col-sspred'>SS Pred</th>
         <th class='col-fx'>Fantrax</th>
         <th class='col-tds'>TDS</th>
         <th class='col-conf'>Confirmed</th>
@@ -2877,6 +2923,7 @@ if feed_rows:
             f"<td class='col-team'><span class='lineup-feed-team'>{row['team']}</span></td>"
             f"<td class='col-player'>{row['player']} vs {row['opponent']}</td>"
             f"<td class='col-ss'>{row['ss']}</td>"
+            f"<td class='col-sspred'>{row['ss_pred']}</td>"
             f"<td class='col-fx'>{row['fx']}</td>"
             f"<td class='col-tds'>{row['tds'] if row['tds'] is not None else ''}</td>"
             f"<td class='col-conf'>{row['confirmed']}</td>"
@@ -4511,8 +4558,6 @@ if show_claims_builder:
     action_options.update(
         {
             "FA add/drop (free agent)": RuleActionType.FA_CLAIM_DROP,
-            "FA add only (no drop)": FA_ACTION_ADD_ONLY,
-            "Drop only": FA_ACTION_DROP_ONLY,
         }
     )
 rule_action_label = st.radio(
@@ -4532,6 +4577,8 @@ if selected_action_type == FA_ACTION_ADD_ONLY:
 active_player_id: Optional[str] = None
 drop_player_id: Optional[str] = None
 override_never_drop = False
+fa_simple_mode = FA_SIMPLE_MODE_CLAIM_BASED
+fa_trigger_mode = FA_TRIGGER_MODE_FA_STARTING_ONLY
 
 if selected_action_type == RuleActionType.LINEUP_SWAP:
     active_player_id = st.selectbox(
@@ -4540,7 +4587,7 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
         format_func=lambda pid: active_labels.get(pid, pid),
         key="conditional_active_select",
     )
-elif selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_DROP_ONLY):
+elif selected_action_type == RuleActionType.FA_CLAIM_DROP and fa_simple_mode == FA_SIMPLE_MODE_DROP_BASED:
     drop_player_id = st.selectbox(
         "Roster player to drop/monitor",
         options=list(roster_labels.keys()),
@@ -4578,6 +4625,28 @@ if drop_row:
         )
         if not override_never_drop:
             st.warning("This player is in your never-drop list; saving is disabled until you override.")
+
+if selected_action_type == RuleActionType.FA_CLAIM_DROP:
+    mode_options = {
+        "Conditional claim (FA status drives trigger) (recommended)": FA_SIMPLE_MODE_CLAIM_BASED,
+        "Conditional drop (rostered player status drives trigger)": FA_SIMPLE_MODE_DROP_BASED,
+    }
+    mode_label = st.selectbox(
+        "Add/Drop mode",
+        options=list(mode_options.keys()),
+        index=0,
+        help=(
+            "Conditional claim: trigger when the FA target is starting, then choose a drop candidate compatible "
+            "with that FA kickoff slot. Conditional drop: trigger when the rostered drop candidate is not starting."
+        ),
+        key="fa_simple_mode_select",
+    )
+    fa_simple_mode = mode_options[mode_label]
+    fa_trigger_mode = (
+        FA_TRIGGER_MODE_FA_STARTING_ONLY
+        if fa_simple_mode == FA_SIMPLE_MODE_CLAIM_BASED
+        else FA_TRIGGER_MODE_DROP_AND_FA_STARTING
+    )
 
 if user_id and claims_allowed and selected_action_type in (
     RuleActionType.FA_CLAIM_DROP,
@@ -4629,6 +4698,7 @@ debug_candidates: List[Dict[str, object]] = []
 selected_backup_ids: List[str] = []
 fa_candidate: Optional[Dict[str, str]] = None
 fa_bid_amount: float = 0.0
+fa_status_map: Dict[str, object] = {}
 
 if selected_action_type == RuleActionType.LINEUP_SWAP:
     if (
@@ -4803,8 +4873,8 @@ open_active_slots, open_reserve_slots = _open_roster_slots(roster)
 if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
     st.markdown("**Free agent candidate (conditional claim target)**")
     drop_kickoff = drop_lineup.kickoff if drop_lineup else None
-    if selected_action_type == RuleActionType.FA_CLAIM_DROP and not drop_kickoff:
-        st.info("Waiting for drop candidate's kickoff/time before evaluating FA candidates.")
+    if selected_action_type == RuleActionType.FA_CLAIM_DROP and fa_simple_mode == FA_SIMPLE_MODE_DROP_BASED and not drop_kickoff:
+        st.info("Waiting for drop candidate kickoff/time before evaluating FA targets in conditional drop mode.")
     elif selected_action_type == FA_ACTION_ADD_ONLY and not (open_active_slots or open_reserve_slots):
         st.info("No open roster slots available for add-only claims.")
     else:
@@ -4828,12 +4898,19 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                 status_val = getattr(snapshot, "status", None) if snapshot else None
                 status_label = _format_status(status_val)
                 kickoff_dt = getattr(snapshot, "kickoff", None) if snapshot else None
-                # If kickoff is missing we can't reliably filter "already played"; exclude to avoid bad candidates.
-                if not kickoff_dt or kickoff_dt <= now:
+                # Exclude players we can positively identify as already played.
+                # If kickoff is missing, keep the player visible (we'll show kickoff as blank/unknown).
+                if kickoff_dt and kickoff_dt <= now:
                     continue
                 is_confirmed = False
                 if status_val == LineupStatus.STARTING:
-                    if selected_action_type == RuleActionType.FA_CLAIM_DROP and drop_kickoff and drop_kickoff < kickoff_dt:
+                    if (
+                        selected_action_type == RuleActionType.FA_CLAIM_DROP
+                        and fa_trigger_mode == FA_TRIGGER_MODE_DROP_AND_FA_STARTING
+                        and drop_kickoff
+                        and kickoff_dt
+                        and kickoff_dt < drop_kickoff
+                    ):
                         is_confirmed = False
                     else:
                         is_confirmed = True
@@ -4846,6 +4923,13 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                         roster_view,
                         drop_id=drop_player_id,
                         min_gks=1,
+                    ):
+                        continue
+                    if (
+                        fa_trigger_mode == FA_TRIGGER_MODE_DROP_AND_FA_STARTING
+                        and drop_kickoff
+                        and kickoff_dt
+                        and kickoff_dt < drop_kickoff
                     ):
                         continue
                 proj_row = _fa_projection_row(p.get("name"), p.get("team"), projections_map or {})
@@ -4915,6 +4999,58 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                 )
         else:
             st.info("No free agents available for this league/period.")
+
+    if selected_action_type == RuleActionType.FA_CLAIM_DROP and fa_simple_mode == FA_SIMPLE_MODE_CLAIM_BASED and fa_candidate:
+        fa_snapshot = fa_status_map.get(str(fa_candidate["id"])) if fa_status_map else None
+        fa_kickoff = getattr(fa_snapshot, "kickoff", None) if fa_snapshot else None
+        st.markdown("**Roster player to drop (filtered by FA kickoff slot)**")
+
+        eligible_drop_ids: List[str] = []
+        for pid in roster_labels.keys():
+            row = player_lookup.get(pid)
+            if not row:
+                continue
+            if not roster_view.get_row(pid):
+                continue
+            info = lineup_info_by_player.get(pid)
+            drop_kickoff = getattr(info, "kickoff", None) if info else None
+            if fa_kickoff and drop_kickoff and drop_kickoff < fa_kickoff:
+                continue
+            if not ConditionalSwapEngine._drop_would_keep_roster_legal(
+                roster_view,
+                drop_id=pid,
+                min_gks=1,
+            ):
+                continue
+            eligible_drop_ids.append(pid)
+
+        if not eligible_drop_ids:
+            st.info("No eligible drop candidates available for the selected FA kickoff slot.")
+        else:
+            drop_player_id = st.selectbox(
+                "Roster player to drop/monitor",
+                options=eligible_drop_ids,
+                format_func=lambda pid: roster_labels.get(pid, pid),
+                key="conditional_drop_select_claim_mode",
+            )
+            drop_row = player_lookup.get(drop_player_id) if drop_player_id else None
+            drop_lineup = lineup_info_by_player.get(drop_player_id) if drop_player_id else None
+            if drop_row:
+                status_text = _format_status(drop_lineup.status) if drop_lineup else "Unknown"
+                kickoff_text = _format_kickoff(drop_lineup.kickoff if drop_lineup else None)
+                st.markdown(
+                    f"**Drop candidate**: {drop_row.player.name} (`{drop_player_id}`) — lineup status: "
+                    f"`{status_text}` (kickoff {kickoff_text})"
+                )
+                if drop_player_id in never_drop_ids:
+                    override_never_drop = st.checkbox(
+                        "Override never-drop guard for this rule",
+                        value=False,
+                        key="override_never_drop_rule_claim_mode",
+                        help="Only enable if you are intentionally dropping a never-drop player.",
+                    )
+                    if not override_never_drop:
+                        st.warning("This player is in your never-drop list; saving is disabled until you override.")
 
     if fa_candidate:
         active_targets: list[tuple[str, str]] = []
@@ -5099,7 +5235,12 @@ if submitted and not submit_disabled:
                         already_exists = True
                         break
                 if action_key == RuleActionType.FA_CLAIM_DROP.value:
-                    if str(r.get("active_id") or "") == drop_key and str(r.get("fa_add_scorer_id") or "") == fa_key:
+                    existing_mode = str(r.get("fa_trigger_mode") or FA_TRIGGER_MODE_FA_STARTING_ONLY)
+                    if (
+                        str(r.get("active_id") or "") == drop_key
+                        and str(r.get("fa_add_scorer_id") or "") == fa_key
+                        and existing_mode == fa_trigger_mode
+                    ):
                         if _normalized_rule_state(r.get("state")) != "fired":
                             already_exists = True
                             break
@@ -5116,6 +5257,7 @@ if submitted and not submit_disabled:
                 "active_id": drop_player_id if drop_player_id else None,
                 "drop_label": roster_labels.get(drop_player_id, "") if drop_player_id else "",
                 "fa_add_scorer_id": fa_candidate["id"] if fa_candidate else None,
+                "fa_trigger_mode": fa_trigger_mode if action_key == RuleActionType.FA_CLAIM_DROP.value else None,
                 "fa_add_position_id": claim_position_id,
                 "fa_claim_to_status_id": claim_to_status_id,
                 "fa_bid_amount": fa_bid_amount,
@@ -5474,9 +5616,15 @@ else:
                     f"during **{period_label}**."
                 )
             else:
+                trigger_mode = str(rule.get("fa_trigger_mode") or FA_TRIGGER_MODE_FA_STARTING_ONLY)
                 st.markdown(
-                    f"**Add/Drop rule:** When **{drop_name}** is *not starting* and **{fa_label}** is *starting*, "
-                    f"submit claim to add **{fa_label}** and drop **{drop_name}** during **{period_label}**."
+                    (
+                        f"**Add/Drop rule:** When **{fa_label}** is *starting*, submit claim to add **{fa_label}** "
+                        f"and drop **{drop_name}** during **{period_label}**."
+                        if trigger_mode == FA_TRIGGER_MODE_FA_STARTING_ONLY
+                        else f"**Add/Drop rule:** When **{drop_name}** is *not starting* and **{fa_label}** is *starting*, "
+                        f"submit claim to add **{fa_label}** and drop **{drop_name}** during **{period_label}**."
+                    )
                 )
             if post_swap_out:
                 swap_row = player_lookup.get(str(post_swap_out))

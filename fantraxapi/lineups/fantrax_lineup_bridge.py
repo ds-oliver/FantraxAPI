@@ -383,11 +383,16 @@ def fetch_fa_status_map(
     statuses = parse_fantrax_player_statuses(payload)
     result: Dict[str, FALineupSnapshot] = {}
     for sid, s_obj in statuses.items():
+        event_id: Optional[int]
+        try:
+            event_id = int(s_obj.event_id) if s_obj.event_id is not None else None
+        except Exception:
+            event_id = None
         result[sid] = FALineupSnapshot(
             scorer_id=sid,
             status=s_obj.status,
             kickoff=s_obj.kickoff,
-            event_id=int(s_obj.event_id) if s_obj.event_id is not None else None,
+            event_id=event_id,
             team_name=s_obj.team_name,
             opponent_name=s_obj.opponent_name,
             is_home=s_obj.is_home,

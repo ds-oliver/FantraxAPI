@@ -35,6 +35,45 @@ tail -n 40 /opt/FantraxAPI/logs/streamlit.out
 ssh -L 8501:127.0.0.1:8501 fantrax-vps
 ```
 
+## VPS Quick Start (After Shutdown / Reconnect)
+
+Use this exact sequence when your machine/processes were interrupted and you need everything back up quickly.
+
+1. From your Mac, connect to VPS as your normal user.
+```bash
+ssh hogan@5.78.118.108
+```
+
+2. On VPS, pull latest code and restart app service.
+```bash
+cd /opt/FantraxAPI
+BRANCH=testing /opt/FantraxAPI/bin/pull_restart.sh
+sudo systemctl restart fantrax-pull-restart.service
+sudo systemctl status fantrax-pull-restart.service --no-pager
+```
+
+3. Confirm Streamlit is listening on `127.0.0.1:8501`.
+```bash
+sudo ss -ltnp | grep -E ':8501\\b' || true
+tail -n 80 /opt/FantraxAPI/logs/streamlit.out 2>/dev/null || true
+```
+
+4. If service did not bring Streamlit up, launch manually on VPS (foreground/debug mode).
+```bash
+cd /opt/FantraxAPI
+PYTHONPATH=/opt/FantraxAPI /opt/FantraxAPI/.venv/bin/streamlit run apps/auth_login/overview.py --server.address 127.0.0.1 --server.port 8501
+```
+
+5. Open a new terminal on your Mac and create the tunnel (leave it running).
+```bash
+ssh -L 8501:127.0.0.1:8501 hogan@5.78.118.108
+```
+
+6. Open the app in your Mac browser.
+```text
+http://127.0.0.1:8501
+```
+
 ### VPS Streamlit Tunnel (Mac)
 
 Use the same user you normally SSH with (`hogan`) and run the tunnel from your **Mac**, not from the VPS.
