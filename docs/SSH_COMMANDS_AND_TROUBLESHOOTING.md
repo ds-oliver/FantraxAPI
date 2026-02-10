@@ -2,6 +2,59 @@
 
 Purpose: a concise, repeatable guide for maintaining the repo, the VPS app, and the background jobs.
 
+## Terminal Count (How Many Windows You Need)
+
+- `1 terminal`: Any one-off VPS maintenance command (pull/restart/check logs).
+- `2 terminals`: VPS Streamlit access from Mac via SSH tunnel.
+  - Terminal A: SSH tunnel command, keep it running.
+  - Terminal B: Optional extra SSH session for VPS commands while tunnel stays open.
+- `3 terminals` (optional): If you also want local app/dev commands running at the same time.
+
+## SSH Key Setup (Mac) for Passwordless Root Login
+
+Do this once on your Mac. Do **not** paste these lines directly into the shell prompt as separate commands.
+
+1. Ensure your key exists:
+```bash
+ls -la ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub
+```
+
+2. Add SSH host aliases in `~/.ssh/config`:
+```sshconfig
+Host fantrax-vps
+  HostName 5.78.118.108
+  User hogan
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+
+Host fantrax-vps-root
+  HostName 5.78.118.108
+  User root
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+```
+
+3. Lock down permissions:
+```bash
+chmod 600 ~/.ssh/config
+chmod 700 ~/.ssh
+```
+
+4. Verify resolved SSH config:
+```bash
+ssh -G fantrax-vps-root | grep -E 'hostname|user|identityfile'
+```
+
+5. Connect:
+```bash
+ssh fantrax-vps-root
+```
+
+If prompted unexpectedly, it is usually key passphrase prompt (not root password). Cache key in macOS keychain:
+```bash
+ssh-add --apple-use-keychain ~/.ssh/id_ed25519
+```
+
 ## Daily Workflow (Mac → VPS)
 
 1. Confirm local repo state.
@@ -38,6 +91,7 @@ ssh -L 8501:127.0.0.1:8501 fantrax-vps
 ## VPS Quick Start (After Shutdown / Reconnect)
 
 Use this exact sequence when your machine/processes were interrupted and you need everything back up quickly.
+Terminal requirement: `2 terminals` (1 for admin commands, 1 for tunnel).
 
 1. From your Mac, connect to VPS as your normal user.
 ```bash
@@ -74,13 +128,51 @@ ssh -L 8501:127.0.0.1:8501 hogan@5.78.118.108
 http://127.0.0.1:8501
 ```
 
+### When your shell is busy ("Restarting Streamlit / Launching Streamlit")
+
+If your current SSH shell is busy and not accepting commands, **leave it alone** and open another terminal.
+
+1. Open **Terminal A (new)** on Mac:
+```bash
+ssh fantrax-vps-root
+```
+
+2. In Terminal A, run checks:
+```bash
+ss -ltnp 'sport = :8501' || true
+systemctl status fantrax-pull-restart.service --no-pager -l
+tail -n 80 /opt/FantraxAPI/logs/streamlit.out 2>/dev/null || true
+```
+
+3. Open **Terminal B (new)** on Mac for tunnel:
+```bash
+ssh -L 8501:127.0.0.1:8501 fantrax-vps-root
+```
+
+4. Open browser:
+```text
+http://127.0.0.1:8501
+```
+
+Rule:
+- Busy shell = leave it.
+- Use a second shell for checks.
+- Use a dedicated shell for the tunnel.
+
 ### VPS Streamlit Tunnel (Mac)
 
 Use the same user you normally SSH with (`hogan`) and run the tunnel from your **Mac**, not from the VPS.
+Terminal requirement: `2 terminals`.
 
 ### 1) From your Mac: tunnel as `hogan`
 ```bash
 ssh -L 8501:127.0.0.1:8501 hogan@5.78.118.108
+```
+Then open: `http://127.0.0.1:8501`
+
+### 1b) From your Mac: tunnel as `root` (if root SSH key auth is configured)
+```bash
+ssh -L 8501:127.0.0.1:8501 fantrax-vps-root
 ```
 Then open: `http://127.0.0.1:8501`
 

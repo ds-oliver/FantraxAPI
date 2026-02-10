@@ -2,15 +2,237 @@
   "event_id": 14025191,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 138530,
+        "name": "Jordan Pickford",
+        "position": "G",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 998253,
+        "name": "Jake O'Brien",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 145188,
+        "name": "James Tarkowski",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 979563,
+        "name": "Jarrad Branthwaite",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 876643,
+        "name": "Vitaliy Mykolenko",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927361,
+        "name": "James Garner",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 106337,
+        "name": "Idrissa Gueye",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1627560,
+        "name": "Harrison Armstrong",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 861970,
+        "name": "Kiernan Dewsbury-Hall",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 914309,
+        "name": "Iliman Ndiaye",
+        "position": "M",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1395746,
+        "name": "Thierno Barry",
+        "position": "F",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 189061,
+        "name": "Jack Grealish",
+        "position": "M",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 882604,
+        "name": "\u0110or\u0111e Petrovi\u0107",
+        "position": "G",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 44566,
+        "name": "Adam Smith",
+        "position": "D",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1156586,
+        "name": "James Hill",
+        "position": "D",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 830659,
+        "name": "Marcos Senesi",
+        "position": "D",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 999028,
+        "name": "Adrien Truffert",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 548188,
+        "name": "Lewis Cook",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 1104986,
+        "name": "Alex Scott",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1184308,
+        "name": "\u00c1lex Jim\u00e9nez",
+        "position": "D",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1426228,
+        "name": "Eli Junior Kroupi",
+        "position": "F",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 991478,
+        "name": "Amine Adli",
+        "position": "F",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 998490,
+        "name": "Evanilson",
+        "position": "F",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 1154861,
+        "name": "Ben Gannon-Doak",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1201520,
+        "name": "Julio Soler",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 851596,
+        "name": "Justin Kluivert",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 895576,
+        "name": "Marcus Tavernier",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 800419,
+        "name": "Tyler Adams",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1190712,
+        "name": "Matai Akinmboni",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   }
 }

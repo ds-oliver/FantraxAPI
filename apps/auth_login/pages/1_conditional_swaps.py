@@ -317,6 +317,14 @@ def _match_period_from_round(
         return candidates[0]
 
 
+def _mark_period_manual_override() -> None:
+    """
+    Track that the user explicitly changed the Fantrax period selector.
+    """
+    st.session_state["period_manual_override"] = True
+    st.session_state["period_override_round"] = st.session_state.get("current_sofascore_round")
+
+
 def _ensure_xsrf_header(session: Session) -> None:
     """
     Ensure an X-XSRF-TOKEN header is set in the session.
@@ -2094,6 +2102,7 @@ detected_period: Optional[str] = None
 if periods:
     period_id_map = {str(opt["id"]): opt["label"] for opt in periods}
     period_choices = list(period_id_map.keys())
+    inferred_match = _match_period_from_round(inferred_round, period_id_map)
 
     try:
         detected_period = str(api.resolve_active_period(team_id))
@@ -2101,16 +2110,23 @@ if periods:
         detected_period = None
 
     cached_period = st.session_state.get("selected_gameweek_period_id")
-    if cached_period and cached_period in period_id_map:
+    override_round = st.session_state.get("period_override_round")
+    manual_override_active = bool(st.session_state.get("period_manual_override")) and (
+        str(override_round or "") == str(inferred_round or "")
+    )
+
+    if inferred_match and inferred_match in period_id_map and not manual_override_active:
+        default_period_id = inferred_match
+    elif cached_period and cached_period in period_id_map:
         default_period_id = cached_period
     else:
-        inferred_match = _match_period_from_round(inferred_round, period_id_map)
-        if inferred_match and inferred_match in period_id_map:
-            default_period_id = inferred_match
-        elif detected_period and detected_period in period_id_map:
+        if detected_period and detected_period in period_id_map:
             default_period_id = detected_period
         else:
             default_period_id = period_choices[0]
+
+    if not manual_override_active:
+        st.session_state["selected_gameweek_period_id"] = default_period_id
 
     st.subheader("Gameweek / Fantrax period")
     col_gw, col_period = st.columns([1, 3])
@@ -2123,6 +2139,7 @@ if periods:
             index=period_choices.index(default_period_id),
             format_func=lambda pid: period_id_map.get(pid, pid),
             key="selected_gameweek_period_id",
+            on_change=_mark_period_manual_override,
             help=(
                 "We infer the current EPL gameweek from SofaScore and map it to your Fantrax "
                 "scoring periods. You can override it here to target a future gameweek."

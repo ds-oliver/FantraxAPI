@@ -2,15 +2,243 @@
   "event_id": 14025194,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 125274,
+        "name": "Stefan Ortega",
+        "position": "G",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 800417,
+        "name": "Ola Aina",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836168,
+        "name": "Nikola Milenkovi\u0107",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 985086,
+        "name": "Morato",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927356,
+        "name": "Neco Williams",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 843754,
+        "name": "Ibrahim Sangar\u00e9",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 994546,
+        "name": "Elliot Anderson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1090963,
+        "name": "Omari Hutchinson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 865912,
+        "name": "Morgan Gibbs-White",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 867442,
+        "name": "Callum Hudson-Odoi",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 962364,
+        "name": "Lorenzo Lucca",
+        "position": "F",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 50480,
+        "name": "Chris Wood",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 840103,
+        "name": "John Victor",
+        "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 1010220,
+        "name": "Nicol\u00f2 Savona",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 78152,
+        "name": "Matz Sels",
+        "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 1199282,
+        "name": "Murillo",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "3-5-2",
+    "starters": [
+      {
+        "id": 252669,
+        "name": "Jos\u00e9 S\u00e1",
+        "position": "G",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1014835,
+        "name": "Yerson Mosquera",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 846308,
+        "name": "Santiago Bueno",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 856250,
+        "name": "Ladislav Krej\u010d\u00ed",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1006073,
+        "name": "Rodrigo Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1015267,
+        "name": "Jo\u00e3o Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 867441,
+        "name": "Angel Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1899647,
+        "name": "Mateus Man\u00e9",
+        "position": "F",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1013928,
+        "name": "Hugo Bueno",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 361352,
+        "name": "Adam Armstrong",
+        "position": "F",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 987734,
+        "name": "Tolu Arokodare",
+        "position": "F",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 973418,
+        "name": "Toti Gomes",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 786186,
+        "name": "Hee-Chan Hwang",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 1035996,
+        "name": "Andr\u00e9",
+        "position": "M",
+        "reason": 1
+      }
+    ]
   }
 }
