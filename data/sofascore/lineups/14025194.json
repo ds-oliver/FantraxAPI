@@ -22,7 +22,7 @@
       },
       {
         "id": 836168,
-        "name": "Nikola Milenkovi\u0107",
+        "name": "Nikola Milenković",
         "position": "D",
         "team_id": 14,
         "substitute": false,
@@ -46,7 +46,7 @@
       },
       {
         "id": 843754,
-        "name": "Ibrahim Sangar\u00e9",
+        "name": "Ibrahim Sangaré",
         "position": "M",
         "team_id": 14,
         "substitute": false,
@@ -109,7 +109,7 @@
       },
       {
         "id": 1010220,
-        "name": "Nicol\u00f2 Savona",
+        "name": "Nicolò Savona",
         "position": "D",
         "reason": 1
       },
@@ -124,6 +124,12 @@
         "name": "Murillo",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 139310,
+        "name": "Willy Boly",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
@@ -132,7 +138,7 @@
     "starters": [
       {
         "id": 252669,
-        "name": "Jos\u00e9 S\u00e1",
+        "name": "José Sá",
         "position": "G",
         "team_id": 3,
         "substitute": false,
@@ -156,7 +162,7 @@
       },
       {
         "id": 856250,
-        "name": "Ladislav Krej\u010d\u00ed",
+        "name": "Ladislav Krejčí",
         "position": "D",
         "team_id": 3,
         "substitute": false,
@@ -172,7 +178,7 @@
       },
       {
         "id": 1015267,
-        "name": "Jo\u00e3o Gomes",
+        "name": "João Gomes",
         "position": "M",
         "team_id": 3,
         "substitute": false,
@@ -188,7 +194,7 @@
       },
       {
         "id": 1899647,
-        "name": "Mateus Man\u00e9",
+        "name": "Mateus Mané",
         "position": "F",
         "team_id": 3,
         "substitute": false,
@@ -235,10 +241,11 @@
       },
       {
         "id": 1035996,
-        "name": "Andr\u00e9",
+        "name": "André",
         "position": "M",
         "reason": 1
       }
     ]
-  }
+  },
+  "fetched_at_utc": "2026-02-11 08:00:41+0000"
 }

@@ -2,15 +2,256 @@
   "event_id": 14025215,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 158263,
+        "name": "Emiliano Martínez",
+        "position": "G",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 833956,
+        "name": "Matty Cash",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 827679,
+        "name": "Ezri Konsa",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 303638,
+        "name": "Tyrone Mings",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 96538,
+        "name": "Lucas Digne",
+        "position": "D",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 923973,
+        "name": "Amadou Onana",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 867887,
+        "name": "Douglas Luiz",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 851100,
+        "name": "Jadon Sancho",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 948261,
+        "name": "Morgan Rogers",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 783126,
+        "name": "Emiliano Buendía",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 555386,
+        "name": "Ollie Watkins",
+        "position": "F",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 826204,
+        "name": "Boubacar Kamara",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 100390,
+        "name": "Marco Bizot",
+        "position": "G",
+        "reason": 13
+      },
+      {
+        "id": 1457536,
+        "name": "Andrés García",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 250223,
+        "name": "John McGinn",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 331737,
+        "name": "Youri Tielemans",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 833956,
+        "name": "Matty Cash",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "3-4-2-1",
+    "starters": [
+      {
+        "id": 871290,
+        "name": "Lucas Perri",
+        "position": "G",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 827681,
+        "name": "James Justin",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 828640,
+        "name": "Joe Rodon",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 886930,
+        "name": "Jaka Bijol",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 929132,
+        "name": "Jayden Bogle",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 911679,
+        "name": "Ilia Gruev",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 847097,
+        "name": "Ethan Ampadu",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 834308,
+        "name": "Gabriel Gudmundsson",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 973431,
+        "name": "Brenden Aaronson",
+        "position": "M",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 865523,
+        "name": "Noah Okafor",
+        "position": "F",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 372344,
+        "name": "Dominic Calvert-Lewin",
+        "position": "F",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 889861,
+        "name": "Anton Stach",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 865523,
+        "name": "Noah Okafor",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 828639,
+        "name": "Daniel James",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 836675,
+        "name": "Pascal Struijk",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-02-18 08:00:45+0000"
 }

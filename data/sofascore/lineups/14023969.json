@@ -2,15 +2,238 @@
   "event_id": 14023969,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 856640,
+        "name": "Mads Hermansen",
+        "position": "G",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 863653,
+        "name": "Aaron Wan-Bissaka",
+        "position": "D",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 829022,
+        "name": "Konstantinos Mavropanos",
+        "position": "D",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 827243,
+        "name": "Axel Disasi",
+        "position": "D",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1471764,
+        "name": "El Hadji Malick Diouf",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142562,
+        "name": "Mateus Fernandes",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1170560,
+        "name": "Soungoutou Magassa",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 552884,
+        "name": "Jarrod Bowen",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 799041,
+        "name": "Tomáš Souček",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 917005,
+        "name": "Crysencio Summerville",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 877013,
+        "name": "Valentín Castellanos",
+        "position": "F",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 15479,
+        "name": "Łukasz Fabiański",
+        "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 1101174,
+        "name": "Pablo Felipe",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 1089582,
+        "name": "Freddie Potts",
+        "position": "M",
+        "reason": 13
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 882604,
+        "name": "Đorđe Petrović",
+        "position": "G",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1184308,
+        "name": "Álex Jiménez",
+        "position": "D",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1156586,
+        "name": "James Hill",
+        "position": "D",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 830659,
+        "name": "Marcos Senesi",
+        "position": "D",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 999028,
+        "name": "Adrien Truffert",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1104986,
+        "name": "Alex Scott",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 322391,
+        "name": "Ryan Christie",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1464966,
+        "name": "Rayan",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1476524,
+        "name": "Alex Tóth",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 991478,
+        "name": "Amine Adli",
+        "position": "F",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 998490,
+        "name": "Evanilson",
+        "position": "F",
+        "team_id": 60,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 1154861,
+        "name": "Ben Gannon-Doak",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 851596,
+        "name": "Justin Kluivert",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1201520,
+        "name": "Julio Soler",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 895576,
+        "name": "Marcus Tavernier",
+        "position": "M",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-02-18 08:00:47+0000"
 }

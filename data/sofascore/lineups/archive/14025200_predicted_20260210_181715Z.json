@@ -1,0 +1,298 @@
+{
+  "event_id": 14025200,
+  "confirmed": false,
+  "home": {
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 553606,
+        "name": "Guglielmo Vicario",
+        "position": "G",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142335,
+        "name": "Archie Gray",
+        "position": "D",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 997103,
+        "name": "Radu Drăguşin",
+        "position": "D",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 998247,
+        "name": "Micky van de Ven",
+        "position": "D",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 945798,
+        "name": "Djed Spence",
+        "position": "D",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 904970,
+        "name": "Conor Gallagher",
+        "position": "M",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 364612,
+        "name": "João Palhinha",
+        "position": "M",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1002711,
+        "name": "Pape Matar Sarr",
+        "position": "M",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142679,
+        "name": "Wilson Odobert",
+        "position": "F",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 361420,
+        "name": "Dominic Solanke",
+        "position": "F",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 997183,
+        "name": "Xavi Simons",
+        "position": "M",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [],
+    "missing": [
+      {
+        "id": 356398,
+        "name": "James Maddison",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 794953,
+        "name": "Kevin Danso",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 983572,
+        "name": "Destiny Udogie",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 791190,
+        "name": "Rodrigo Bentancur",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 840217,
+        "name": "Richarlison",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 928124,
+        "name": "Dejan Kulusevski",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 94758,
+        "name": "Ben Davies",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1391251,
+        "name": "Lucas Bergvall",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 913654,
+        "name": "Pedro Porro",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 905163,
+        "name": "Mohammed Kudus",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 829932,
+        "name": "Cristian Romero",
+        "position": "D",
+        "reason": 13
+      }
+    ]
+  },
+  "away": {
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 162653,
+        "name": "Nick Pope",
+        "position": "G",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 69256,
+        "name": "Kieran Trippier",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1014286,
+        "name": "Malick Thiaw",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 99090,
+        "name": "Dan Burn",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1136730,
+        "name": "Lewis Hall",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 892673,
+        "name": "Sandro Tonali",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 866469,
+        "name": "Bruno Guimarães",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 975937,
+        "name": "Jacob Ramsey",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 979232,
+        "name": "Anthony Elanga",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 980623,
+        "name": "Nick Woltemade",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 855647,
+        "name": "Harvey Barnes",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      }
+    ],
+    "subs": [],
+    "missing": [
+      {
+        "id": 914902,
+        "name": "Anthony Gordon",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 980634,
+        "name": "Valentino Livramento",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 101882,
+        "name": "Fabian Schär",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 150396,
+        "name": "Emil Krafth",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 560128,
+        "name": "Joelinton",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1400650,
+        "name": "Lewis Miley",
+        "position": "M",
+        "reason": 1
+      }
+    ]
+  }
+}

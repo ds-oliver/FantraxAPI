@@ -2,15 +2,274 @@
   "event_id": 14024010,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 824509,
+        "name": "Gianluigi Donnarumma",
+        "position": "G",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 945122,
+        "name": "Matheus Nunes",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 318941,
+        "name": "Rúben Dias",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 877994,
+        "name": "Marc Guéhi",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 931278,
+        "name": "Rayan Aït-Nouri",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 331209,
+        "name": "Bernardo Silva",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 827606,
+        "name": "Rodri",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142703,
+        "name": "Nico O'Reilly",
+        "position": "D",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 859765,
+        "name": "Phil Foden",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 839956,
+        "name": "Erling Haaland",
+        "position": "F",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 934354,
+        "name": "Antoine Semenyo",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 136710,
+        "name": "Mateo Kovačić",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 964994,
+        "name": "Joško Gvardiol",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1168513,
+        "name": "Max Alleyne",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 934386,
+        "name": "Jérémy Doku",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1046795,
+        "name": "Savinho",
+        "position": "M",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-3-3",
+    "starters": [
+      {
+        "id": 839410,
+        "name": "Aaron Ramsdale",
+        "position": "G",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 69256,
+        "name": "Kieran Trippier",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1014286,
+        "name": "Malick Thiaw",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 910046,
+        "name": "Sven Botman",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 99090,
+        "name": "Dan Burn",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 975937,
+        "name": "Jacob Ramsey",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 892673,
+        "name": "Sandro Tonali",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 888550,
+        "name": "Joe Willock",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 372336,
+        "name": "Jacob Murphy",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 914902,
+        "name": "Anthony Gordon",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 855647,
+        "name": "Harvey Barnes",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 150396,
+        "name": "Emil Krafth",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 805123,
+        "name": "Yoane Wissa",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 866469,
+        "name": "Bruno Guimarães",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 560128,
+        "name": "Joelinton",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1400650,
+        "name": "Lewis Miley",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 980634,
+        "name": "Valentino Livramento",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 101882,
+        "name": "Fabian Schär",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 910046,
+        "name": "Sven Botman",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-02-18 08:00:47+0000"
 }

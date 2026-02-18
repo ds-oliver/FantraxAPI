@@ -1,6 +1,6 @@
 {
   "event_id": 14025191,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
     "formation": "4-2-3-1",
     "starters": [
@@ -61,8 +61,8 @@
         "captain": false
       },
       {
-        "id": 1627560,
-        "name": "Harrison Armstrong",
+        "id": 914309,
+        "name": "Iliman Ndiaye",
         "position": "M",
         "team_id": 48,
         "substitute": false,
@@ -77,9 +77,9 @@
         "captain": false
       },
       {
-        "id": 914309,
-        "name": "Iliman Ndiaye",
-        "position": "M",
+        "id": 1403061,
+        "name": "Tyrique George",
+        "position": "F",
         "team_id": 48,
         "substitute": false,
         "captain": false
@@ -93,7 +93,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1627560,
+        "name": "Harrison Armstrong",
+        "position": "M",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 987489,
+        "name": "Beto",
+        "position": "F",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 110846,
+        "name": "Michael Keane",
+        "position": "D",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 856720,
+        "name": "Mark Travers",
+        "position": "G",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1020141,
+        "name": "Nathan Patterson",
+        "position": "D",
+        "team_id": 36553,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1174472,
+        "name": "Tyler Dibling",
+        "position": "M",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1017392,
+        "name": "Carlos Alcaraz",
+        "position": "M",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1064082,
+        "name": "Merlin Röhl",
+        "position": "M",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1085950,
+        "name": "Tim Iroegbunam",
+        "position": "M",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 189061,
@@ -108,15 +181,15 @@
     "starters": [
       {
         "id": 882604,
-        "name": "\u0110or\u0111e Petrovi\u0107",
+        "name": "Đorđe Petrović",
         "position": "G",
         "team_id": 60,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 44566,
-        "name": "Adam Smith",
+        "id": 1184308,
+        "name": "Álex Jiménez",
         "position": "D",
         "team_id": 60,
         "substitute": false,
@@ -147,14 +220,6 @@
         "captain": false
       },
       {
-        "id": 548188,
-        "name": "Lewis Cook",
-        "position": "M",
-        "team_id": 60,
-        "substitute": false,
-        "captain": true
-      },
-      {
         "id": 1104986,
         "name": "Alex Scott",
         "position": "M",
@@ -163,17 +228,25 @@
         "captain": false
       },
       {
-        "id": 1184308,
-        "name": "\u00c1lex Jim\u00e9nez",
-        "position": "D",
+        "id": 322391,
+        "name": "Ryan Christie",
+        "position": "M",
+        "team_id": 60,
+        "substitute": false,
+        "captain": true
+      },
+      {
+        "id": 1464966,
+        "name": "Rayan",
+        "position": "M",
         "team_id": 60,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 1426228,
-        "name": "Eli Junior Kroupi",
-        "position": "F",
+        "id": 1476524,
+        "name": "Alex Tóth",
+        "position": "M",
         "team_id": 60,
         "substitute": false,
         "captain": false
@@ -195,7 +268,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1426228,
+        "name": "Eli Junior Kroupi",
+        "position": "F",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 336655,
+        "name": "Enes Ünal",
+        "position": "F",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 548188,
+        "name": "Lewis Cook",
+        "position": "M",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 855731,
+        "name": "David Brooks",
+        "position": "M",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 44566,
+        "name": "Adam Smith",
+        "position": "D",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 913762,
+        "name": "Christos Mandas",
+        "position": "G",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 962408,
+        "name": "Bafodé Diakité",
+        "position": "D",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1406130,
+        "name": "Veljko Milosavljević",
+        "position": "D",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 800419,
+        "name": "Tyler Adams",
+        "position": "M",
+        "team_id": 60,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 1154861,
@@ -222,17 +368,12 @@
         "reason": 1
       },
       {
-        "id": 800419,
-        "name": "Tyler Adams",
-        "position": "M",
-        "reason": 1
-      },
-      {
         "id": 1190712,
         "name": "Matai Akinmboni",
         "position": "D",
         "reason": 1
       }
     ]
-  }
+  },
+  "fetched_at_utc": "2026-02-10 21:25:15+0000"
 }

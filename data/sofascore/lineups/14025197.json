@@ -1,6 +1,6 @@
 {
   "event_id": 14025197,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
     "formation": "4-2-3-1",
     "starters": [
@@ -45,9 +45,9 @@
         "captain": false
       },
       {
-        "id": 856739,
-        "name": "Lutsharel Geertruida",
-        "position": "D",
+        "id": 1171539,
+        "name": "Noah Sadiki",
+        "position": "M",
         "team_id": 41,
         "substitute": false,
         "captain": false
@@ -66,7 +66,7 @@
         "position": "D",
         "team_id": 41,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 1128532,
@@ -77,9 +77,9 @@
         "captain": false
       },
       {
-        "id": 1142675,
-        "name": "Chemsdine Talbi",
-        "position": "M",
+        "id": 1116571,
+        "name": "Nilson Angulo",
+        "position": "F",
         "team_id": 41,
         "substitute": false,
         "captain": false
@@ -93,7 +93,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 856739,
+        "name": "Lutsharel Geertruida",
+        "position": "D",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1142675,
+        "name": "Chemsdine Talbi",
+        "position": "M",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1094440,
+        "name": "Romaine Mundle",
+        "position": "F",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 877980,
+        "name": "Wilson Isidor",
+        "position": "F",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1099795,
+        "name": "Melker Ellborg",
+        "position": "G",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1014987,
+        "name": "Dennis Cirkin",
+        "position": "D",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 365812,
+        "name": "Luke O'Nien",
+        "position": "D",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1394089,
+        "name": "Chris Rigg",
+        "position": "M",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1168588,
+        "name": "Eliezer Mayenda",
+        "position": "F",
+        "team_id": 41,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 117777,
@@ -104,12 +177,6 @@
       {
         "id": 2138729,
         "name": "Jocelin Ta Bi",
-        "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 1171539,
-        "name": "Noah Sadiki",
         "position": "M",
         "reason": 1
       },
@@ -133,8 +200,8 @@
         "captain": false
       },
       {
-        "id": 927353,
-        "name": "Curtis Jones",
+        "id": 143040,
+        "name": "Wataru Endo",
         "position": "M",
         "team_id": 44,
         "substitute": false,
@@ -154,11 +221,11 @@
         "position": "D",
         "team_id": 44,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
-        "id": 1097425,
-        "name": "Miloš Kerkez",
+        "id": 262911,
+        "name": "Andrew Robertson",
         "position": "D",
         "team_id": 44,
         "substitute": false,
@@ -213,7 +280,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 318927,
+        "name": "Joe Gomez",
+        "position": "D",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 927353,
+        "name": "Curtis Jones",
+        "position": "M",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 845386,
+        "name": "Federico Chiesa",
+        "position": "F",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 930997,
+        "name": "Giorgi Mamardashvili",
+        "position": "G",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1097425,
+        "name": "Miloš Kerkez",
+        "position": "D",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 991227,
+        "name": "Calvin Ramsay",
+        "position": "D",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1445945,
+        "name": "Trey Nyoni",
+        "position": "M",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1462781,
+        "name": "Kieran Morrison",
+        "position": "M",
+        "team_id": 36556,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1881902,
+        "name": "Rio Ngumoha",
+        "position": "F",
+        "team_id": 44,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 1142636,
@@ -232,12 +372,6 @@
         "name": "Dominik Szoboszlai",
         "position": "M",
         "reason": 13
-      },
-      {
-        "id": 318927,
-        "name": "Joe Gomez",
-        "position": "D",
-        "reason": 1
       },
       {
         "id": 823941,
@@ -259,5 +393,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-10 01:00:50+0000"
+  "fetched_at_utc": "2026-02-11 22:10:17+0000"
 }

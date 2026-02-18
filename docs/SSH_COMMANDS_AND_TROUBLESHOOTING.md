@@ -93,22 +93,20 @@ ssh -L 8501:127.0.0.1:8501 fantrax-vps
 Use this exact sequence when your machine/processes were interrupted and you need everything back up quickly.
 Terminal requirement: `2 terminals` (1 for admin commands, 1 for tunnel).
 
-1. From your Mac, connect to VPS as your normal user.
+1. From your Mac, connect to VPS as root (admin shell).
 ```bash
-ssh hogan@5.78.118.108
+ssh fantrax-vps-root
 ```
 
 2. On VPS, pull latest code and restart app service.
 ```bash
-cd /opt/FantraxAPI
-BRANCH=testing /opt/FantraxAPI/bin/pull_restart.sh
-sudo systemctl restart fantrax-pull-restart.service
-sudo systemctl status fantrax-pull-restart.service --no-pager
+systemctl restart fantrax-pull-restart.service
+systemctl status fantrax-pull-restart.service --no-pager
 ```
 
 3. Confirm Streamlit is listening on `127.0.0.1:8501`.
 ```bash
-sudo ss -ltnp | grep -E ':8501\\b' || true
+ss -ltnp | grep -E ':8501\\b' || true
 tail -n 80 /opt/FantraxAPI/logs/streamlit.out 2>/dev/null || true
 ```
 

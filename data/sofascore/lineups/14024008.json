@@ -2,15 +2,238 @@
   "event_id": 14024008,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "3-4-2-1",
+    "starters": [
+      {
+        "id": 788134,
+        "name": "Dean Henderson",
+        "position": "G",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 931844,
+        "name": "Chris Richards",
+        "position": "D",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 879674,
+        "name": "Maxence Lacroix",
+        "position": "D",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1064218,
+        "name": "Chadi Riad",
+        "position": "D",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 870360,
+        "name": "Daniel Muñoz",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1109771,
+        "name": "Adam Wharton",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 193554,
+        "name": "Will Hughes",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 988275,
+        "name": "Tyrick Mitchell",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 845286,
+        "name": "Ismaïla Sarr",
+        "position": "F",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 984624,
+        "name": "Yéremy Pino",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 876599,
+        "name": "Jørgen Strand Larsen",
+        "position": "F",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 858194,
+        "name": "Edward Nketiah",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 906047,
+        "name": "Cheick Doucouré",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1465401,
+        "name": "Caleb Kporha",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 848276,
+        "name": "Jean-Philippe Mateta",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 1469007,
+        "name": "Rio Cardines",
+        "position": "F",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "3-5-2",
+    "starters": [
+      {
+        "id": 98427,
+        "name": "Sam Johnstone",
+        "position": "G",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1014835,
+        "name": "Yerson Mosquera",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 846308,
+        "name": "Santiago Bueno",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 856250,
+        "name": "Ladislav Krejčí",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1096210,
+        "name": "Jackson Tchatchoua",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1015267,
+        "name": "João Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 867441,
+        "name": "Angel Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1899647,
+        "name": "Mateus Mané",
+        "position": "F",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1031283,
+        "name": "David Möller Wolfe",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 987734,
+        "name": "Tolu Arokodare",
+        "position": "F",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 361352,
+        "name": "Adam Armstrong",
+        "position": "F",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 973418,
+        "name": "Toti Gomes",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 786186,
+        "name": "Hee-Chan Hwang",
+        "position": "F",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-02-18 08:00:49+0000"
 }

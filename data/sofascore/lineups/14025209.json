@@ -77,9 +77,9 @@
         "captain": false
       },
       {
-        "id": 984624,
-        "name": "Yéremy Pino",
-        "position": "M",
+        "id": 1085180,
+        "name": "Brennan Johnson",
+        "position": "F",
         "team_id": 7,
         "substitute": false,
         "captain": false
@@ -134,7 +134,7 @@
     ]
   },
   "away": {
-    "formation": "4-5-1",
+    "formation": "3-4-2-1",
     "starters": [
       {
         "id": 42209,
@@ -145,8 +145,16 @@
         "captain": false
       },
       {
-        "id": 44614,
-        "name": "Kyle Walker",
+        "id": 552036,
+        "name": "Josh Laurent",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1117223,
+        "name": "Maxime Estève",
         "position": "D",
         "team_id": 6,
         "substitute": false,
@@ -161,9 +169,25 @@
         "captain": false
       },
       {
-        "id": 1117223,
-        "name": "Maxime Estève",
+        "id": 44614,
+        "name": "Kyle Walker",
         "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1048916,
+        "name": "Lesley Ugochukwu",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 161717,
+        "name": "James Ward-Prowse",
+        "position": "M",
         "team_id": 6,
         "substitute": false,
         "captain": false
@@ -185,30 +209,6 @@
         "captain": false
       },
       {
-        "id": 1009386,
-        "name": "Hannibal Mejbri",
-        "position": "M",
-        "team_id": 6,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 855845,
-        "name": "Florentino Luís",
-        "position": "M",
-        "team_id": 6,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 1048916,
-        "name": "Lesley Ugochukwu",
-        "position": "M",
-        "team_id": 6,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 1020680,
         "name": "Jaidon Anthony",
         "position": "M",
@@ -217,8 +217,8 @@
         "captain": false
       },
       {
-        "id": 875137,
-        "name": "Zian Flemming",
+        "id": 996985,
+        "name": "Armando Broja",
         "position": "F",
         "team_id": 6,
         "substitute": false,
@@ -265,5 +265,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-10 01:00:49+0000"
+  "fetched_at_utc": "2026-02-11 08:00:41+0000"
 }

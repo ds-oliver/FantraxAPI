@@ -1,8 +1,8 @@
 {
   "event_id": 14025203,
-  "confirmed": false,
+  "confirmed": true,
   "home": {
-    "formation": "4-3-3",
+    "formation": "4-2-3-1",
     "starters": [
       {
         "id": 856640,
@@ -45,8 +45,8 @@
         "captain": false
       },
       {
-        "id": 799041,
-        "name": "Tom\u00e1\u0161 Sou\u010dek",
+        "id": 1142562,
+        "name": "Mateus Fernandes",
         "position": "M",
         "team_id": 37,
         "substitute": false,
@@ -61,25 +61,17 @@
         "captain": false
       },
       {
-        "id": 1142562,
-        "name": "Mateus Fernandes",
-        "position": "M",
-        "team_id": 37,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 552884,
         "name": "Jarrod Bowen",
         "position": "M",
         "team_id": 37,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
-        "id": 877013,
-        "name": "Valent\u00edn Castellanos",
-        "position": "F",
+        "id": 799041,
+        "name": "Tomáš Souček",
+        "position": "M",
         "team_id": 37,
         "substitute": false,
         "captain": false
@@ -91,13 +83,94 @@
         "team_id": 37,
         "substitute": false,
         "captain": false
+      },
+      {
+        "id": 877013,
+        "name": "Valentín Castellanos",
+        "position": "F",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 113956,
+        "name": "Callum Wilson",
+        "position": "F",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1170560,
+        "name": "Soungoutou Magassa",
+        "position": "M",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1150952,
+        "name": "Oliver Scarles",
+        "position": "M",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 96531,
+        "name": "Alphonse Aréola",
+        "position": "G",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 823085,
+        "name": "Kyle Walker-Peters",
+        "position": "D",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 894474,
+        "name": "Max Kilman",
+        "position": "D",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1652590,
+        "name": "Ezra Mayers",
+        "position": "D",
+        "team_id": 36552,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1523623,
+        "name": "Mohamadou Kanté",
+        "position": "M",
+        "team_id": 36552,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 286165,
+        "name": "Adama Traoré",
+        "position": "F",
+        "team_id": 37,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 15479,
-        "name": "\u0141ukasz Fabia\u0144ski",
+        "name": "Łukasz Fabiański",
         "position": "G",
         "reason": 1
       },
@@ -138,7 +211,7 @@
       },
       {
         "id": 859999,
-        "name": "Lisandro Mart\u00ednez",
+        "name": "Lisandro Martínez",
         "position": "D",
         "team_id": 35,
         "substitute": false,
@@ -153,16 +226,16 @@
         "captain": false
       },
       {
-        "id": 122951,
-        "name": "Casemiro",
+        "id": 1142175,
+        "name": "Kobbie Mainoo",
         "position": "M",
         "team_id": 35,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 1142175,
-        "name": "Kobbie Mainoo",
+        "id": 122951,
+        "name": "Casemiro",
         "position": "M",
         "team_id": 35,
         "substitute": false,
@@ -182,7 +255,7 @@
         "position": "M",
         "team_id": 35,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 927083,
@@ -201,7 +274,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 1153315,
+        "name": "Leny Yoro",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 986397,
+        "name": "Benjamin Šeško",
+        "position": "F",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 917007,
+        "name": "Joshua Zirkzee",
+        "position": "F",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 815890,
+        "name": "Altay Bayındır",
+        "position": "G",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1445799,
+        "name": "Ayden Heaven",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 825839,
+        "name": "Tyrell Malacia",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 847030,
+        "name": "Noussair Mazraoui",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1402850,
+        "name": "Tyler Fletcher",
+        "position": "M",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 846425,
+        "name": "Manuel Ugarte",
+        "position": "M",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 1397168,
@@ -222,5 +368,6 @@
         "reason": 1
       }
     ]
-  }
+  },
+  "fetched_at_utc": "2026-02-10 21:55:08+0000"
 }

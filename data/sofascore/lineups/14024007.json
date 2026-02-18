@@ -2,15 +2,280 @@
   "event_id": 14024007,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 920546,
+        "name": "Robert Sánchez",
+        "position": "G",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 885908,
+        "name": "Reece James",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 923894,
+        "name": "Wesley Fofana",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 826134,
+        "name": "Trevoh Chalobah",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1153079,
+        "name": "Jorrel Hato",
+        "position": "D",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1105779,
+        "name": "Andrey Santos",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 987650,
+        "name": "Moisés Caicedo",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 982780,
+        "name": "Cole Palmer",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 974505,
+        "name": "Enzo Fernández",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 879349,
+        "name": "Pedro Neto",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 975079,
+        "name": "João Pedro",
+        "position": "F",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 1110006,
+        "name": "Dário Essugo",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 962053,
+        "name": "Filip Jørgensen",
+        "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 1069488,
+        "name": "Roméo Lavia",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 794939,
+        "name": "Marc Cucurella",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 958966,
+        "name": "Mykhaylo Mudryk",
+        "position": "M",
+        "reason": 3
+      },
+      {
+        "id": 996911,
+        "name": "Levi Colwill",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1140599,
+        "name": "Jamie Gittens",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1035645,
+        "name": "Caleb Wiley",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "3-4-2-1",
+    "starters": [
+      {
+        "id": 42209,
+        "name": "Martin Dúbravka",
+        "position": "G",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 552036,
+        "name": "Josh Laurent",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 838399,
+        "name": "Joe Worrall",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1117223,
+        "name": "Maxime Estève",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 44614,
+        "name": "Kyle Walker",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1048916,
+        "name": "Lesley Ugochukwu",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1009386,
+        "name": "Hannibal Mejbri",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 996910,
+        "name": "Bashir Humphreys",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 795066,
+        "name": "Marcus Edwards",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1020680,
+        "name": "Jaidon Anthony",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 875137,
+        "name": "Zian Flemming",
+        "position": "F",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 804613,
+        "name": "Connor Roberts",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 826183,
+        "name": "Mike Trésor",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 817979,
+        "name": "Axel Tuanzebe",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 990550,
+        "name": "Zeki Amdouni",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 792122,
+        "name": "Josh Cullen",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 927175,
+        "name": "Jordan Beyer",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-02-18 08:00:45+0000"
 }

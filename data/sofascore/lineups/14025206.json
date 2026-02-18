@@ -6,7 +6,7 @@
     "starters": [
       {
         "id": 158263,
-        "name": "Emiliano Mart\u00ednez",
+        "name": "Emiliano Martínez",
         "position": "G",
         "team_id": 40,
         "substitute": false,
@@ -78,7 +78,7 @@
       },
       {
         "id": 783126,
-        "name": "Emiliano Buend\u00eda",
+        "name": "Emiliano Buendía",
         "position": "M",
         "team_id": 40,
         "substitute": false,
@@ -115,7 +115,7 @@
       },
       {
         "id": 1457536,
-        "name": "Andr\u00e9s Garc\u00eda",
+        "name": "Andrés García",
         "position": "D",
         "reason": 1
       },
@@ -140,7 +140,7 @@
       },
       {
         "id": 825844,
-        "name": "Ferdi Kad\u0131o\u011flu",
+        "name": "Ferdi Kadıoğlu",
         "position": "D",
         "team_id": 30,
         "substitute": false,
@@ -172,7 +172,7 @@
       },
       {
         "id": 48480,
-        "name": "Pascal Gro\u00df",
+        "name": "Pascal Groß",
         "position": "M",
         "team_id": 30,
         "substitute": false,
@@ -196,7 +196,7 @@
       },
       {
         "id": 1065588,
-        "name": "Diego G\u00f3mez",
+        "name": "Diego Gómez",
         "position": "M",
         "team_id": 30,
         "substitute": false,
@@ -258,5 +258,6 @@
         "reason": 1
       }
     ]
-  }
+  },
+  "fetched_at_utc": "2026-02-11 08:00:40+0000"
 }

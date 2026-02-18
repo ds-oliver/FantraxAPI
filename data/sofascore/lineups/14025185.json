@@ -140,7 +140,7 @@
       },
       {
         "id": 958959,
-        "name": "Jurri\u00ebn Timber",
+        "name": "Jurriën Timber",
         "position": "D",
         "team_id": 42,
         "substitute": false,
@@ -156,7 +156,7 @@
       },
       {
         "id": 869792,
-        "name": "Gabriel Magalh\u00e3es",
+        "name": "Gabriel Magalhães",
         "position": "D",
         "team_id": 42,
         "substitute": false,
@@ -164,7 +164,7 @@
       },
       {
         "id": 1002837,
-        "name": "Piero Hincapi\u00e9",
+        "name": "Piero Hincapié",
         "position": "D",
         "team_id": 42,
         "substitute": false,
@@ -180,7 +180,7 @@
       },
       {
         "id": 966837,
-        "name": "Mart\u00edn Zubimendi",
+        "name": "Martín Zubimendi",
         "position": "M",
         "team_id": 42,
         "substitute": false,
@@ -204,7 +204,7 @@
       },
       {
         "id": 804508,
-        "name": "Viktor Gy\u00f6keres",
+        "name": "Viktor Gyökeres",
         "position": "F",
         "team_id": 42,
         "substitute": false,
@@ -247,10 +247,11 @@
       },
       {
         "id": 547410,
-        "name": "Martin \u00d8degaard",
+        "name": "Martin Ødegaard",
         "position": "M",
         "reason": 1
       }
     ]
-  }
+  },
+  "fetched_at_utc": "2026-02-12 03:00:16+0000"
 }
