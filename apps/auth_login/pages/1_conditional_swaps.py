@@ -20,6 +20,14 @@ import pandas as pd
 import streamlit as st
 import yaml
 
+from apps.auth_login.conditional_swaps_health import (
+    build_fired_conditional_events,
+    compute_health_metrics,
+    fetch_lineup_change_history,
+    match_events,
+    normalize_lineup_change_rows,
+    resolve_round_from_period,
+)
 from apps.auth_login.context import select_league_and_team_in_sidebar
 from fantraxapi.fantrax import FantraxAPI
 from fantraxapi.lineups.conditional_swaps import (
@@ -115,6 +123,8 @@ from utils.user_manager import UserManager
 logger = logging.getLogger(__name__)
 _LOG_PATH = Path("data/logs/conditional_swaps.log")
 LOG_TIMEZONE = "America/Los_Angeles"
+HEALTH_MATCH_WINDOW_SECONDS = 120
+HEALTH_TIMEZONE = "America/Los_Angeles"
 
 def _log_time_converter(*_args):
     return datetime.now(ZoneInfo(LOG_TIMEZONE)).timetuple()
@@ -212,8 +222,7 @@ readme_dialog_md = """
 Please read the expanded "Read This First" section for the full app flow.
 """.strip()
 
-@st.dialog("Read This First: Conditional Swaps are Live")
-def _show_conditional_swaps_dialog() -> None:
+def _show_conditional_swaps_notice_inline() -> None:
     st.markdown(readme_dialog_md)
     st.checkbox("Don't remind me again this session", key="conditional_swaps_dont_remind")
     if st.button("Continue", type="primary"):
@@ -222,22 +231,21 @@ def _show_conditional_swaps_dialog() -> None:
             st.session_state["conditional_swaps_notice_suppressed"] = True
         st.rerun()
 
-@st.dialog("Rule Saved")
-def _show_saved_rule_dialog() -> None:
+def _show_saved_rule_notice_inline() -> None:
     preview_lines = st.session_state.get("advanced_rule_preview_lines", [])
+    st.success("Rule saved.")
     if preview_lines:
         st.markdown(
             "\n".join(f"{index + 1}. {line}" for index, line in enumerate(preview_lines))
         )
-    else:
-        st.write("Rule saved.")
-    if st.button("Close", type="primary"):
-        st.rerun()
+    st.button("Dismiss", key="dismiss_saved_rule_notice")
 
 if not st.session_state.get("conditional_swaps_notice_seen") and not st.session_state.get(
     "conditional_swaps_notice_suppressed"
 ):
-    _show_conditional_swaps_dialog()
+    with st.container(border=True):
+        st.subheader("Read This First: Conditional Swaps are Live")
+        _show_conditional_swaps_notice_inline()
 
 with st.expander("Read This First (Live Fantrax Changes)", expanded=True):
     st.warning(
@@ -323,6 +331,28 @@ def _mark_period_manual_override() -> None:
     """
     st.session_state["period_manual_override"] = True
     st.session_state["period_override_round"] = st.session_state.get("current_sofascore_round")
+
+
+def _record_immediate_swap_event(
+    *,
+    action: str,
+    out_player_id: str,
+    in_player_id: str,
+    period: Optional[int],
+) -> None:
+    events = st.session_state.get("conditional_immediate_swap_events")
+    if not isinstance(events, list):
+        events = []
+    events.append(
+        {
+            "action": str(action),
+            "out_player_id": str(out_player_id),
+            "in_player_id": str(in_player_id),
+            "period": str(period) if period is not None else "",
+            "fired_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+    st.session_state["conditional_immediate_swap_events"] = events
 
 
 def _ensure_xsrf_header(session: Session) -> None:
@@ -2803,9 +2833,15 @@ with st.expander("Live Lineup Fetch Diagnostics", expanded=False):
             ),
         )
 
-gw_num = inferred_round or selected_period_id
+selected_round = resolve_round_from_period(
+    selected_period_id=selected_period_id,
+    selected_period_label=selected_period_label,
+    inferred_round=inferred_round,
+)
+overview_round = selected_round or inferred_round
+gw_num = overview_round or selected_period_id
 gw_label = f"GW {gw_num}" if gw_num else "GW"
-schedule_events, schedule_source = _fetch_gameweek_events(inferred_round)
+schedule_events, schedule_source = _fetch_gameweek_events(overview_round)
 gw_meta = _build_gameweek_meta_from_events(schedule_events, gw_label)
 if not gw_meta:
     gw_meta = _build_gameweek_meta(lineup_info_by_player, gw_label)
@@ -2820,9 +2856,17 @@ if gw_meta:
         count_label = f"{len(schedule_events)} events"
         if expected_matches and len(schedule_events) != expected_matches:
             count_label += f" (expected {expected_matches})"
-        st.caption(f"Schedule source: {source_label} | {count_label} | Round: {inferred_round or 'n/a'}")
+        st.caption(
+            "Schedule source: "
+            f"{source_label} | {count_label} | Selected period: {selected_period_label or selected_period_id or 'n/a'} "
+            f"| Resolved round: {overview_round or 'n/a'} | Inferred round: {inferred_round or 'n/a'}"
+        )
     else:
-        st.caption("Schedule fallback: derived from this roster's kickoffs only.")
+        st.caption(
+            "Schedule fallback: derived from this roster's kickoffs only. "
+            f"Selected period: {selected_period_label or selected_period_id or 'n/a'} | "
+            f"Resolved round: {overview_round or 'n/a'} | Inferred round: {inferred_round or 'n/a'}"
+        )
 
 projections_map = st.session_state.get("projections_map")
 if projections_map is None:
@@ -3272,7 +3316,10 @@ st.caption(
 )
 
 if st.session_state.pop("show_advanced_rule_dialog", False):
-    _show_saved_rule_dialog()
+    st.session_state["show_saved_rule_notice_inline"] = True
+if st.session_state.pop("show_saved_rule_notice_inline", False):
+    with st.container(border=True):
+        _show_saved_rule_notice_inline()
 
 projections_map = st.session_state.get("projections_map")
 if projections_map is None:
@@ -3669,6 +3716,12 @@ if test_fire:
                     period=test_period_int,
                 )
                 if result.get("success"):
+                    _record_immediate_swap_event(
+                        action="test_fire",
+                        out_player_id=adv_active_id,
+                        in_player_id=test_reserve_id,
+                        period=test_period_int,
+                    )
                     st.success("Test swap executed in Fantrax.")
                     st.warning("Swap back manually so the rule can still trigger later.")
                     _safe_rerun()
@@ -3821,6 +3874,12 @@ with st.expander("Make a single swap", expanded=False):
                         period=int(swap_period_int),
                     )
                     if result.get("success"):
+                        _record_immediate_swap_event(
+                            action="immediate_swap",
+                            out_player_id=swap_active,
+                            in_player_id=swap_reserve,
+                            period=swap_period_int,
+                        )
                         msg = result.get("message") or "Swap executed successfully."
                         st.success(f"✅ {msg}")
                         st.rerun()
@@ -5854,3 +5913,242 @@ else:
     st.divider()
     st.subheader("Auto-generated claim/drop rules (read-only)")
     st.caption("Auto claims/drops are disabled during testing.")
+
+
+# ----------------------------------------------------------------------
+# Conditional swap system health (Fantrax reconciliation)
+# ----------------------------------------------------------------------
+st.divider()
+with st.expander("Conditional Swap System Health", expanded=False):
+    if not user_id:
+        st.info("Log in to view conditional swap health for this team.")
+    else:
+        try:
+            rules_for_user = load_rules_for_user(str(user_id))
+        except Exception:
+            rules_for_user = []
+
+        app_fired_events_all = build_fired_conditional_events(
+            rules_for_user,
+            league_id=str(league_id),
+            team_id=str(team_id),
+        )
+        logger.info(
+            "[health] app fired conditional events: %s (league=%s team=%s user=%s)",
+            len(app_fired_events_all),
+            league_id,
+            team_id,
+            user_id,
+        )
+
+        try:
+            fantrax_raw_rows = fetch_lineup_change_history(api, team_id=str(team_id), max_rows=200)
+            fantrax_events_all = normalize_lineup_change_rows(fantrax_raw_rows)
+        except Exception as exc:
+            fantrax_events_all = []
+            st.warning(f"Unable to load Fantrax lineup-change history: {exc}")
+        logger.info(
+            "[health] fantrax lineup history events: %s (league=%s team=%s)",
+            len(fantrax_events_all),
+            league_id,
+            team_id,
+        )
+
+        def _period_token(value: Any) -> str:
+            raw = str(value or "").strip()
+            digits = "".join(ch for ch in raw if ch.isdigit())
+            if not digits:
+                return ""
+            try:
+                return str(int(digits))
+            except Exception:
+                return ""
+
+        last_gameweek_token = ""
+        detected_token = _period_token(detected_period)
+        selected_token = _period_token(selected_period_id)
+        if detected_token:
+            try:
+                detected_int = int(detected_token)
+                if detected_int > 1:
+                    last_gameweek_token = str(detected_int - 1)
+            except Exception:
+                pass
+        if not last_gameweek_token and selected_token:
+            try:
+                selected_int = int(selected_token)
+                if selected_int > 1:
+                    last_gameweek_token = str(selected_int - 1)
+            except Exception:
+                pass
+
+        sorted_period_ids: List[str] = []
+        for pid in period_id_map.keys():
+            token = _period_token(pid)
+            if token:
+                sorted_period_ids.append(token)
+        sorted_period_ids = sorted(set(sorted_period_ids), key=lambda p: int(p))
+        if not last_gameweek_token and len(sorted_period_ids) >= 2:
+            last_gameweek_token = sorted_period_ids[-2]
+        elif not last_gameweek_token and len(sorted_period_ids) == 1:
+            last_gameweek_token = sorted_period_ids[0]
+
+        period_window_options: List[str] = []
+        period_window_map: Dict[str, str] = {}
+        if last_gameweek_token:
+            last_label = period_id_map.get(last_gameweek_token, f"Period {last_gameweek_token}")
+            default_label = f"Last gameweek (default): {last_label}"
+            period_window_options.append(default_label)
+            period_window_map[default_label] = last_gameweek_token
+        all_label = "All periods"
+        period_window_options.append(all_label)
+        period_window_map[all_label] = ""
+        for pid in sorted(period_id_map.keys(), key=lambda p: int(_period_token(p) or 0), reverse=True):
+            token = _period_token(pid)
+            if not token:
+                continue
+            if token == last_gameweek_token:
+                continue
+            label = period_id_map.get(pid, f"Period {pid}")
+            option_label = f"{label}"
+            period_window_options.append(option_label)
+            period_window_map[option_label] = token
+
+        selected_window_label = st.selectbox(
+            "Health view window period",
+            options=period_window_options if period_window_options else [all_label],
+            index=0,
+            key=f"conditional_health_period_window_{league_id}_{team_id}",
+            help="Choose which gameweek period to evaluate in the conditional swap health view.",
+        )
+        selected_window_period = period_window_map.get(selected_window_label, "")
+        if selected_window_period:
+            app_fired_events = [
+                event
+                for event in app_fired_events_all
+                if _period_token(event.get("period")) == selected_window_period
+            ]
+            fantrax_events = [
+                event
+                for event in fantrax_events_all
+                if _period_token(event.get("week_or_period")) == selected_window_period
+            ]
+        else:
+            app_fired_events = app_fired_events_all
+            fantrax_events = fantrax_events_all
+        logger.info(
+            "[health] window period=%s app_events=%s fantrax_events=%s (league=%s team=%s)",
+            selected_window_period or "ALL",
+            len(app_fired_events),
+            len(fantrax_events),
+            league_id,
+            team_id,
+        )
+
+        matched_rows = match_events(
+            app_events=app_fired_events,
+            fantrax_events=fantrax_events,
+            window_seconds=HEALTH_MATCH_WINDOW_SECONDS,
+        )
+        metrics = compute_health_metrics(matched_rows)
+        logger.info(
+            "[health] matched=%s unmatched=%s total=%s (league=%s team=%s)",
+            metrics.get("matched"),
+            metrics.get("unmatched"),
+            metrics.get("total_fired"),
+            league_id,
+            team_id,
+        )
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Fired conditional swaps", metrics.get("total_fired", 0))
+        m2.metric("Matched in Fantrax", metrics.get("matched", 0))
+        m3.metric("Unmatched", metrics.get("unmatched", 0))
+        m4.metric("Success rate", f"{metrics.get('success_rate', 0.0)}%")
+        st.caption(
+            f"Match window: {HEALTH_MATCH_WINDOW_SECONDS}s | "
+            f"Fantrax view: LINEUP_CHANGE | Team filter: {team_id} | "
+            f"Window period: {selected_window_period or 'ALL'}"
+        )
+
+        if matched_rows:
+            local_tz = ZoneInfo(HEALTH_TIMEZONE)
+            details_rows: List[Dict[str, Any]] = []
+            for row in matched_rows:
+                app_time = row.get("fired_at_utc")
+                app_time_local = (
+                    app_time.astimezone(local_tz).strftime("%Y-%m-%d %H:%M:%S %Z")
+                    if isinstance(app_time, datetime)
+                    else "—"
+                )
+                fan_time = row.get("fantrax_time_utc")
+                fan_time_local = (
+                    fan_time.astimezone(local_tz).strftime("%Y-%m-%d %H:%M:%S %Z")
+                    if isinstance(fan_time, datetime)
+                    else (row.get("fantrax_time_local") or "—")
+                )
+                out_id = str(row.get("active_id") or "")
+                in_id = str(row.get("reserve_id") or "")
+                out_row = player_lookup.get(out_id)
+                in_row = player_lookup.get(in_id)
+                out_name = out_row.player.name if out_row and getattr(out_row, "player", None) else out_id
+                in_name = in_row.player.name if in_row and getattr(in_row, "player", None) else in_id
+                details_rows.append(
+                    {
+                        "Status": str(row.get("health_status") or "unmatched").upper(),
+                        "App fired (local)": app_time_local,
+                        "Rule ID": row.get("rule_id") or "—",
+                        "Out": out_name,
+                        "In": in_name,
+                        "Period": row.get("period") or "—",
+                        "Fantrax tx time (local)": fan_time_local,
+                        "Fantrax txSetId": row.get("matched_tx_set_id") or "—",
+                        "Delta (sec)": row.get("delta_seconds") if row.get("delta_seconds") is not None else "—",
+                    }
+                )
+            st.dataframe(pd.DataFrame(details_rows), hide_index=True, use_container_width=True)
+        else:
+            st.info("No fired conditional lineup swap rules found for this team yet.")
+
+        if metrics.get("unmatched", 0) > 0:
+            st.warning(
+                "Some app-fired swaps were not matched in Fantrax within 2 minutes. "
+                "Possible causes: timing drift, delayed Fantrax posting, or non-swap outcomes."
+            )
+
+
+# ----------------------------------------------------------------------
+# Immediate swaps (session only)
+# ----------------------------------------------------------------------
+with st.expander("Immediate Swaps (current session only)", expanded=False):
+    events = st.session_state.get("conditional_immediate_swap_events")
+    if not isinstance(events, list) or not events:
+        st.caption("No immediate or test-fire swaps recorded in this session.")
+    else:
+        local_tz = ZoneInfo(HEALTH_TIMEZONE)
+        rows: List[Dict[str, Any]] = []
+        for event in reversed(events):
+            out_id = str(event.get("out_player_id") or "")
+            in_id = str(event.get("in_player_id") or "")
+            out_row = player_lookup.get(out_id)
+            in_row = player_lookup.get(in_id)
+            out_name = out_row.player.name if out_row and getattr(out_row, "player", None) else out_id
+            in_name = in_row.player.name if in_row and getattr(in_row, "player", None) else in_id
+            fired_raw = str(event.get("fired_at_utc") or "")
+            try:
+                fired_dt = datetime.fromisoformat(fired_raw)
+                if fired_dt.tzinfo is None:
+                    fired_dt = fired_dt.replace(tzinfo=timezone.utc)
+                fired_local = fired_dt.astimezone(local_tz).strftime("%Y-%m-%d %H:%M:%S %Z")
+            except Exception:
+                fired_local = fired_raw or "—"
+            rows.append(
+                {
+                    "Time (local)": fired_local,
+                    "Action": event.get("action") or "immediate_swap",
+                    "Out": out_name,
+                    "In": in_name,
+                    "Period": event.get("period") or "—",
+                }
+            )
+        st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)

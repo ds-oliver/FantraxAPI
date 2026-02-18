@@ -2,7 +2,7 @@
   "event_id": 14025018,
   "confirmed": true,
   "home": {
-    "formation": "3-5-2",
+    "formation": "3-4-2-1",
     "starters": [
       {
         "id": 252669,
@@ -10,7 +10,7 @@
         "position": "G",
         "team_id": 3,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 1014835,
@@ -45,6 +45,14 @@
         "captain": false
       },
       {
+        "id": 867441,
+        "name": "Angel Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
         "id": 1035996,
         "name": "André",
         "position": "M",
@@ -53,8 +61,16 @@
         "captain": false
       },
       {
-        "id": 867441,
-        "name": "Angel Gomes",
+        "id": 1013928,
+        "name": "Hugo Bueno",
+        "position": "D",
+        "team_id": 3,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 845273,
+        "name": "Jean-Ricner Bellegarde",
         "position": "M",
         "team_id": 3,
         "substitute": false,
@@ -69,31 +85,88 @@
         "captain": false
       },
       {
-        "id": 1013928,
-        "name": "Hugo Bueno",
-        "position": "D",
-        "team_id": 3,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 361352,
         "name": "Adam Armstrong",
         "position": "F",
         "team_id": 3,
         "substitute": false,
         "captain": false
+      }
+    ],
+    "subs": [
+      {
+        "id": 987734,
+        "name": "Tolu Arokodare",
+        "position": "F",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
       },
       {
-        "id": 845273,
-        "name": "Jean-Ricner Bellegarde",
+        "id": 1006073,
+        "name": "Rodrigo Gomes",
         "position": "M",
         "team_id": 3,
-        "substitute": false,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 98427,
+        "name": "Sam Johnstone",
+        "position": "G",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 143047,
+        "name": "Matt Doherty",
+        "position": "D",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1031283,
+        "name": "David Möller Wolfe",
+        "position": "D",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1597270,
+        "name": "Pedro Lima",
+        "position": "D",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1015267,
+        "name": "João Gomes",
+        "position": "M",
+        "team_id": 3,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1819718,
+        "name": "Luke Rawlings",
+        "position": "M",
+        "team_id": 36551,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1445189,
+        "name": "Tom Edozie",
+        "position": "M",
+        "team_id": 36551,
+        "substitute": true,
         "captain": false
       }
     ],
-    "subs": [],
     "missing": [
       {
         "id": 973418,
@@ -153,16 +226,16 @@
         "captain": false
       },
       {
-        "id": 856714,
-        "name": "Declan Rice",
+        "id": 966837,
+        "name": "Martín Zubimendi",
         "position": "M",
         "team_id": 42,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 966837,
-        "name": "Martín Zubimendi",
+        "id": 856714,
+        "name": "Declan Rice",
         "position": "M",
         "team_id": 42,
         "substitute": false,
@@ -182,7 +255,7 @@
         "position": "F",
         "team_id": 42,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 922573,
@@ -201,7 +274,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 794839,
+        "name": "Gabriel Jesus",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 864921,
+        "name": "Eberechi Eze",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 135666,
+        "name": "Leandro Trossard",
+        "position": "F",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 232422,
+        "name": "Kepa Arrizabalaga",
+        "position": "G",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1144630,
+        "name": "Cristhian Mosquera",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 846036,
+        "name": "Ben White",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 957602,
+        "name": "Riccardo Calafiori",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1423711,
+        "name": "Myles Lewis-Skelly",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 135256,
+        "name": "Christian Nørgaard",
+        "position": "M",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 1917626,
@@ -213,18 +359,6 @@
         "id": 836705,
         "name": "Kai Havertz",
         "position": "F",
-        "reason": 1
-      },
-      {
-        "id": 957602,
-        "name": "Riccardo Calafiori",
-        "position": "D",
-        "reason": 1
-      },
-      {
-        "id": 846036,
-        "name": "Ben White",
-        "position": "D",
         "reason": 1
       },
       {
@@ -241,5 +375,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-18 18:47:07+0000"
+  "fetched_at_utc": "2026-02-18 21:35:09+0000"
 }
