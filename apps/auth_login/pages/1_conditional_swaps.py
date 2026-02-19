@@ -1379,6 +1379,15 @@ def _player_projection_row(
     return row
 
 
+def _has_projection_row(
+    info: Optional[PlayerLineupInfo],
+    *,
+    projections: dict,
+    fallback_name: Optional[str] = None,
+) -> bool:
+    return _player_projection_row(info, projections=projections, fallback_name=fallback_name) is not None
+
+
 def _confirmed_status(info: Optional[PlayerLineupInfo]) -> Optional[LineupStatus]:
     if not info:
         return None
@@ -2907,6 +2916,7 @@ def _build_lineup_feed_rows(
         fx_effective = getattr(info, "fx_conf_status", None) if info else None
         fx_code = _status_code(fx_effective)
         proj_gs = None
+        projection_missing = False
         if projections:
             proj_row = _player_projection_row(info, projections=projections, fallback_name=row.player.name)
             if proj_row:
@@ -2914,6 +2924,8 @@ def _build_lineup_feed_rows(
                     proj_gs = int(proj_row.get("ProjGS"))
                 except Exception:
                     proj_gs = None
+            else:
+                projection_missing = True
 
         pos = _display_pos(row).upper()
         slot_order = 0 if pid in active_set else 1
@@ -2925,7 +2937,8 @@ def _build_lineup_feed_rows(
                 "ss_pred": ss_pred_code,
                 "fx": fx_code,
                 "confirmed": ss_confirmed,
-                "tds": proj_gs,
+                "tds": ("MISS" if projection_missing else proj_gs),
+                "projection_missing": projection_missing,
                 "kickoff": kickoff,
                 "kickoff_label": _format_kickoff(kickoff),
                 "opponent": opponent,
@@ -3217,6 +3230,14 @@ if projection_updated_label:
     st.caption(f"Projections last updated: {projection_updated_label}")
 if projection_stale_message:
     st.warning(projection_stale_message)
+missing_projection_names = [str(r.get("player")) for r in feed_rows if r.get("projection_missing")]
+if missing_projection_names:
+    unique_missing = sorted(set(missing_projection_names))
+    st.warning(
+        "Missing projection this GW (treated as likely unavailable in auto swap logic): "
+        + ", ".join(unique_missing[:12])
+        + (" ..." if len(unique_missing) > 12 else "")
+    )
 
 if feed_rows:
     header = """
@@ -4515,6 +4536,29 @@ if swap_period_int is not None:
         if not ko:
             reserve_debug.append({"Player": row.player.name, "Reason": "no kickoff", "Code": "-", "KO": "-"})
             continue
+        has_projection = _has_projection_row(
+            info,
+            projections=projections_map,
+            fallback_name=row.player.name,
+        )
+        if not has_projection:
+            missing_projections_debug.append(
+                {
+                    "Player": row.player.name,
+                    "Team": getattr(info, "team_name", None) if info else None,
+                    "Key": _normalize_player_name(row.player.name),
+                    "Usage": "excluded_from_auto_swaps",
+                }
+            )
+            reserve_debug.append(
+                {
+                    "Player": row.player.name,
+                    "Reason": "missing projection (excluded)",
+                    "Code": "-",
+                    "KO": _format_kickoff(ko),
+                }
+            )
+            continue
         proj_row = _player_projection_row(
             info,
             projections=projections_map,
@@ -4531,14 +4575,6 @@ if swap_period_int is not None:
                 proj_gs = int(proj_row.get("ProjGS"))
             except Exception:
                 proj_gs = None
-        else:
-            missing_projections_debug.append(
-                {
-                    "Player": row.player.name,
-                    "Team": getattr(info, "team_name", None) if info else None,
-                    "Key": _normalize_player_name(row.player.name),
-                }
-            )
         reserve_candidates.append(
             {
                 "pid": pid,
@@ -4832,6 +4868,9 @@ if swap_period_int is not None and active_candidates and reserve_candidates:
         )
         st.dataframe(pd.DataFrame(debug_rows), hide_index=True, use_container_width=True)
 if missing_projections_debug:
+    st.warning(
+        "Players missing projections are treated as likely unavailable for this gameweek and are excluded from auto swap candidates."
+    )
     with st.expander("Projection coverage debug"):
         st.dataframe(
             pd.DataFrame(missing_projections_debug).drop_duplicates(),
@@ -4910,13 +4949,35 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
         format_func=lambda pid: active_labels.get(pid, pid),
         key="conditional_active_select",
     )
-elif selected_action_type == RuleActionType.FA_CLAIM_DROP and fa_simple_mode == FA_SIMPLE_MODE_DROP_BASED:
-    drop_player_id = st.selectbox(
-        "Roster player to drop/monitor",
-        options=list(roster_labels.keys()),
-        format_func=lambda pid: roster_labels.get(pid, pid),
-        key="conditional_drop_select",
+
+if selected_action_type == RuleActionType.FA_CLAIM_DROP:
+    mode_options = {
+        "Conditional claim (FA status drives trigger) (recommended)": FA_SIMPLE_MODE_CLAIM_BASED,
+        "Conditional drop (rostered player status drives trigger)": FA_SIMPLE_MODE_DROP_BASED,
+    }
+    mode_label = st.selectbox(
+        "Add/Drop mode",
+        options=list(mode_options.keys()),
+        index=0,
+        help=(
+            "Conditional claim: trigger when the FA target is starting, then choose a drop candidate compatible "
+            "with that FA kickoff slot. Conditional drop: trigger when the rostered drop candidate is not starting."
+        ),
+        key="fa_simple_mode_select",
     )
+    fa_simple_mode = mode_options[mode_label]
+    fa_trigger_mode = (
+        FA_TRIGGER_MODE_FA_STARTING_ONLY
+        if fa_simple_mode == FA_SIMPLE_MODE_CLAIM_BASED
+        else FA_TRIGGER_MODE_DROP_AND_FA_STARTING
+    )
+    if fa_simple_mode == FA_SIMPLE_MODE_DROP_BASED:
+        drop_player_id = st.selectbox(
+            "Roster player to drop/monitor",
+            options=list(roster_labels.keys()),
+            format_func=lambda pid: roster_labels.get(pid, pid),
+            key="conditional_drop_select",
+        )
 
 active_row = player_lookup.get(active_player_id) if active_player_id else None
 active_lineup = lineup_info_by_player.get(active_player_id) if active_player_id else None
@@ -4948,28 +5009,6 @@ if drop_row:
         )
         if not override_never_drop:
             st.warning("This player is in your never-drop list; saving is disabled until you override.")
-
-if selected_action_type == RuleActionType.FA_CLAIM_DROP:
-    mode_options = {
-        "Conditional claim (FA status drives trigger) (recommended)": FA_SIMPLE_MODE_CLAIM_BASED,
-        "Conditional drop (rostered player status drives trigger)": FA_SIMPLE_MODE_DROP_BASED,
-    }
-    mode_label = st.selectbox(
-        "Add/Drop mode",
-        options=list(mode_options.keys()),
-        index=0,
-        help=(
-            "Conditional claim: trigger when the FA target is starting, then choose a drop candidate compatible "
-            "with that FA kickoff slot. Conditional drop: trigger when the rostered drop candidate is not starting."
-        ),
-        key="fa_simple_mode_select",
-    )
-    fa_simple_mode = mode_options[mode_label]
-    fa_trigger_mode = (
-        FA_TRIGGER_MODE_FA_STARTING_ONLY
-        if fa_simple_mode == FA_SIMPLE_MODE_CLAIM_BASED
-        else FA_TRIGGER_MODE_DROP_AND_FA_STARTING
-    )
 
 if user_id and claims_allowed and selected_action_type in (
     RuleActionType.FA_CLAIM_DROP,
@@ -5197,8 +5236,10 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
     st.markdown("**Free agent candidate (conditional claim target)**")
     drop_kickoff = drop_lineup.kickoff if drop_lineup else None
     if selected_action_type == RuleActionType.FA_CLAIM_DROP and fa_simple_mode == FA_SIMPLE_MODE_DROP_BASED and not drop_kickoff:
-        st.info("Waiting for drop candidate kickoff/time before evaluating FA targets in conditional drop mode.")
-    elif selected_action_type == FA_ACTION_ADD_ONLY and not (open_active_slots or open_reserve_slots):
+        st.caption(
+            "Drop candidate kickoff is unknown; evaluating FA targets anyway and applying kickoff ordering only when available."
+        )
+    if selected_action_type == FA_ACTION_ADD_ONLY and not (open_active_slots or open_reserve_slots):
         st.info("No open roster slots available for add-only claims.")
     else:
         fa_candidate_rows: List[Dict[str, str]] = []

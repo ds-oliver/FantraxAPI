@@ -855,6 +855,21 @@ def _projection_for_row(row: RosterRow, projections: Dict[Tuple[str, str], dict]
     return proj, proj_gs
 
 
+def _has_projection_for_row(row: Optional[RosterRow], projections: Dict[Tuple[str, str], dict]) -> bool:
+    """
+    Return True only when a concrete projection row exists for this roster player.
+    """
+    if row is None:
+        return False
+    player = getattr(row, "player", None)
+    name_key = _normalize_player_name(getattr(player, "name", None))
+    if not name_key:
+        return False
+    team_code = _player_team_code(row)
+    proj_row = projections.get((name_key, team_code)) or projections.get((name_key, ""))
+    return proj_row is not None
+
+
 def _projection_for_name_and_team(
     name: Optional[str],
     team: Optional[str],
@@ -1008,6 +1023,12 @@ def _generate_auto_swap_rules(
     for pid in reserve_ids:
         row = id_to_row.get(str(pid))
         if not row:
+            continue
+        if not _has_projection_for_row(row, projections):
+            logger.info(
+                "Auto swap reserve excluded (missing projection): %s",
+                getattr(getattr(row, "player", None), "name", pid),
+            )
             continue
         info = lineup_info_by_player.get(str(pid))
         proj, proj_gs = _projection_for_row(row, projections)
@@ -2464,8 +2485,15 @@ def main() -> None:
                                     )
                                     continue
                             proj_val = r.get("proj_fpts")
+                            row = id_to_row.get(reserve_id)
+                            if not _has_projection_for_row(row, projections):
+                                logger.info(
+                                    "Rule %s skipped: reserve missing projection (%s).",
+                                    r.get("rule_id"),
+                                    _player_label(roster_view, reserve_id),
+                                )
+                                continue
                             if proj_val is None:
-                                row = id_to_row.get(reserve_id)
                                 proj_val, _proj_gs = _projection_for_row(row, projections) if row else (0.0, 0)
                             try:
                                 proj_val = float(proj_val or 0.0)
