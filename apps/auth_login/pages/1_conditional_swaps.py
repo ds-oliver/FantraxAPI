@@ -979,6 +979,22 @@ TEAM_MAPPINGS_PATH = Path("config/team_mappings.yaml")
 CLUB_MAPPINGS_PATH = Path("config/club_team_mappings.yaml")
 
 
+def _env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except Exception:
+        return default
+
+
+PROJECTIONS_REFRESH_TTL_MINUTES = max(1, _env_int("PROJECTIONS_REFRESH_TTL_MINUTES", 5))
+PROJECTIONS_STALE_WARNING_MINUTES = max(
+    PROJECTIONS_REFRESH_TTL_MINUTES, _env_int("PROJECTIONS_STALE_WARNING_MINUTES", 120)
+)
+
+
 def _normalize_player_name(name: Optional[str]) -> Optional[str]:
     if not name:
         return None
@@ -1062,10 +1078,27 @@ def _service_account_path() -> Path:
 
 def _set_projection_metadata(source: str, updated_at: Optional[datetime] = None) -> None:
     try:
-        ts = (updated_at or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat()
-        st.session_state["projections_meta"] = {"source": source, "updated_at": ts}
+        now = datetime.now(timezone.utc)
+        source_ts = (updated_at or now).astimezone(timezone.utc).isoformat()
+        st.session_state["projections_meta"] = {
+            "source": source,
+            "updated_at": source_ts,
+            "fetched_at": now.isoformat(),
+        }
     except Exception:
         return
+
+
+def _parse_iso_utc(raw_ts: Optional[str]) -> Optional[datetime]:
+    if not raw_ts:
+        return None
+    try:
+        ts = datetime.fromisoformat(str(raw_ts))
+    except Exception:
+        return None
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    return ts.astimezone(timezone.utc)
 
 
 def _projection_last_updated_label() -> Optional[str]:
@@ -1074,17 +1107,45 @@ def _projection_last_updated_label() -> Optional[str]:
         return None
     raw_ts = meta.get("updated_at")
     source = str(meta.get("source") or "unknown")
-    if not raw_ts:
-        return None
-    try:
-        ts = datetime.fromisoformat(str(raw_ts))
-    except Exception:
+    ts = _parse_iso_utc(str(raw_ts) if raw_ts else None)
+    if not ts:
         return None
     source_label = {
         "google_sheet": "Google Sheet",
         "cache_parquet": "Parquet cache",
     }.get(source, source)
     return f"{ts.strftime('%Y-%m-%d %H:%M UTC')} ({source_label})"
+
+
+def _projection_stale_message(now: Optional[datetime] = None) -> Optional[str]:
+    meta = st.session_state.get("projections_meta")
+    if not isinstance(meta, dict):
+        return "Projection freshness unknown (missing metadata)."
+    source = str(meta.get("source") or "unknown")
+    source_ts = _parse_iso_utc(meta.get("updated_at"))
+    if not source_ts:
+        return "Projection freshness unknown (invalid last-updated timestamp)."
+    current = now or datetime.now(timezone.utc)
+    age_minutes = int((current - source_ts).total_seconds() // 60)
+    if age_minutes <= PROJECTIONS_STALE_WARNING_MINUTES:
+        return None
+    source_label = "Google Sheet" if source == "google_sheet" else "Parquet cache" if source == "cache_parquet" else source
+    return (
+        f"Projections may be stale: last update {age_minutes} min ago from {source_label} "
+        f"(threshold {PROJECTIONS_STALE_WARNING_MINUTES} min)."
+    )
+
+
+def _get_projections_map(*, force_refresh: bool = False) -> dict:
+    now = datetime.now(timezone.utc)
+    projections_map = st.session_state.get("projections_map")
+    fetched_at = _parse_iso_utc(st.session_state.get("projections_map_fetched_at"))
+    refresh_due = fetched_at is None or (now - fetched_at) >= timedelta(minutes=PROJECTIONS_REFRESH_TTL_MINUTES)
+    if force_refresh or projections_map is None or refresh_due:
+        projections_map = _load_projections()
+        st.session_state["projections_map"] = projections_map
+        st.session_state["projections_map_fetched_at"] = now.isoformat()
+    return projections_map or {}
 
 
 def _normalize_projection_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -2222,20 +2283,37 @@ if periods:
         else:
             default_period_id = period_choices[0]
 
-    if not manual_override_active:
-        st.session_state["selected_gameweek_period_id"] = default_period_id
+    period_widget_key = "selected_gameweek_period_id"
+    stale_selected = st.session_state.get(period_widget_key) not in period_id_map
+    if (
+        (not manual_override_active)
+        or period_widget_key not in st.session_state
+        or stale_selected
+    ):
+        st.session_state[period_widget_key] = default_period_id
 
     st.subheader("Gameweek / Fantrax period")
     col_gw, col_period = st.columns([1, 3])
     with col_gw:
         st.metric("Inferred EPL GW", inferred_round or "Unknown")
     with col_period:
+        inferred_period_for_button = (
+            inferred_match if inferred_match and inferred_match in period_id_map else default_period_id
+        )
+        if st.button(
+            "Use Inferred GW",
+            key="use_inferred_gw_period_btn",
+            help="Reset the Fantrax period selector to the period mapped from the inferred EPL gameweek.",
+        ):
+            st.session_state[period_widget_key] = inferred_period_for_button
+            st.session_state["period_manual_override"] = False
+            st.session_state["period_override_round"] = inferred_round
+            _safe_rerun()
         selected_period_id = st.selectbox(
             "Fantrax period to use for swaps and rules",
             options=period_choices,
-            index=period_choices.index(default_period_id),
             format_func=lambda pid: period_id_map.get(pid, pid),
-            key="selected_gameweek_period_id",
+            key=period_widget_key,
             on_change=_mark_period_manual_override,
             help=(
                 "We infer the current EPL gameweek from SofaScore and map it to your Fantrax "
@@ -2420,6 +2498,15 @@ with st.spinner("Refreshing lineup data..."):
 
 kos_map, last_kos_index = _build_kos_index_map(lineup_info_by_player)
 never_drop_ids: set[str] = set()
+with st.sidebar:
+    st.markdown("**Projections sync**")
+    if st.button("Refresh projections now", key="refresh_projections_now"):
+        _get_projections_map(force_refresh=True)
+        st.success("Projections refreshed.")
+    st.caption(f"Auto-refresh interval: {PROJECTIONS_REFRESH_TTL_MINUTES} min")
+
+projections_map = _get_projections_map()
+projection_stale_message = _projection_stale_message()
 
 if user_id:
     user_mgr = UserManager()
@@ -2448,10 +2535,6 @@ if user_id:
     label_to_id = {label: pid for label, pid in player_options}
     stored_do_not_move = user_mgr.get_do_not_move(str(user_id), str(league_id))
     default_labels = [id_to_label[pid] for pid in stored_do_not_move if pid in id_to_label]
-    projections_map = st.session_state.get("projections_map")
-    if projections_map is None:
-        projections_map = _load_projections()
-        st.session_state["projections_map"] = projections_map
     auto_never_drop: list[str] = []
     top_fpts_ids = _top_fpts_ids_cached(
         waivers_service,
@@ -2935,10 +3018,7 @@ if gw_meta:
             f"Resolved round: {overview_round or 'n/a'} | Inferred round: {inferred_round or 'n/a'}"
         )
 
-projections_map = st.session_state.get("projections_map")
-if projections_map is None:
-    projections_map = _load_projections()
-    st.session_state["projections_map"] = projections_map
+projections_map = _get_projections_map()
 
 feed_rows = _build_lineup_feed_rows(
     roster_view=roster_view,
@@ -3030,6 +3110,8 @@ st.subheader("Roster with compiled lineup statuses")
 projection_updated_label = _projection_last_updated_label()
 if projection_updated_label:
     st.caption(f"Projections last updated: {projection_updated_label}")
+if projection_stale_message:
+    st.warning(projection_stale_message)
 
 if feed_rows:
     header = """
@@ -3120,10 +3202,7 @@ st.markdown(
 )
 
 # Ensure projections are loaded for optimization
-projections_map = st.session_state.get("projections_map")
-if projections_map is None:
-    projections_map = _load_projections()
-    st.session_state["projections_map"] = projections_map
+projections_map = _get_projections_map()
 
 def _kickoff_or_max(info: Optional[PlayerLineupInfo]) -> datetime:
     ko = getattr(info, "kickoff", None) if info else None
@@ -3388,10 +3467,7 @@ if st.session_state.pop("show_saved_rule_notice_inline", False):
     with st.container(border=True):
         _show_saved_rule_notice_inline()
 
-projections_map = st.session_state.get("projections_map")
-if projections_map is None:
-    projections_map = _load_projections()
-    st.session_state["projections_map"] = projections_map
+projections_map = _get_projections_map()
 
 def _safe_float(value: Any) -> Optional[float]:
     try:
@@ -4190,10 +4266,7 @@ if not odds_map:
         odds_map = fetched
         st.session_state["ss_event_odds"] = fetched
 
-projections_map = st.session_state.get("projections_map")
-if projections_map is None:
-    projections_map = _load_projections()
-    st.session_state["projections_map"] = projections_map
+projections_map = _get_projections_map()
 
 team_strength_map = st.session_state.get("team_strength_map")
 if team_strength_map is None:
@@ -4667,10 +4740,7 @@ if missing_projections_debug:
 st.divider()
 st.subheader("Create Rule (simple)")
 
-projections_map = st.session_state.get("projections_map")
-if projections_map is None:
-    projections_map = _load_projections()
-    st.session_state["projections_map"] = projections_map
+projections_map = _get_projections_map()
 
 all_rows = [
     row
