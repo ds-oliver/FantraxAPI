@@ -1072,8 +1072,22 @@ def _load_team_code_map() -> dict:
 def _service_account_path() -> Path:
     env_path = os.environ.get("SERVICE_ACCOUNT_JSON")
     if env_path:
-        return Path(env_path).expanduser().resolve()
-    return SERVICE_ACCOUNT_DEFAULT_PATH
+        p = Path(env_path).expanduser()
+        if p.exists():
+            return p.resolve()
+    # Resolve robustly even when Streamlit CWD is not repo root.
+    here = Path(__file__).resolve()
+    candidates = [
+        SERVICE_ACCOUNT_DEFAULT_PATH,
+        here.parents[3] / SERVICE_ACCOUNT_DEFAULT_PATH,  # project root
+        Path.cwd() / SERVICE_ACCOUNT_DEFAULT_PATH,
+    ]
+    for candidate in candidates:
+        c = candidate.expanduser()
+        if c.exists():
+            return c.resolve()
+    # Return default resolved-to-cwd path for clearer logging.
+    return (Path.cwd() / SERVICE_ACCOUNT_DEFAULT_PATH).resolve()
 
 
 def _set_projection_metadata(source: str, updated_at: Optional[datetime] = None) -> None:
