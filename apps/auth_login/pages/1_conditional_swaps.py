@@ -1117,6 +1117,15 @@ def _projection_sync_status_message() -> Optional[tuple[str, str]]:
     if status == "cache_fallback":
         suffix = f" Reason: {detail}" if detail else ""
         return ("warning", f"Projection sync used parquet cache ({at_label}).{suffix}")
+    if status == "service_account_missing":
+        reason = detail or "service account key path not found in runtime environment"
+        return ("warning", f"Google Sheet sync unavailable ({at_label}). Missing service account key at: {reason}")
+    if status == "sheet_unavailable":
+        reason = detail or "gspread dependency missing"
+        return ("warning", f"Google Sheet sync unavailable ({at_label}). {reason}")
+    if status == "google_sheet_error":
+        reason = detail or "unknown Google API error"
+        return ("warning", f"Google Sheet sync failed ({at_label}). {reason}")
     if status:
         suffix = f" Reason: {detail}" if detail else ""
         return ("error", f"Projection sync failed ({at_label}).{suffix}")
@@ -1209,7 +1218,7 @@ def _fetch_projections_from_sheet() -> Optional[pd.DataFrame]:
     key_path = _service_account_path()
     if not key_path.exists():
         logger.info("Service account key missing at %s; skipping sheet fetch", key_path)
-        _record_projection_sync_status(status="service_account_missing", detail=str(key_path))
+        _record_projection_sync_status(status="service_account_missing", detail=str(key_path.resolve()))
         return None
 
     try:
