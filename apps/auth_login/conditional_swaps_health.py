@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
 
+from utils.conditional_rule_store import load_execution_events_for_user, normalize_rule_source
+
 
 _ROUND_PATTERNS = [
     re.compile(r"\bgw\s*(\d+)\b", re.IGNORECASE),
@@ -173,11 +175,68 @@ def normalize_lineup_change_rows(rows: List[dict]) -> List[dict]:
     return normalized
 
 
-def build_fired_conditional_events(rules: List[dict], league_id: str, team_id: str) -> List[dict]:
+def build_fired_conditional_events(
+    rules: List[dict],
+    league_id: str,
+    team_id: str,
+    *,
+    user_id: Optional[str] = None,
+) -> List[dict]:
     """
     Build normalized app-side fired conditional lineup swap events from saved rules.
+    Journal entries are authoritative when available.
     """
     events: List[dict] = []
+    seen_keys: set[tuple[str, str, str]] = set()
+
+    if user_id:
+        try:
+            journal_events = load_execution_events_for_user(
+                str(user_id),
+                league_id=str(league_id),
+                team_id=str(team_id),
+                max_rows=5000,
+            )
+        except Exception:
+            journal_events = []
+        for event in journal_events:
+            result = str(event.get("result") or "").strip().lower()
+            if result not in {"executed", "satisfied_noop"}:
+                continue
+            action_type = str(event.get("action_type") or "").strip().lower()
+            if action_type and action_type != "lineup_swap":
+                continue
+            fired_at = str(event.get("fired_at") or event.get("occurred_at_utc") or "").strip()
+            if not fired_at:
+                continue
+            try:
+                fired_at_utc = datetime.fromisoformat(fired_at)
+            except Exception:
+                continue
+            if fired_at_utc.tzinfo is None:
+                fired_at_utc = fired_at_utc.replace(tzinfo=timezone.utc)
+            else:
+                fired_at_utc = fired_at_utc.astimezone(timezone.utc)
+            active_id = str(event.get("active_id") or "").strip()
+            reserve_id = str(event.get("reserve_id") or "").strip()
+            if not active_id or not reserve_id:
+                continue
+            dedupe = (str(event.get("rule_id") or ""), active_id, reserve_id)
+            seen_keys.add(dedupe)
+            events.append(
+                {
+                    "rule_id": str(event.get("rule_id") or ""),
+                    "fired_at_utc": fired_at_utc,
+                    "active_id": active_id,
+                    "reserve_id": reserve_id,
+                    "period": str(event.get("period") or ""),
+                    "source": normalize_rule_source(str(event.get("source") or "")),
+                    "result": str(event.get("result") or ""),
+                    "team_id": str(team_id),
+                    "event_origin": "journal",
+                }
+            )
+
     for rule in rules or []:
         if str(rule.get("league_id") or "") != str(league_id):
             continue
@@ -204,6 +263,9 @@ def build_fired_conditional_events(rules: List[dict], league_id: str, team_id: s
         reserve_id = str(rule.get("reserve_id") or "").strip()
         if not active_id or not reserve_id:
             continue
+        dedupe = (str(rule.get("rule_id") or ""), active_id, reserve_id)
+        if dedupe in seen_keys:
+            continue
         events.append(
             {
                 "rule_id": str(rule.get("rule_id") or ""),
@@ -211,9 +273,10 @@ def build_fired_conditional_events(rules: List[dict], league_id: str, team_id: s
                 "active_id": active_id,
                 "reserve_id": reserve_id,
                 "period": str(rule.get("period") or ""),
-                "source": str(rule.get("source") or ""),
+                "source": normalize_rule_source(str(rule.get("source") or "")),
                 "result": str(rule.get("result") or ""),
                 "team_id": str(team_id),
+                "event_origin": "legacy_rule_row",
             }
         )
     events.sort(key=lambda e: e["fired_at_utc"], reverse=True)
@@ -313,4 +376,3 @@ def compute_health_metrics(matches: List[dict]) -> dict:
         "unmatched": unmatched,
         "success_rate": success_rate,
     }
-

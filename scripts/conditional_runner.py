@@ -55,11 +55,16 @@ from fantraxapi.objs import RosterRow
 from fantraxapi.waivers import WaiversService
 
 from utils.conditional_rule_store import (
+    AUTO_RULE_PRUNE_FIRED_FROM_RULES,
     DEFAULT_RULES_PATH,
+    SOURCE_AUTO_LINEUP_SWAPS,
+    append_execution_event_for_user,
+    is_conditional_state_writer,
     load_rules,
     load_rules_with_locks,
     load_rules_for_user,
     load_rules_for_user_with_locks,
+    normalize_rule_source,
     rules_path_for_user,
     save_rules,
 )
@@ -103,6 +108,54 @@ CONFIRM_WINDOW_MINUTES = 60
 LOCK_DIR = Path("data/locks/conditional_runner")
 LOCK_DIR.mkdir(parents=True, exist_ok=True)
 LOCK_TTL_SECONDS = 300
+STATE_WRITER_ENABLED = is_conditional_state_writer()
+
+
+def _record_execution_event(
+    *,
+    user_id: Optional[str],
+    league_id: Any,
+    team_id: Any,
+    period: Any,
+    rule: Dict[str, Any],
+    result: str,
+    reason: str = "",
+    fantrax_tx_set_id: Optional[str] = None,
+    event_type: str = "execution",
+) -> None:
+    if not user_id:
+        return
+    try:
+        append_execution_event_for_user(
+            str(user_id),
+            {
+                "event_type": event_type,
+                "occurred_at_utc": _now().isoformat(),
+                "league_id": str(league_id or ""),
+                "team_id": str(team_id or ""),
+                "period": str(period or ""),
+                "rule_id": str(rule.get("rule_id") or ""),
+                "group_id": str(rule.get("group_id") or ""),
+                "source": normalize_rule_source(str(rule.get("source") or "")),
+                "action_type": str(rule.get("action_type") or "lineup_swap"),
+                "active_id": str(rule.get("active_id") or ""),
+                "reserve_id": str(rule.get("reserve_id") or ""),
+                "result": str(result or ""),
+                "reason": str(reason or ""),
+                "fantrax_tx_set_id": fantrax_tx_set_id,
+                "rule_snapshot": dict(rule),
+                "fired_at": str(rule.get("fired_at") or ""),
+            },
+        )
+    except Exception as exc:
+        logger.info(
+            "Execution journal append failed (user=%s league=%s team=%s rule=%s): %s",
+            user_id,
+            league_id,
+            team_id,
+            rule.get("rule_id"),
+            exc,
+        )
 
 
 def _now() -> datetime:
@@ -1025,7 +1078,7 @@ def _generate_auto_swap_rules(
                     "max_fires": 1,
                     "league_id": league_id,
                     "team_id": team_id,
-                    "source": "auto",
+                    "source": SOURCE_AUTO_LINEUP_SWAPS,
                 }
             )
             backups += 1
@@ -1208,9 +1261,13 @@ def _merge_auto_rules(
         r
         for r in rules
         if not (
-            str(r.get("source")) == "auto"
+            normalize_rule_source(str(r.get("source") or "")) == SOURCE_AUTO_LINEUP_SWAPS
             and str(r.get("league_id")) == str(league_id)
             and str(r.get("team_id")) == str(team_id)
+            and (
+                AUTO_RULE_PRUNE_FIRED_FROM_RULES
+                or str(r.get("state") or "").lower() not in {"fired", "executed", "satisfied_noop"}
+            )
         )
     ]
     ts = datetime.now(timezone.utc).isoformat()
@@ -1219,7 +1276,7 @@ def _merge_auto_rules(
         r.setdefault("created_at", ts)
         r.setdefault("state", "pending")
         r.setdefault("fired_count", 0)
-        r.setdefault("source", "auto_lineup_swaps")
+        r.setdefault("source", SOURCE_AUTO_LINEUP_SWAPS)
         r.setdefault("source_type", 2)
         if user_id:
             r["user_id"] = user_id
@@ -1355,6 +1412,11 @@ def main() -> None:
     )
     parser.add_argument("--trace", action="store_true", help="Log detailed per-rule trace information.")
     args = parser.parse_args()
+    if not STATE_WRITER_ENABLED and not args.dry_run:
+        logger.info(
+            "Conditional state role is reader; forcing --dry-run for this runner process."
+        )
+        args.dry_run = True
 
     runs = _collect_runs(args)
     if not runs:
@@ -1511,7 +1573,7 @@ def main() -> None:
                 ):
                     roster_view = RosterView(roster)
                     had_auto_rules = any(
-                        str(r.get("source")) == "auto"
+                        normalize_rule_source(str(r.get("source") or "")) == SOURCE_AUTO_LINEUP_SWAPS
                         and str(r.get("league_id")) == str(league_id)
                         and str(r.get("team_id")) == str(team_id)
                         for r in rules
@@ -1710,6 +1772,15 @@ def main() -> None:
                                     rule["fired_at"] = _now().isoformat()
                                     rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
                                     rule["result"] = "drop_executed"
+                                    _record_execution_event(
+                                        user_id=user_id,
+                                        league_id=league_id,
+                                        team_id=team_id,
+                                        period=rule_period,
+                                        rule=rule,
+                                        result="drop_executed",
+                                        reason="drop_only_triggered",
+                                    )
                                     updated = True
                                     fa_action_executed = True
                                     logger.info(
@@ -1837,6 +1908,15 @@ def main() -> None:
                                 rule["fired_at"] = _now().isoformat()
                                 rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
                                 rule["result"] = "claim_submitted"
+                                _record_execution_event(
+                                    user_id=user_id,
+                                    league_id=league_id,
+                                    team_id=team_id,
+                                    period=rule_period,
+                                    rule=rule,
+                                    result="claim_submitted",
+                                    reason="fa_claim_submitted",
+                                )
                                 updated = True
                                 fa_action_executed = True
                                 logger.info(
@@ -1877,7 +1957,12 @@ def main() -> None:
 
                 if fa_action_executed:
                     if updated or updated_locks:
-                        save_rules(rules, path=rules_path, player_locks=player_locks)
+                        save_rules(
+                            rules,
+                            path=rules_path,
+                            player_locks=player_locks,
+                            actor_env=str(os.getenv("CONDITIONAL_WRITER_ENV", "unknown")),
+                        )
                     continue
 
                 iteration = 0
@@ -1939,6 +2024,15 @@ def main() -> None:
                         r["fired_at"] = _now().isoformat()
                         r["fired_count"] = int(r.get("fired_count") or 0) + 1
                         r["result"] = "satisfied_noop"
+                        _record_execution_event(
+                            user_id=user_id,
+                            league_id=league_id,
+                            team_id=team_id,
+                            period=rule_period,
+                            rule=r,
+                            result="satisfied_noop",
+                            reason="already_swapped_before_runner",
+                        )
                         updated = True
                         logger.info(
                             "Rule %s satisfied (noop): %s active=%s reserve=%s",
@@ -2032,7 +2126,7 @@ def main() -> None:
                         if (
                             user_id
                             and user_mgr
-                            and str(base_rule.get("source")) == "auto_lineup_swaps"
+                            and normalize_rule_source(str(base_rule.get("source") or "")) == SOURCE_AUTO_LINEUP_SWAPS
                             and not user_mgr.is_auto_rules_enabled(str(user_id), str(league_id), "lineup_swaps")
                         ):
                             logger.info(
@@ -2042,7 +2136,7 @@ def main() -> None:
                                 user_id,
                             )
                             continue
-                        is_auto_rule = str(base_rule.get("source")) == "auto_lineup_swaps"
+                        is_auto_rule = normalize_rule_source(str(base_rule.get("source") or "")) == SOURCE_AUTO_LINEUP_SWAPS
                         if is_auto_rule:
                             period_id = auto_period_id
                         else:
@@ -2492,6 +2586,15 @@ def main() -> None:
                                     rule["fired_at"] = _now().isoformat()
                                     rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
                                     rule["result"] = "executed"
+                                    _record_execution_event(
+                                        user_id=user_id,
+                                        league_id=league_id,
+                                        team_id=team_id,
+                                        period=period_id,
+                                        rule=rule,
+                                        result="executed",
+                                        reason="lineup_swap_executed",
+                                    )
                                     updated = True
                                     executed = True
                                     swap_executed = True
@@ -2586,7 +2689,12 @@ def main() -> None:
                     kos_index_map, _first_kos, last_kos = _build_kos_index_map(lineup_info_by_player)
 
         if updated or updated_locks:
-            save_rules(rules, path=rules_path, player_locks=player_locks)
+            save_rules(
+                rules,
+                path=rules_path,
+                player_locks=player_locks,
+                actor_env=str(os.getenv("CONDITIONAL_WRITER_ENV", "unknown")),
+            )
 
 
 if __name__ == "__main__":

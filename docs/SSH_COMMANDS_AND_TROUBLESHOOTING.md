@@ -33,7 +33,7 @@ Keep this running.
 ```bash
 ssh fantrax-vps-root
 systemctl restart fantrax-pull-restart.service
-systedata/logs/conditional_swaps.logmctl status fantrax-pull-restart.service --no-pager
+systemctl status fantrax-pull-restart.service --no-pager
 ss -ltnp | grep -E ':8501\\b' || true
 tail -n 80 /opt/FantraxAPI/logs/streamlit.out 2>/dev/null || true
 ```
@@ -301,11 +301,32 @@ sudo chmod 600 /opt/FantraxAPI/data/auth/.encryption_key
 Rules storage (where conditional swaps live):
 - Global rules file: `/opt/FantraxAPI/data/conditional_rules.json`
 - Per-user rules dir: `/opt/FantraxAPI/data/conditional_rules/<user_id>.json`
+- Execution journal dir: `/opt/FantraxAPI/data/conditional_rules_journal/<user_id>.jsonl`
+
+Canonical state controls:
+- `CONDITIONAL_STATE_ROLE=writer|reader`
+- `CONDITIONAL_WRITER_ENV=vps|local`
+- VPS should run as writer; local should run as reader unless explicitly doing maintenance.
 
 Quick checks:
 ```
 ls -la /opt/FantraxAPI/data/conditional_rules.json
 ls -la /opt/FantraxAPI/data/conditional_rules 2>/dev/null || true
+ls -la /opt/FantraxAPI/data/conditional_rules_journal 2>/dev/null || true
+```
+
+Backfill journal from existing fired rules:
+```
+PYTHONPATH=/opt/FantraxAPI /opt/FantraxAPI/.venv/bin/python scripts/backfill_conditional_execution_journal.py
+```
+
+Explicit conditional-state sync (run from local repo):
+```
+python scripts/sync_conditional_state.py --pull-from-vps
+```
+Emergency reverse sync:
+```
+python scripts/sync_conditional_state.py --push-to-vps
 ```
 
 If "auto lineup swaps" is enabled but no rules appear:

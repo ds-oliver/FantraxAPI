@@ -64,6 +64,24 @@ This document captures how the Streamlit front end, runner scripts, data feeds, 
    - `logs/streamlit.out`: Streamlit runtime output (monitored by tail or service).
    - `logs/pull_restart.log`: git/venv steps from auto-restart script.
    - `data/logs/`: conditional_runner, conditional_swaps, auth, lineup bridge, etc.
+5. **Conditional execution journal**:
+   - Runner appends execution records to `data/conditional_rules_journal/<user_id>.jsonl`.
+   - Journal is append-only and is the authoritative source for executed conditional swaps.
+
+## Conditional State Authority
+
+- Canonical writer environment is VPS.
+- Controlled via:
+  - `CONDITIONAL_STATE_ROLE=writer|reader`
+  - `CONDITIONAL_WRITER_ENV=vps|local`
+- Default behavior:
+  - VPS defaults to `writer`.
+  - Non-VPS environments default to `reader`.
+- In `reader` mode:
+  - Streamlit save/toggle/delete actions are disabled.
+  - `scripts/conditional_runner.py` auto-forces dry-run behavior.
+- Rule files now include metadata:
+  - `meta.revision`, `meta.writer_env`, `meta.updated_at`.
 
 **Log trimming:** To prevent logs from consuming too much space, run `scripts/trim_logs.py` on a schedule (e.g. weekly). It trims any `.log` or `.out` in `logs/` and `data/logs/` that exceed a size threshold to the last N lines. Example cron (Sunday 3am): `0 3 * * 0 cd /opt/FantraxAPI && .venv/bin/python scripts/trim_logs.py`. Options: `--max-size-mb 5` (default), `--keep-lines 50000`, `--dry-run`. The conditional runner also uses rotating file handlers so its log is capped at 2 MB per file with 5 backups.
 
@@ -93,6 +111,17 @@ This document captures how the Streamlit front end, runner scripts, data feeds, 
 
 - **Data sync**:
   - Syncthing ensures `data/sofascore` is mirrored between Mac and VPS. Resync conflicts produce `.sync-conflict-*` files.
+  - Conditional state is synced explicitly (not implicitly) with:
+    ```bash
+    python scripts/sync_conditional_state.py --pull-from-vps
+    ```
+    Emergency reverse sync:
+    ```bash
+    python scripts/sync_conditional_state.py --push-to-vps
+    ```
+    Paths synced by this script:
+    - `data/conditional_rules/`
+    - `data/conditional_rules_journal/`
   - UI tunnel (macOS zsh):
     ```bash
     ssh -L 8385:127.0.0.1:8385 fantrax-vps

@@ -50,11 +50,12 @@ from fantraxapi.lineups.conditional_swaps import (
     would_break_mandatory_slots,
 )
 from utils.conditional_rule_store import (
+    SOURCE_AUTO_LINEUP_SWAPS,
+    apply_rule_operations_for_user,
     append_rules,
-    append_rules_for_user,
-    load_rules_for_user,
-    rules_path_for_user,
-    save_rules,
+    is_conditional_state_writer,
+    load_rules_for_user_state,
+    normalize_rule_source,
 )
 from fantraxapi.objs import RosterRow
 from fantraxapi.waivers import WaiversService
@@ -414,6 +415,63 @@ def _mark_never_drop_dirty() -> None:
     st.session_state["never_drop_dirty"] = True
 
 
+def _rules_revision_key(user_id: str) -> str:
+    return f"conditional_rules_revision::{user_id}"
+
+
+def _load_rules_for_user_with_revision(user_id: str) -> List[Dict[str, Any]]:
+    rules, _locks, meta = load_rules_for_user_state(str(user_id))
+    try:
+        rev = int((meta or {}).get("revision") or 0)
+    except Exception:
+        rev = 0
+    st.session_state[_rules_revision_key(str(user_id))] = rev
+    return list(rules or [])
+
+
+def _apply_user_rule_ops(
+    *,
+    user_id: str,
+    operations: List[Dict[str, Any]],
+    retry_on_conflict: bool = True,
+) -> Dict[str, Any]:
+    revision_key = _rules_revision_key(str(user_id))
+    expected_revision = st.session_state.get(revision_key)
+    if expected_revision is None:
+        try:
+            _rules, _locks, meta = load_rules_for_user_state(str(user_id))
+            expected_revision = int((meta or {}).get("revision") or 0)
+        except Exception:
+            expected_revision = 0
+    actor_env = str(os.getenv("CONDITIONAL_WRITER_ENV", "unknown"))
+    result = apply_rule_operations_for_user(
+        str(user_id),
+        operations,
+        expected_revision=expected_revision,
+        actor_env=actor_env,
+    )
+    st.session_state[revision_key] = int(result.get("revision_after") or expected_revision or 0)
+    if result.get("conflict") and retry_on_conflict:
+        result = apply_rule_operations_for_user(
+            str(user_id),
+            operations,
+            expected_revision=int(result.get("revision_after") or 0),
+            actor_env=actor_env,
+        )
+        st.session_state[revision_key] = int(result.get("revision_after") or st.session_state.get(revision_key) or 0)
+    logger.info(
+        "[rule-mutation] user=%s rev_before=%s rev_after=%s op_count=%s actor_env=%s conflict=%s changed=%s",
+        user_id,
+        result.get("revision_before"),
+        result.get("revision_after"),
+        len(operations or []),
+        actor_env,
+        result.get("conflict"),
+        result.get("changed_count"),
+    )
+    return result
+
+
 session = _require_session()
 if session is None:
     st.error("Please authenticate on the Overview page first.")
@@ -428,6 +486,12 @@ if not league_id or not team_id:
     st.stop()
 
 user_id = st.session_state.get("user_id")
+state_writer_enabled = is_conditional_state_writer()
+if not state_writer_enabled:
+    st.warning(
+        "Conditional rule state is running in read-only mode (`CONDITIONAL_STATE_ROLE=reader`). "
+        "Save/toggle/delete actions are disabled in this environment."
+    )
 claims_allowed = str(league_id) == TEST_CLAIMS_LEAGUE_ID
 global_status_path = global_status_path_for_user(str(user_id)) if user_id else global_status_path_for_user(None)
 if user_id:
@@ -3675,6 +3739,8 @@ adv_submit_disabled = not (
     and adv_backup_order
     and adv_period_id
 )
+if not state_writer_enabled:
+    adv_submit_disabled = True
 adv_submitted = st.button("Save Rule", disabled=adv_submit_disabled, type="primary", key="save_rule_adv_btn")
 
 st.caption(
@@ -3683,7 +3749,7 @@ st.caption(
 test_fire_disabled = not (adv_active_id and adv_backup_order and adv_period_id)
 test_fire = st.button(
     "Test fire swap now",
-    disabled=test_fire_disabled,
+    disabled=(test_fire_disabled or not state_writer_enabled),
     type="secondary",
     key="test_fire_adv_btn",
 )
@@ -3735,7 +3801,7 @@ if test_fire:
 
 if adv_submitted and not adv_submit_disabled:
     try:
-        existing_rules = load_rules_for_user(str(user_id))
+        existing_rules = _load_rules_for_user_with_revision(str(user_id))
     except Exception:
         existing_rules = []
     already_exists = False
@@ -3796,12 +3862,9 @@ if adv_submitted and not adv_submit_disabled:
                 "state": "active",
             }
             to_persist.append(rec)
-        append_rules_for_user(
-            str(user_id),
-            to_persist,
-            source="manual",
-            source_type=3,
-            default_max_fires=1,
+        _apply_user_rule_ops(
+            user_id=str(user_id),
+            operations=[{"op": "upsert_rules", "items": to_persist}],
         )
         st.session_state["advanced_rule_preview_lines"] = preview_lines
         st.session_state["show_advanced_rule_dialog"] = True
@@ -3858,7 +3921,12 @@ with st.expander("Make a single swap", expanded=False):
     else:
         st.warning("Unable to resolve a valid Fantrax period; swap requests may fail.")
 
-    if st.button("Execute swap now", type="primary", key="immediate_swap_button_top"):
+    if st.button(
+        "Execute swap now",
+        type="primary",
+        key="immediate_swap_button_top",
+        disabled=not state_writer_enabled,
+    ):
         if swap_period_int is None:
             st.error("Cannot execute swap because no valid Fantrax period is selected.")
         else:
@@ -4535,12 +4603,13 @@ elif suggestions:
             try:
                 user_id = st.session_state.get("user_id")
                 if user_id:
-                    append_rules_for_user(
-                        str(user_id),
-                        to_persist,
-                        source="suggested_swaps",
-                        source_type=1,
-                    )
+                    if state_writer_enabled:
+                        _apply_user_rule_ops(
+                            user_id=str(user_id),
+                            operations=[{"op": "upsert_rules", "items": to_persist}],
+                        )
+                    else:
+                        st.warning("Read-only mode: suggested swaps were queued in session but not persisted.")
                 else:
                     append_rules(
                         to_persist,
@@ -5220,6 +5289,8 @@ else:
 if not user_id:
     submit_disabled = True
     st.info("Log in to save manual rules.")
+if not state_writer_enabled:
+    submit_disabled = True
 
 submitted = st.button("Save Rule", disabled=submit_disabled, type="primary", key="save_rule_btn")
 
@@ -5230,7 +5301,7 @@ if submitted and not submit_disabled:
                 st.warning("Log in to save manual lineup swap rules.")
                 st.stop()
             try:
-                existing_rules = load_rules_for_user(str(user_id))
+                existing_rules = _load_rules_for_user_with_revision(str(user_id))
             except Exception:
                 existing_rules = []
             already_exists = False
@@ -5279,12 +5350,9 @@ if submitted and not submit_disabled:
                     "state": "active",
                 }
                 to_persist.append(rec)
-            append_rules_for_user(
-                str(user_id),
-                to_persist,
-                source="manual",
-                source_type=3,
-                default_max_fires=1,
+            _apply_user_rule_ops(
+                user_id=str(user_id),
+                operations=[{"op": "upsert_rules", "items": to_persist}],
             )
             st.success("Rule saved successfully.")
             st.rerun()
@@ -5293,7 +5361,7 @@ if submitted and not submit_disabled:
                 st.warning("Log in to save manual rules.")
                 st.stop()
             try:
-                existing_rules = load_rules_for_user(str(user_id))
+                existing_rules = _load_rules_for_user_with_revision(str(user_id))
             except Exception:
                 existing_rules = []
             action_key = selected_action_type.value if hasattr(selected_action_type, "value") else str(selected_action_type)
@@ -5354,12 +5422,9 @@ if submitted and not submit_disabled:
                 "state": "active",
                 "override_never_drop": bool(override_never_drop),
             }
-            append_rules_for_user(
-                str(user_id),
-                [rec],
-                source="manual",
-                source_type=3,
-                default_max_fires=1,
+            _apply_user_rule_ops(
+                user_id=str(user_id),
+                operations=[{"op": "upsert_rules", "items": [rec]}],
             )
             if claims_allowed and not claims_acknowledged:
                 user_mgr.set_claims_ack(
@@ -5386,7 +5451,7 @@ legacy_fa_rules: List[ConditionalSwapRule] = []
 
 if user_id:
     try:
-        existing_rules = load_rules_for_user(str(user_id))
+        existing_rules = _load_rules_for_user_with_revision(str(user_id))
     except Exception:
         existing_rules = []
 
@@ -5462,15 +5527,13 @@ if user_id:
                     }
                 )
         if to_migrate:
-            append_rules_for_user(
-                str(user_id),
-                to_migrate,
-                source="manual",
-                source_type=3,
-                default_max_fires=1,
-            )
+            if state_writer_enabled:
+                _apply_user_rule_ops(
+                    user_id=str(user_id),
+                    operations=[{"op": "upsert_rules", "items": to_migrate}],
+                )
             try:
-                existing_rules = load_rules_for_user(str(user_id))
+                existing_rules = _load_rules_for_user_with_revision(str(user_id))
             except Exception:
                 existing_rules = []
 
@@ -5603,24 +5666,33 @@ else:
                     f"{toggle_label} Rule",
                     key=f"toggle_manual_{group_id}",
                     use_container_width=True,
+                    disabled=not state_writer_enabled,
                 ):
                     try:
-                        path = rules_path_for_user(str(user_id))
-                        updated_rules = load_rules_for_user(str(user_id))
-                        for r in updated_rules:
-                            if not _is_manual_rule(r):
-                                continue
-                            in_group = False
-                            if r.get("group_id"):
-                                in_group = str(r.get("group_id")) == group_id
-                            else:
-                                in_group = (
-                                    str(r.get("active_id")) == active_id
-                                    and str(r.get("period")) == str(group.get("period"))
-                                )
-                            if in_group:
-                                r["state"] = "disabled" if state_text == "active" else "active"
-                        save_rules(updated_rules, path=path)
+                        selector: Dict[str, Any]
+                        if group_rules and group_rules[0].get("group_id"):
+                            selector = {"group_id": group_id}
+                        else:
+                            selector = {
+                                "matcher": {
+                                    "active_id": str(active_id),
+                                    "period": str(group.get("period")),
+                                    "league_id": str(league_id),
+                                    "team_id": str(team_id),
+                                }
+                            }
+                        _apply_user_rule_ops(
+                            user_id=str(user_id),
+                            operations=[
+                                {
+                                    "op": "patch_rules",
+                                    "selector": selector,
+                                    "patch": {
+                                        "state": "disabled" if state_text == "active" else "active",
+                                    },
+                                }
+                            ],
+                        )
                         st.rerun()
                     except Exception:
                         st.warning("Failed to update rule state.")
@@ -5631,26 +5703,30 @@ else:
                 "Delete",
                 key=f"delete_manual_{group_id}",
                 use_container_width=True,
+                disabled=not state_writer_enabled,
             ):
                 try:
-                    path = rules_path_for_user(str(user_id))
-                    updated_rules = load_rules_for_user(str(user_id))
-                    retained = []
-                    for r in updated_rules:
-                        if not _is_manual_rule(r):
-                            retained.append(r)
-                            continue
-                        in_group = False
-                        if r.get("group_id"):
-                            in_group = str(r.get("group_id")) == group_id
-                        else:
-                            in_group = (
-                                str(r.get("active_id")) == active_id
-                                and str(r.get("period")) == str(group.get("period"))
-                            )
-                        if not in_group:
-                            retained.append(r)
-                    save_rules(retained, path=path)
+                    selector: Dict[str, Any]
+                    if group_rules and group_rules[0].get("group_id"):
+                        selector = {"group_id": group_id}
+                    else:
+                        selector = {
+                            "matcher": {
+                                "active_id": str(active_id),
+                                "period": str(group.get("period")),
+                                "league_id": str(league_id),
+                                "team_id": str(team_id),
+                            }
+                        }
+                    _apply_user_rule_ops(
+                        user_id=str(user_id),
+                        operations=[
+                            {
+                                "op": "delete_rules",
+                                "selector": selector,
+                            }
+                        ],
+                    )
                     st.rerun()
                 except Exception:
                     st.warning("Failed to delete rule group.")
@@ -5719,16 +5795,21 @@ else:
                     f"{toggle_label} Rule",
                     key=f"toggle_manual_claim_{rule.get('rule_id')}",
                     use_container_width=True,
+                    disabled=not state_writer_enabled,
                 ):
                     try:
-                        path = rules_path_for_user(str(user_id))
-                        updated_rules = load_rules_for_user(str(user_id))
-                        for r in updated_rules:
-                            if not _is_manual_rule(r):
-                                continue
-                            if str(r.get("rule_id")) == str(rule.get("rule_id")):
-                                r["state"] = "disabled" if state_text == "active" else "active"
-                        save_rules(updated_rules, path=path)
+                        _apply_user_rule_ops(
+                            user_id=str(user_id),
+                            operations=[
+                                {
+                                    "op": "patch_rules",
+                                    "selector": {"rule_ids": [str(rule.get("rule_id"))]},
+                                    "patch": {
+                                        "state": "disabled" if state_text == "active" else "active",
+                                    },
+                                }
+                            ],
+                        )
                         st.rerun()
                     except Exception:
                         st.warning("Failed to update rule state.")
@@ -5738,18 +5819,18 @@ else:
                 "Delete",
                 key=f"delete_manual_claim_{rule.get('rule_id')}",
                 use_container_width=True,
+                disabled=not state_writer_enabled,
             ):
                 try:
-                    path = rules_path_for_user(str(user_id))
-                    updated_rules = load_rules_for_user(str(user_id))
-                    retained = []
-                    for r in updated_rules:
-                        if not _is_manual_rule(r):
-                            retained.append(r)
-                            continue
-                        if str(r.get("rule_id")) != str(rule.get("rule_id")):
-                            retained.append(r)
-                    save_rules(retained, path=path)
+                    _apply_user_rule_ops(
+                        user_id=str(user_id),
+                        operations=[
+                            {
+                                "op": "delete_rules",
+                                "selector": {"rule_ids": [str(rule.get("rule_id"))]},
+                            }
+                        ],
+                    )
                     st.rerun()
                 except Exception:
                     st.warning("Failed to delete rule.")
@@ -5792,14 +5873,14 @@ if not user_id:
 else:
     auto_rules: List[Dict[str, Any]] = []
     try:
-        raw_rules = load_rules_for_user(str(user_id))
+        raw_rules = _load_rules_for_user_with_revision(str(user_id))
     except Exception:
         raw_rules = []
     for rule in raw_rules:
         if str(rule.get("league_id")) != str(league_id) or str(rule.get("team_id")) != str(team_id):
             continue
-        source = str(rule.get("source") or "")
-        if source not in {"auto_lineup_swaps", "auto"}:
+        source = normalize_rule_source(str(rule.get("source") or ""))
+        if source != SOURCE_AUTO_LINEUP_SWAPS:
             continue
         auto_rules.append(rule)
 
@@ -5927,7 +6008,7 @@ with st.expander("Conditional Swap System Health", expanded=False):
         st.info("Log in to view conditional swap health for this team.")
     else:
         try:
-            rules_for_user = load_rules_for_user(str(user_id))
+            rules_for_user = _load_rules_for_user_with_revision(str(user_id))
         except Exception:
             rules_for_user = []
 
@@ -5935,6 +6016,7 @@ with st.expander("Conditional Swap System Health", expanded=False):
             rules_for_user,
             league_id=str(league_id),
             team_id=str(team_id),
+            user_id=str(user_id),
         )
         logger.info(
             "[health] app fired conditional events: %s (league=%s team=%s user=%s)",
@@ -6168,6 +6250,7 @@ with st.expander("Conditional Swap System Health", expanded=False):
                         "reserve_id": event.get("reserve_id") or "",
                         "fired_at_utc": _dt_iso(event.get("fired_at_utc")),
                         "source": event.get("source") or "",
+                        "event_origin": event.get("event_origin") or "",
                         "result": event.get("result") or "",
                     }
                 )
