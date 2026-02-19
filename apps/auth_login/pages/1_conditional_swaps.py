@@ -10,6 +10,7 @@ import json
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import sys
 import unicodedata
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -1146,6 +1147,30 @@ def _projection_sync_status_message() -> Optional[tuple[str, str]]:
     return None
 
 
+def _gspread_import_status() -> tuple[bool, str]:
+    try:
+        import gspread  # type: ignore
+
+        return True, f"ok (v{getattr(gspread, '__version__', 'unknown')})"
+    except Exception as exc:
+        return False, str(exc)
+
+
+def _projection_diagnostics_payload() -> dict[str, Any]:
+    key_path = _service_account_path()
+    gspread_ok, gspread_detail = _gspread_import_status()
+    return {
+        "active_sys_executable": sys.executable,
+        "service_account_path": str(key_path),
+        "service_account_exists": key_path.exists(),
+        "gspread_import_ok": gspread_ok,
+        "gspread_import_detail": gspread_detail,
+        "sheet_url": PROJECTIONS_SHEET_URL,
+        "sheet_worksheet": PROJECTIONS_SHEET_WORKSHEET or "(sheet1 default)",
+        "last_google_fetch_exception": st.session_state.get("projections_google_last_exception"),
+    }
+
+
 def _parse_iso_utc(raw_ts: Optional[str]) -> Optional[datetime]:
     if not raw_ts:
         return None
@@ -1226,12 +1251,14 @@ def _fetch_projections_from_sheet() -> Optional[pd.DataFrame]:
         import gspread
     except Exception as exc:
         logger.info("gspread unavailable; skipping projections sheet fetch: %s", exc)
+        st.session_state["projections_google_last_exception"] = str(exc)
         _record_projection_sync_status(status="sheet_unavailable", detail=str(exc))
         return None
 
     key_path = _service_account_path()
     if not key_path.exists():
         logger.info("Service account key missing at %s; skipping sheet fetch", key_path)
+        st.session_state["projections_google_last_exception"] = f"service account missing: {key_path.resolve()}"
         _record_projection_sync_status(status="service_account_missing", detail=str(key_path.resolve()))
         return None
 
@@ -1243,6 +1270,7 @@ def _fetch_projections_from_sheet() -> Optional[pd.DataFrame]:
         if df.empty:
             raise ValueError("projections sheet returned no rows")
         logger.info("Loaded %s projection rows from Google Sheet", len(df))
+        st.session_state["projections_google_last_exception"] = None
         _set_projection_metadata("google_sheet")
         _record_projection_sync_status(status="google_sheet_ok", detail=f"{len(df)} rows")
         try:
@@ -1253,6 +1281,7 @@ def _fetch_projections_from_sheet() -> Optional[pd.DataFrame]:
         return df
     except Exception as exc:
         logger.warning("Failed to load projections from Google Sheet: %s", exc)
+        st.session_state["projections_google_last_exception"] = str(exc)
         _record_projection_sync_status(status="google_sheet_error", detail=str(exc))
         return None
 
@@ -2578,6 +2607,8 @@ with st.sidebar:
         else:
             st.error(text)
     st.caption(f"Auto-refresh interval: {PROJECTIONS_REFRESH_TTL_MINUTES} min")
+    with st.expander("Projections diagnostics", expanded=False):
+        st.json(_projection_diagnostics_payload())
 
 projections_map = _get_projections_map()
 projection_stale_message = _projection_stale_message()
