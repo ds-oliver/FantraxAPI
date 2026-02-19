@@ -8,6 +8,7 @@ import csv
 import html
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import unicodedata
 import uuid
@@ -122,6 +123,7 @@ from utils.user_manager import UserManager
 
 logger = logging.getLogger(__name__)
 _LOG_PATH = Path("data/logs/conditional_swaps.log")
+_HEALTH_DEBUG_PATH = Path("data/logs/conditional_swaps_health_debug.jsonl")
 LOG_TIMEZONE = "America/Los_Angeles"
 HEALTH_MATCH_WINDOW_SECONDS = 120
 HEALTH_TIMEZONE = "America/Los_Angeles"
@@ -132,7 +134,8 @@ def _log_time_converter(*_args):
 if not any(getattr(h, "baseFilename", None) == str(_LOG_PATH) for h in logger.handlers):
     try:
         _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        fh = logging.FileHandler(_LOG_PATH)
+        # Keep this log bounded in size to avoid multi-GB growth.
+        fh = RotatingFileHandler(_LOG_PATH, maxBytes=300 * 1024 * 1024, backupCount=2)
         formatter = logging.Formatter("%(asctime)s %(levelname)s [conditional_swaps] %(message)s")
         formatter.converter = _log_time_converter
         fh.setFormatter(formatter)
@@ -5964,6 +5967,16 @@ with st.expander("Conditional Swap System Health", expanded=False):
             except Exception:
                 return ""
 
+        period_id_to_round_token: Dict[str, str] = {}
+        for pid, label in period_id_map.items():
+            round_token = resolve_round_from_period(
+                selected_period_id=str(pid),
+                selected_period_label=str(label),
+                inferred_round=None,
+            ) or _period_token(pid)
+            if round_token:
+                period_id_to_round_token[str(pid)] = str(round_token)
+
         last_gameweek_token = ""
         detected_token = _period_token(detected_period)
         selected_token = _period_token(selected_period_id)
@@ -5984,7 +5997,7 @@ with st.expander("Conditional Swap System Health", expanded=False):
 
         sorted_period_ids: List[str] = []
         for pid in period_id_map.keys():
-            token = _period_token(pid)
+            token = period_id_to_round_token.get(str(pid)) or _period_token(pid)
             if token:
                 sorted_period_ids.append(token)
         sorted_period_ids = sorted(set(sorted_period_ids), key=lambda p: int(p))
@@ -6003,8 +6016,12 @@ with st.expander("Conditional Swap System Health", expanded=False):
         all_label = "All periods"
         period_window_options.append(all_label)
         period_window_map[all_label] = ""
-        for pid in sorted(period_id_map.keys(), key=lambda p: int(_period_token(p) or 0), reverse=True):
-            token = _period_token(pid)
+        for pid in sorted(
+            period_id_map.keys(),
+            key=lambda p: int(period_id_to_round_token.get(str(p)) or _period_token(p) or 0),
+            reverse=True,
+        ):
+            token = period_id_to_round_token.get(str(pid)) or _period_token(pid)
             if not token:
                 continue
             if token == last_gameweek_token:
@@ -6023,10 +6040,16 @@ with st.expander("Conditional Swap System Health", expanded=False):
         )
         selected_window_period = period_window_map.get(selected_window_label, "")
         if selected_window_period:
+            def _event_round_token(event_period: Any) -> str:
+                period_str = str(event_period or "").strip()
+                if period_str in period_id_to_round_token:
+                    return period_id_to_round_token[period_str]
+                return _period_token(period_str)
+
             app_fired_events = [
                 event
                 for event in app_fired_events_all
-                if _period_token(event.get("period")) == selected_window_period
+                if _event_round_token(event.get("period")) == selected_window_period
             ]
             fantrax_events = [
                 event
@@ -6115,6 +6138,137 @@ with st.expander("Conditional Swap System Health", expanded=False):
                 "Some app-fired swaps were not matched in Fantrax within 2 minutes. "
                 "Possible causes: timing drift, delayed Fantrax posting, or non-swap outcomes."
             )
+
+        with st.container(border=True):
+            st.markdown("**Health Debug Datasets**")
+            st.caption(
+                "Compare what Fantrax transaction history returned vs what app-fired conditional rules returned "
+                "for this selected period window."
+            )
+            st.caption("Log path: data/logs/conditional_swaps.log")
+
+            def _dt_iso(val: Any) -> str:
+                if isinstance(val, datetime):
+                    try:
+                        return val.astimezone(timezone.utc).isoformat()
+                    except Exception:
+                        return str(val)
+                return str(val or "")
+
+            app_debug_rows: List[Dict[str, Any]] = []
+            for event in app_fired_events_all:
+                app_debug_rows.append(
+                    {
+                        "window_included": "yes"
+                        if event in app_fired_events
+                        else "no",
+                        "rule_id": event.get("rule_id") or "",
+                        "period": event.get("period") or "",
+                        "active_id": event.get("active_id") or "",
+                        "reserve_id": event.get("reserve_id") or "",
+                        "fired_at_utc": _dt_iso(event.get("fired_at_utc")),
+                        "source": event.get("source") or "",
+                        "result": event.get("result") or "",
+                    }
+                )
+            fantrax_debug_rows: List[Dict[str, Any]] = []
+            for event in fantrax_events_all:
+                moves = event.get("moves") or []
+                player_ids = " | ".join(
+                    f"{m.get('player_name') or m.get('player_id')}:{m.get('from_slot')}->{m.get('to_slot')}"
+                    for m in moves
+                )
+                fantrax_debug_rows.append(
+                    {
+                        "window_included": "yes"
+                        if event in fantrax_events
+                        else "no",
+                        "tx_set_id": event.get("tx_set_id") or "",
+                        "week_or_period": event.get("week_or_period") or "",
+                        "team_id": event.get("team_id") or "",
+                        "executed": bool(event.get("executed")),
+                        "date_local": event.get("date_local") or "",
+                        "date_utc": _dt_iso(event.get("date_utc")),
+                        "moves": player_ids,
+                    }
+                )
+
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("**App Fired Conditional Rules (source)**")
+                if app_debug_rows:
+                    st.dataframe(pd.DataFrame(app_debug_rows), hide_index=True, use_container_width=True)
+                else:
+                    st.caption("No app fired conditional events found.")
+            with c2:
+                st.markdown("**Fantrax Lineup Transactions (source)**")
+                if fantrax_debug_rows:
+                    st.dataframe(pd.DataFrame(fantrax_debug_rows), hide_index=True, use_container_width=True)
+                else:
+                    st.caption("No Fantrax lineup transaction events found.")
+
+            st.markdown("**Match Output (what the component uses)**")
+            if matched_rows:
+                match_debug_rows = []
+                for row in matched_rows:
+                    match_debug_rows.append(
+                        {
+                            "health_status": row.get("health_status") or "",
+                            "rule_id": row.get("rule_id") or "",
+                            "period": row.get("period") or "",
+                            "active_id": row.get("active_id") or "",
+                            "reserve_id": row.get("reserve_id") or "",
+                            "fired_at_utc": _dt_iso(row.get("fired_at_utc")),
+                            "matched_tx_set_id": row.get("matched_tx_set_id") or "",
+                            "fantrax_time_utc": _dt_iso(row.get("fantrax_time_utc")),
+                            "delta_seconds": row.get("delta_seconds"),
+                        }
+                    )
+                st.dataframe(pd.DataFrame(match_debug_rows), hide_index=True, use_container_width=True)
+            else:
+                st.caption("No matched/unmatched rows generated for current filters.")
+
+            if st.button(
+                "Log Health Debug Snapshot",
+                key=f"log_health_debug_snapshot_{league_id}_{team_id}",
+                type="secondary",
+            ):
+                snapshot = {
+                    "league_id": str(league_id),
+                    "team_id": str(team_id),
+                    "user_id": str(user_id),
+                    "selected_window_label": selected_window_label,
+                    "selected_window_period": selected_window_period or "ALL",
+                    "match_window_seconds": HEALTH_MATCH_WINDOW_SECONDS,
+                    "app_fired_events_all": app_debug_rows,
+                    "fantrax_events_all": fantrax_debug_rows,
+                    "matched_rows": [
+                        {
+                            "health_status": row.get("health_status") or "",
+                            "rule_id": row.get("rule_id") or "",
+                            "period": row.get("period") or "",
+                            "active_id": row.get("active_id") or "",
+                            "reserve_id": row.get("reserve_id") or "",
+                            "fired_at_utc": _dt_iso(row.get("fired_at_utc")),
+                            "matched_tx_set_id": row.get("matched_tx_set_id") or "",
+                            "fantrax_time_utc": _dt_iso(row.get("fantrax_time_utc")),
+                            "delta_seconds": row.get("delta_seconds"),
+                        }
+                        for row in matched_rows
+                    ],
+                }
+                snapshot_json = json.dumps(snapshot, separators=(",", ":"))
+                logger.info("[health-debug] %s", snapshot_json)
+                try:
+                    _HEALTH_DEBUG_PATH.parent.mkdir(parents=True, exist_ok=True)
+                    with _HEALTH_DEBUG_PATH.open("a", encoding="utf-8") as f:
+                        f.write(snapshot_json + "\n")
+                    st.success(
+                        "Health debug snapshot written to "
+                        "data/logs/conditional_swaps_health_debug.jsonl"
+                    )
+                except Exception as exc:
+                    st.warning(f"Failed to write dedicated health debug file: {exc}")
 
 
 # ----------------------------------------------------------------------

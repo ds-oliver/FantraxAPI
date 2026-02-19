@@ -111,6 +111,14 @@
         "captain": false
       },
       {
+        "id": 1445189,
+        "name": "Tom Edozie",
+        "position": "M",
+        "team_id": 36551,
+        "substitute": true,
+        "captain": false
+      },
+      {
         "id": 98427,
         "name": "Sam Johnstone",
         "position": "G",
@@ -153,14 +161,6 @@
       {
         "id": 1819718,
         "name": "Luke Rawlings",
-        "position": "M",
-        "team_id": 36551,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1445189,
-        "name": "Tom Edozie",
         "position": "M",
         "team_id": 36551,
         "substitute": true,
@@ -300,6 +300,14 @@
         "captain": false
       },
       {
+        "id": 957602,
+        "name": "Riccardo Calafiori",
+        "position": "D",
+        "team_id": 42,
+        "substitute": true,
+        "captain": false
+      },
+      {
         "id": 232422,
         "name": "Kepa Arrizabalaga",
         "position": "G",
@@ -318,14 +326,6 @@
       {
         "id": 846036,
         "name": "Ben White",
-        "position": "D",
-        "team_id": 42,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 957602,
-        "name": "Riccardo Calafiori",
         "position": "D",
         "team_id": 42,
         "substitute": true,
@@ -375,5 +375,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-18 21:35:09+0000"
+  "fetched_at_utc": "2026-02-18 21:55:08+0000"
 }

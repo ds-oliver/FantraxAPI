@@ -33,7 +33,7 @@ Keep this running.
 ```bash
 ssh fantrax-vps-root
 systemctl restart fantrax-pull-restart.service
-systemctl status fantrax-pull-restart.service --no-pager
+systedata/logs/conditional_swaps.logmctl status fantrax-pull-restart.service --no-pager
 ss -ltnp | grep -E ':8501\\b' || true
 tail -n 80 /opt/FantraxAPI/logs/streamlit.out 2>/dev/null || true
 ```
@@ -41,7 +41,7 @@ Use this terminal for VPS checks/restarts.
 
 ### Terminal 3 (Mac SSH tunnel to VPS app)
 ```bash
-ssh -N -o ExitOnForwardFailure=yes -L 8501:127.0.0.1:8501 fantrax-vps-root
+ssh -N -L 8501:127.0.0.1:8501 fantrax-vps-root
 ```
 Keep this running.
 
