@@ -106,26 +106,44 @@ cd /Users/hogan/FantraxAPI
 git status -sb
 ```
 
-2. Push changes to `testing`.
+2. Preferred: push + deploy in one command (auto-commit, push, VPS restart/pull).
+```
+bin/push_and_deploy_vps.sh -m "describe your change"
+```
+
+3. Manual fallback: push changes to `testing`.
 ```
 git add -A
 git commit -m "describe your change"
 git push origin testing
 ```
 
-3. Pull + restart on VPS.
+4. Manual fallback: pull + restart on VPS.
 ```
 ssh fantrax-vps-root "systemctl restart fantrax-pull-restart.service && systemctl status fantrax-pull-restart.service --no-pager -l"
 ```
 
-4. Verify Streamlit on VPS.
+5. Verify Streamlit on VPS.
 ```
 ssh fantrax-vps-root "ss -ltnp | grep -E ':8501\\b' || true; tail -n 40 /opt/FantraxAPI/logs/streamlit.out 2>/dev/null || true"
 ```
 
-5. (Optional) Tunnel VPS Streamlit to your Mac.
+6. (Optional) Tunnel VPS Streamlit to your Mac.
 ```
 ssh -N -o ExitOnForwardFailure=yes -L 8501:127.0.0.1:8501 fantrax-vps-root
+```
+
+### Deploy Helper Script Notes
+
+- Script path: `bin/push_and_deploy_vps.sh`
+- Defaults:
+  - SSH host: `fantrax-vps-root`
+  - Service: `fantrax-pull-restart.service`
+- Useful options:
+```
+bin/push_and_deploy_vps.sh --no-commit
+bin/push_and_deploy_vps.sh -H fantrax-vps-root -s fantrax-pull-restart.service
+bin/push_and_deploy_vps.sh --skip-status
 ```
 
 ## VPS Quick Start (After Shutdown / Reconnect)

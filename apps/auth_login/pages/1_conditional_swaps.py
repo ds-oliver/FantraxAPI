@@ -1089,6 +1089,40 @@ def _set_projection_metadata(source: str, updated_at: Optional[datetime] = None)
         return
 
 
+def _record_projection_sync_status(
+    *,
+    status: str,
+    detail: Optional[str] = None,
+) -> None:
+    try:
+        st.session_state["projections_sync_status"] = {
+            "status": status,
+            "detail": detail or "",
+            "attempted_at": datetime.now(timezone.utc).isoformat(),
+        }
+    except Exception:
+        return
+
+
+def _projection_sync_status_message() -> Optional[tuple[str, str]]:
+    raw = st.session_state.get("projections_sync_status")
+    if not isinstance(raw, dict):
+        return None
+    status = str(raw.get("status") or "")
+    detail = str(raw.get("detail") or "")
+    attempted_at = _parse_iso_utc(raw.get("attempted_at"))
+    at_label = attempted_at.strftime("%Y-%m-%d %H:%M UTC") if attempted_at else "unknown time"
+    if status == "google_sheet_ok":
+        return ("success", f"Projection sync OK ({at_label}): loaded from Google Sheet.")
+    if status == "cache_fallback":
+        suffix = f" Reason: {detail}" if detail else ""
+        return ("warning", f"Projection sync used parquet cache ({at_label}).{suffix}")
+    if status:
+        suffix = f" Reason: {detail}" if detail else ""
+        return ("error", f"Projection sync failed ({at_label}).{suffix}")
+    return None
+
+
 def _parse_iso_utc(raw_ts: Optional[str]) -> Optional[datetime]:
     if not raw_ts:
         return None
@@ -1169,11 +1203,13 @@ def _fetch_projections_from_sheet() -> Optional[pd.DataFrame]:
         import gspread
     except Exception as exc:
         logger.info("gspread unavailable; skipping projections sheet fetch: %s", exc)
+        _record_projection_sync_status(status="sheet_unavailable", detail=str(exc))
         return None
 
     key_path = _service_account_path()
     if not key_path.exists():
         logger.info("Service account key missing at %s; skipping sheet fetch", key_path)
+        _record_projection_sync_status(status="service_account_missing", detail=str(key_path))
         return None
 
     try:
@@ -1185,6 +1221,7 @@ def _fetch_projections_from_sheet() -> Optional[pd.DataFrame]:
             raise ValueError("projections sheet returned no rows")
         logger.info("Loaded %s projection rows from Google Sheet", len(df))
         _set_projection_metadata("google_sheet")
+        _record_projection_sync_status(status="google_sheet_ok", detail=f"{len(df)} rows")
         try:
             PROJECTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
             df.to_parquet(PROJECTIONS_PATH, index=False)
@@ -1193,6 +1230,7 @@ def _fetch_projections_from_sheet() -> Optional[pd.DataFrame]:
         return df
     except Exception as exc:
         logger.warning("Failed to load projections from Google Sheet: %s", exc)
+        _record_projection_sync_status(status="google_sheet_error", detail=str(exc))
         return None
 
 
@@ -1209,9 +1247,13 @@ def _load_projections(path: Path = PROJECTIONS_PATH) -> dict:
             _set_projection_metadata(
                 "cache_parquet", datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
             )
+            if str((st.session_state.get("projections_sync_status") or {}).get("status")) != "google_sheet_ok":
+                detail = str((st.session_state.get("projections_sync_status") or {}).get("detail") or "")
+                _record_projection_sync_status(status="cache_fallback", detail=detail)
         except Exception as exc:
             logger.warning("Unable to load projections from sheet or cache: %s", exc)
             st.warning("Projections unavailable (Google Sheet fetch failed and no cached file found).")
+            _record_projection_sync_status(status="projection_load_failed", detail=str(exc))
             return {}
     proj_map: dict[tuple[str, str], dict] = {}
     for _, row in df.iterrows():
@@ -2300,6 +2342,7 @@ if periods:
         inferred_period_for_button = (
             inferred_match if inferred_match and inferred_match in period_id_map else default_period_id
         )
+
         if st.button(
             "Use Inferred GW",
             key="use_inferred_gw_period_btn",
@@ -2502,7 +2545,15 @@ with st.sidebar:
     st.markdown("**Projections sync**")
     if st.button("Refresh projections now", key="refresh_projections_now"):
         _get_projections_map(force_refresh=True)
-        st.success("Projections refreshed.")
+    sync_msg = _projection_sync_status_message()
+    if sync_msg:
+        level, text = sync_msg
+        if level == "success":
+            st.success(text)
+        elif level == "warning":
+            st.warning(text)
+        else:
+            st.error(text)
     st.caption(f"Auto-refresh interval: {PROJECTIONS_REFRESH_TTL_MINUTES} min")
 
 projections_map = _get_projections_map()
