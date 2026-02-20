@@ -61,8 +61,8 @@
         "captain": false
       },
       {
-        "id": 914309,
-        "name": "Iliman Ndiaye",
+        "id": 1627560,
+        "name": "Harrison Armstrong",
         "position": "M",
         "team_id": 48,
         "substitute": false,
@@ -77,9 +77,9 @@
         "captain": false
       },
       {
-        "id": 1403061,
-        "name": "Tyrique George",
-        "position": "F",
+        "id": 914309,
+        "name": "Iliman Ndiaye",
+        "position": "M",
         "team_id": 48,
         "substitute": false,
         "captain": false
@@ -153,16 +153,16 @@
         "captain": false
       },
       {
-        "id": 1142175,
-        "name": "Kobbie Mainoo",
+        "id": 122951,
+        "name": "Casemiro",
         "position": "M",
         "team_id": 35,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 122951,
-        "name": "Casemiro",
+        "id": 1142175,
+        "name": "Kobbie Mainoo",
         "position": "M",
         "team_id": 35,
         "substitute": false,
@@ -185,17 +185,17 @@
         "captain": false
       },
       {
-        "id": 927083,
-        "name": "Bryan Mbeumo",
-        "position": "M",
+        "id": 886363,
+        "name": "Matheus Cunha",
+        "position": "F",
         "team_id": 35,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 986397,
-        "name": "Benjamin Šeško",
-        "position": "F",
+        "id": 927083,
+        "name": "Bryan Mbeumo",
+        "position": "M",
         "team_id": 35,
         "substitute": false,
         "captain": false
@@ -223,5 +223,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-19 20:00:19+0000"
+  "fetched_at_utc": "2026-02-20 22:00:19+0000"
 }

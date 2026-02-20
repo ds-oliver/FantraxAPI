@@ -102,6 +102,7 @@ AUTO_MAX_FA_CANDIDATES = 3
 FA_POOL_LIMIT = 200
 FA_TRIGGER_MODE_FA_STARTING_ONLY = "fa_starting_only"
 FA_TRIGGER_MODE_DROP_AND_FA_STARTING = "drop_not_starting_and_fa_starting"
+FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE = "drop_not_starting_then_claim_immediate"
 ENABLE_AUTO_CLAIMS = False
 CLAIMS_TEST_LEAGUE_ID = "0z7r5871mc1yqc0s"
 CONFIRM_WINDOW_MINUTES = 60
@@ -277,6 +278,8 @@ def _rule_action_type(rule: Dict[str, Any]) -> str:
 
 def _fa_trigger_mode(rule: Dict[str, Any]) -> str:
     raw = str(rule.get("fa_trigger_mode") or "").strip().lower()
+    if raw == FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE:
+        return FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE
     if raw == FA_TRIGGER_MODE_DROP_AND_FA_STARTING:
         return FA_TRIGGER_MODE_DROP_AND_FA_STARTING
     return FA_TRIGGER_MODE_FA_STARTING_ONLY
@@ -1831,20 +1834,48 @@ def main() -> None:
                                     if drop_kickoff and now >= drop_kickoff:
                                         continue
 
+                            fa_snapshot = fa_status_map.get(add_id) if fa_status_map else None
+                            fa_kickoff = getattr(fa_snapshot, "kickoff", None) if fa_snapshot else None
+
                             if not args.force_trigger:
-                                fa_snapshot = fa_status_map.get(add_id) if fa_status_map else None
-                                if not fa_snapshot:
-                                    continue
-                                status_val = getattr(fa_snapshot, "status", None)
-                                is_starting = (
-                                    status_val == LineupStatus.STARTING
-                                    or str(status_val).lower() == LineupStatus.STARTING.value
-                                )
-                                if not is_starting:
-                                    continue
-                                fa_kickoff = getattr(fa_snapshot, "kickoff", None)
-                                if fa_kickoff and now >= fa_kickoff:
-                                    continue
+                                if action_type == "fa_claim_drop" and fa_mode == FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE:
+                                    drop_status = _confirmed_status_kind(info_drop)
+                                    if drop_status != "not_starting":
+                                        continue
+                                    if fa_kickoff and now >= fa_kickoff:
+                                        rule["state"] = "fired"
+                                        rule["fired_at"] = _now().isoformat()
+                                        rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
+                                        rule["result"] = "claim_failed_kickoff_passed"
+                                        _record_execution_event(
+                                            user_id=user_id,
+                                            league_id=league_id,
+                                            team_id=team_id,
+                                            period=rule_period,
+                                            rule=rule,
+                                            result="claim_failed_kickoff_passed",
+                                            reason="fa_kickoff_passed_before_claim",
+                                        )
+                                        updated = True
+                                        fa_action_executed = True
+                                        logger.info(
+                                            "FA rule %s marked fired: FA kickoff already passed for add=%s",
+                                            rule.get("rule_id"),
+                                            add_id,
+                                        )
+                                        break
+                                else:
+                                    if not fa_snapshot:
+                                        continue
+                                    status_val = getattr(fa_snapshot, "status", None)
+                                    is_starting = (
+                                        status_val == LineupStatus.STARTING
+                                        or str(status_val).lower() == LineupStatus.STARTING.value
+                                    )
+                                    if not is_starting:
+                                        continue
+                                    if fa_kickoff and now >= fa_kickoff:
+                                        continue
                                 if action_type == "fa_claim_drop" and fa_mode == FA_TRIGGER_MODE_DROP_AND_FA_STARTING:
                                     drop_status = _confirmed_status_kind(info_drop)
                                     if drop_status != "not_starting":
@@ -1924,6 +1955,23 @@ def main() -> None:
                                         rule.get("rule_id"),
                                         error_msg,
                                     )
+                                    if action_type == "fa_claim_drop" and fa_mode == FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE:
+                                        rule["state"] = "fired"
+                                        rule["fired_at"] = _now().isoformat()
+                                        rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
+                                        rule["result"] = "claim_rejected"
+                                        _record_execution_event(
+                                            user_id=user_id,
+                                            league_id=league_id,
+                                            team_id=team_id,
+                                            period=rule_period,
+                                            rule=rule,
+                                            result="claim_rejected",
+                                            reason=str(error_msg),
+                                        )
+                                        updated = True
+                                        fa_action_executed = True
+                                        break
                                     continue
                                 rule["state"] = "fired"
                                 rule["fired_at"] = _now().isoformat()
@@ -1971,6 +2019,22 @@ def main() -> None:
                                         logger.info("FA rule %s post-claim swap failed: %s", rule.get("rule_id"), exc)
                             except Exception as exc:
                                 logger.info("FA rule %s claim failed: %s", rule.get("rule_id"), exc)
+                                if action_type == "fa_claim_drop" and fa_mode == FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE:
+                                    rule["state"] = "fired"
+                                    rule["fired_at"] = _now().isoformat()
+                                    rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
+                                    rule["result"] = "claim_failed_exception"
+                                    _record_execution_event(
+                                        user_id=user_id,
+                                        league_id=league_id,
+                                        team_id=team_id,
+                                        period=rule_period,
+                                        rule=rule,
+                                        result="claim_failed_exception",
+                                        reason=str(exc),
+                                    )
+                                    updated = True
+                                    fa_action_executed = True
                             break
 
                         if fa_action_executed:

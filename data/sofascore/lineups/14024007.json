@@ -45,6 +45,14 @@
         "captain": false
       },
       {
+        "id": 987650,
+        "name": "Moisés Caicedo",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
         "id": 1105779,
         "name": "Andrey Santos",
         "position": "M",
@@ -53,8 +61,8 @@
         "captain": false
       },
       {
-        "id": 987650,
-        "name": "Moisés Caicedo",
+        "id": 879349,
+        "name": "Pedro Neto",
         "position": "M",
         "team_id": 38,
         "substitute": false,
@@ -71,14 +79,6 @@
       {
         "id": 974505,
         "name": "Enzo Fernández",
-        "position": "M",
-        "team_id": 38,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 879349,
-        "name": "Pedro Neto",
         "position": "M",
         "team_id": 38,
         "substitute": false,
@@ -105,12 +105,6 @@
         "id": 962053,
         "name": "Filip Jørgensen",
         "position": "G",
-        "reason": 1
-      },
-      {
-        "id": 1069488,
-        "name": "Roméo Lavia",
-        "position": "M",
         "reason": 1
       },
       {
@@ -274,8 +268,14 @@
         "name": "Jordan Beyer",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 996985,
+        "name": "Armando Broja",
+        "position": "F",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-02-19 20:00:11+0000"
+  "fetched_at_utc": "2026-02-20 22:00:12+0000"
 }

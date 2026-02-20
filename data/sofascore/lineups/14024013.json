@@ -29,8 +29,8 @@
         "captain": false
       },
       {
-        "id": 985086,
-        "name": "Morato",
+        "id": 1199282,
+        "name": "Murillo",
         "position": "D",
         "team_id": 14,
         "substitute": false,
@@ -61,8 +61,8 @@
         "captain": false
       },
       {
-        "id": 1090963,
-        "name": "Omari Hutchinson",
+        "id": 871765,
+        "name": "Nicolás Domínguez",
         "position": "M",
         "team_id": 14,
         "substitute": false,
@@ -122,12 +122,6 @@
       {
         "id": 1010220,
         "name": "Nicolò Savona",
-        "position": "D",
-        "reason": 1
-      },
-      {
-        "id": 1199282,
-        "name": "Murillo",
         "position": "D",
         "reason": 1
       }
@@ -240,12 +234,6 @@
         "reason": 1
       },
       {
-        "id": 970361,
-        "name": "Jeremie Frimpong",
-        "position": "M",
-        "reason": 1
-      },
-      {
         "id": 1142636,
         "name": "Stefan Bajčetić",
         "position": "M",
@@ -262,8 +250,14 @@
         "name": "Wataru Endo",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 970361,
+        "name": "Jeremie Frimpong",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-02-19 20:00:16+0000"
+  "fetched_at_utc": "2026-02-20 22:00:16+0000"
 }

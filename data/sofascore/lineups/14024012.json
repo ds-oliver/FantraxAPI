@@ -2,7 +2,7 @@
   "event_id": 14024012,
   "confirmed": false,
   "home": {
-    "formation": "3-5-2",
+    "formation": "3-4-3",
     "starters": [
       {
         "id": 553606,
@@ -53,14 +53,6 @@
         "captain": false
       },
       {
-        "id": 844842,
-        "name": "Yves Bissouma",
-        "position": "M",
-        "team_id": 33,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 1002711,
         "name": "Pape Matar Sarr",
         "position": "M",
@@ -77,8 +69,16 @@
         "captain": false
       },
       {
-        "id": 361420,
-        "name": "Dominic Solanke",
+        "id": 871706,
+        "name": "Randal Kolo Muani",
+        "position": "F",
+        "team_id": 33,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1048888,
+        "name": "Mathys Tel",
         "position": "F",
         "team_id": 33,
         "substitute": false,
@@ -166,6 +166,12 @@
         "name": "Cristian Romero",
         "position": "D",
         "reason": 13
+      },
+      {
+        "id": 361420,
+        "name": "Dominic Solanke",
+        "position": "F",
+        "reason": 1
       }
     ]
   },
@@ -213,8 +219,8 @@
         "captain": false
       },
       {
-        "id": 864921,
-        "name": "Eberechi Eze",
+        "id": 934235,
+        "name": "Bukayo Saka",
         "position": "F",
         "team_id": 42,
         "substitute": false,
@@ -237,9 +243,9 @@
         "captain": false
       },
       {
-        "id": 934235,
-        "name": "Bukayo Saka",
-        "position": "F",
+        "id": 966547,
+        "name": "Noni Madueke",
+        "position": "M",
         "team_id": 42,
         "substitute": false,
         "captain": false
@@ -289,5 +295,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-19 20:00:18+0000"
+  "fetched_at_utc": "2026-02-20 22:00:19+0000"
 }

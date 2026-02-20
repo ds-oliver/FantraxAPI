@@ -2,7 +2,7 @@
   "event_id": 14023969,
   "confirmed": false,
   "home": {
-    "formation": "4-2-3-1",
+    "formation": "4-3-3",
     "starters": [
       {
         "id": 856640,
@@ -37,32 +37,8 @@
         "captain": false
       },
       {
-        "id": 1471764,
-        "name": "El Hadji Malick Diouf",
-        "position": "M",
-        "team_id": 37,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 1142562,
-        "name": "Mateus Fernandes",
-        "position": "M",
-        "team_id": 37,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 1170560,
-        "name": "Soungoutou Magassa",
-        "position": "M",
-        "team_id": 37,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 552884,
-        "name": "Jarrod Bowen",
+        "id": 1150952,
+        "name": "Oliver Scarles",
         "position": "M",
         "team_id": 37,
         "substitute": false,
@@ -77,8 +53,24 @@
         "captain": false
       },
       {
-        "id": 917005,
-        "name": "Crysencio Summerville",
+        "id": 1170560,
+        "name": "Soungoutou Magassa",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142562,
+        "name": "Mateus Fernandes",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 552884,
+        "name": "Jarrod Bowen",
         "position": "M",
         "team_id": 37,
         "substitute": false,
@@ -88,6 +80,14 @@
         "id": 877013,
         "name": "Valentín Castellanos",
         "position": "F",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 917005,
+        "name": "Crysencio Summerville",
+        "position": "M",
         "team_id": 37,
         "substitute": false,
         "captain": false
@@ -159,16 +159,16 @@
         "captain": false
       },
       {
-        "id": 1104986,
-        "name": "Alex Scott",
+        "id": 548188,
+        "name": "Lewis Cook",
         "position": "M",
         "team_id": 60,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 322391,
-        "name": "Ryan Christie",
+        "id": 1104986,
+        "name": "Alex Scott",
         "position": "M",
         "team_id": 60,
         "substitute": false,
@@ -183,9 +183,9 @@
         "captain": false
       },
       {
-        "id": 1476524,
-        "name": "Alex Tóth",
-        "position": "M",
+        "id": 1426228,
+        "name": "Eli Junior Kroupi",
+        "position": "F",
         "team_id": 60,
         "substitute": false,
         "captain": false
@@ -232,8 +232,14 @@
         "name": "Marcus Tavernier",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 1190712,
+        "name": "Matai Akinmboni",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-02-19 20:00:15+0000"
+  "fetched_at_utc": "2026-02-20 22:00:14+0000"
 }

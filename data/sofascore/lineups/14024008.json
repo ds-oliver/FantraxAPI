@@ -21,8 +21,8 @@
         "captain": false
       },
       {
-        "id": 879674,
-        "name": "Maxence Lacroix",
+        "id": 1471671,
+        "name": "Jaydee Canvot",
         "position": "D",
         "team_id": 7,
         "substitute": false,
@@ -53,8 +53,8 @@
         "captain": false
       },
       {
-        "id": 193554,
-        "name": "Will Hughes",
+        "id": 794338,
+        "name": "Daichi Kamada",
         "position": "M",
         "team_id": 7,
         "substitute": false,
@@ -124,6 +124,18 @@
         "name": "Rio Cardines",
         "position": "F",
         "reason": 1
+      },
+      {
+        "id": 355796,
+        "name": "Jefferson Lerma",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 879674,
+        "name": "Maxence Lacroix",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
@@ -131,8 +143,8 @@
     "formation": "3-5-2",
     "starters": [
       {
-        "id": 98427,
-        "name": "Sam Johnstone",
+        "id": 252669,
+        "name": "José Sá",
         "position": "G",
         "team_id": 3,
         "substitute": false,
@@ -163,8 +175,8 @@
         "captain": false
       },
       {
-        "id": 1096210,
-        "name": "Jackson Tchatchoua",
+        "id": 1006073,
+        "name": "Rodrigo Gomes",
         "position": "M",
         "team_id": 3,
         "substitute": false,
@@ -179,8 +191,8 @@
         "captain": false
       },
       {
-        "id": 867441,
-        "name": "Angel Gomes",
+        "id": 1035996,
+        "name": "André",
         "position": "M",
         "team_id": 3,
         "substitute": false,
@@ -195,8 +207,8 @@
         "captain": false
       },
       {
-        "id": 1031283,
-        "name": "David Möller Wolfe",
+        "id": 1013928,
+        "name": "Hugo Bueno",
         "position": "D",
         "team_id": 3,
         "substitute": false,
@@ -235,5 +247,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-19 20:00:17+0000"
+  "fetched_at_utc": "2026-02-20 22:00:17+0000"
 }

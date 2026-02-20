@@ -118,12 +118,6 @@
         "name": "Jérémy Doku",
         "position": "M",
         "reason": 1
-      },
-      {
-        "id": 1046795,
-        "name": "Savinho",
-        "position": "M",
-        "reason": 1
       }
     ]
   },
@@ -131,8 +125,8 @@
     "formation": "4-3-3",
     "starters": [
       {
-        "id": 839410,
-        "name": "Aaron Ramsdale",
+        "id": 162653,
+        "name": "Nick Pope",
         "position": "G",
         "team_id": 39,
         "substitute": false,
@@ -155,14 +149,6 @@
         "captain": false
       },
       {
-        "id": 910046,
-        "name": "Sven Botman",
-        "position": "D",
-        "team_id": 39,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 99090,
         "name": "Dan Burn",
         "position": "D",
@@ -171,8 +157,16 @@
         "captain": false
       },
       {
-        "id": 975937,
-        "name": "Jacob Ramsey",
+        "id": 1136730,
+        "name": "Lewis Hall",
+        "position": "D",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 888550,
+        "name": "Joe Willock",
         "position": "M",
         "team_id": 39,
         "substitute": false,
@@ -187,17 +181,17 @@
         "captain": false
       },
       {
-        "id": 888550,
-        "name": "Joe Willock",
+        "id": 560128,
+        "name": "Joelinton",
         "position": "M",
         "team_id": 39,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 372336,
-        "name": "Jacob Murphy",
-        "position": "F",
+        "id": 979232,
+        "name": "Anthony Elanga",
+        "position": "M",
         "team_id": 39,
         "substitute": false,
         "captain": false
@@ -211,9 +205,9 @@
         "captain": false
       },
       {
-        "id": 855647,
-        "name": "Harvey Barnes",
-        "position": "F",
+        "id": 975937,
+        "name": "Jacob Ramsey",
+        "position": "M",
         "team_id": 39,
         "substitute": false,
         "captain": false
@@ -236,12 +230,6 @@
       {
         "id": 866469,
         "name": "Bruno Guimarães",
-        "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 560128,
-        "name": "Joelinton",
         "position": "M",
         "reason": 1
       },
@@ -271,5 +259,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-19 20:00:15+0000"
+  "fetched_at_utc": "2026-02-20 22:00:15+0000"
 }

@@ -169,6 +169,7 @@ FA_ACTION_ADD_ONLY = "fa_add_only"
 FA_ACTION_DROP_ONLY = "drop_only"
 FA_TRIGGER_MODE_FA_STARTING_ONLY = "fa_starting_only"
 FA_TRIGGER_MODE_DROP_AND_FA_STARTING = "drop_not_starting_and_fa_starting"
+FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE = "drop_not_starting_then_claim_immediate"
 FA_SIMPLE_MODE_CLAIM_BASED = "claim_based"
 FA_SIMPLE_MODE_DROP_BASED = "drop_based"
 TEST_CLAIMS_LEAGUE_ID = "0z7r5871mc1yqc0s"
@@ -4961,7 +4962,8 @@ if selected_action_type == RuleActionType.FA_CLAIM_DROP:
         index=0,
         help=(
             "Conditional claim: trigger when the FA target is starting, then choose a drop candidate compatible "
-            "with that FA kickoff slot. Conditional drop: trigger when the rostered drop candidate is not starting."
+            "with that FA kickoff slot. Conditional drop: trigger when the rostered drop candidate is not starting, "
+            "then submit the FA claim immediately."
         ),
         key="fa_simple_mode_select",
     )
@@ -4969,7 +4971,7 @@ if selected_action_type == RuleActionType.FA_CLAIM_DROP:
     fa_trigger_mode = (
         FA_TRIGGER_MODE_FA_STARTING_ONLY
         if fa_simple_mode == FA_SIMPLE_MODE_CLAIM_BASED
-        else FA_TRIGGER_MODE_DROP_AND_FA_STARTING
+        else FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE
     )
     if fa_simple_mode == FA_SIMPLE_MODE_DROP_BASED:
         drop_player_id = st.selectbox(
@@ -5270,7 +5272,10 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                 if status_val == LineupStatus.STARTING:
                     if (
                         selected_action_type == RuleActionType.FA_CLAIM_DROP
-                        and fa_trigger_mode == FA_TRIGGER_MODE_DROP_AND_FA_STARTING
+                        and fa_trigger_mode in (
+                            FA_TRIGGER_MODE_DROP_AND_FA_STARTING,
+                            FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE,
+                        )
                         and drop_kickoff
                         and kickoff_dt
                         and kickoff_dt < drop_kickoff
@@ -5290,7 +5295,10 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                     ):
                         continue
                     if (
-                        fa_trigger_mode == FA_TRIGGER_MODE_DROP_AND_FA_STARTING
+                        fa_trigger_mode in (
+                            FA_TRIGGER_MODE_DROP_AND_FA_STARTING,
+                            FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE,
+                        )
                         and drop_kickoff
                         and kickoff_dt
                         and kickoff_dt < drop_kickoff
@@ -5510,6 +5518,29 @@ if not state_writer_enabled:
 
 submitted = st.button("Save Rule", disabled=submit_disabled, type="primary", key="save_rule_btn")
 
+def _render_conflicting_rules(conflicts: List[Dict[str, Any]], *, heading: str) -> None:
+    if not conflicts:
+        return
+    st.warning(heading)
+    rows: List[Dict[str, Any]] = []
+    for r in conflicts:
+        action = str(r.get("action_type") or RuleActionType.LINEUP_SWAP.value)
+        period_raw = str(r.get("period") or "")
+        rows.append(
+            {
+                "Rule ID": str(r.get("rule_id") or ""),
+                "Action": action,
+                "State": _normalized_rule_state(r.get("state")),
+                "Period": period_id_map.get(period_raw, period_raw),
+                "Active/Drop ID": str(r.get("active_id") or ""),
+                "Reserve/FA ID": str(r.get("reserve_id") or r.get("fa_add_scorer_id") or ""),
+                "Trigger Mode": str(r.get("fa_trigger_mode") or ""),
+                "Source": str(r.get("source") or ""),
+            }
+        )
+    with st.expander("Conflicting existing rule(s)", expanded=True):
+        st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+
 if submitted and not submit_disabled:
     try:
         if selected_action_type == RuleActionType.LINEUP_SWAP:
@@ -5520,7 +5551,7 @@ if submitted and not submit_disabled:
                 existing_rules = _load_rules_for_user_with_revision(str(user_id))
             except Exception:
                 existing_rules = []
-            already_exists = False
+            conflicts: List[Dict[str, Any]] = []
             for r in existing_rules:
                 if not _is_manual_rule(r):
                     continue
@@ -5531,10 +5562,12 @@ if submitted and not submit_disabled:
                 if str(r.get("period")) != str(period_id):
                     continue
                 if _normalized_rule_state(r.get("state")) != "fired":
-                    already_exists = True
-                    break
-            if already_exists:
-                st.warning("A manual rule already exists for this active player and period.")
+                    conflicts.append(r)
+            if conflicts:
+                _render_conflicting_rules(
+                    conflicts,
+                    heading="A manual rule already exists for this active player and period.",
+                )
                 st.stop()
             group_id = uuid.uuid4().hex
             active_label = active_labels.get(active_player_id, active_player_id)
@@ -5583,7 +5616,7 @@ if submitted and not submit_disabled:
             action_key = selected_action_type.value if hasattr(selected_action_type, "value") else str(selected_action_type)
             drop_key = str(drop_player_id or "")
             fa_key = str(fa_candidate["id"]) if fa_candidate else ""
-            already_exists = False
+            conflicts: List[Dict[str, Any]] = []
             for r in existing_rules:
                 if not _is_manual_rule(r):
                     continue
@@ -5595,8 +5628,7 @@ if submitted and not submit_disabled:
                     continue
                 if action_key == FA_ACTION_DROP_ONLY and str(r.get("active_id") or "") == drop_key:
                     if _normalized_rule_state(r.get("state")) != "fired":
-                        already_exists = True
-                        break
+                        conflicts.append(r)
                 if action_key == RuleActionType.FA_CLAIM_DROP.value:
                     existing_mode = str(r.get("fa_trigger_mode") or FA_TRIGGER_MODE_FA_STARTING_ONLY)
                     if (
@@ -5605,14 +5637,15 @@ if submitted and not submit_disabled:
                         and existing_mode == fa_trigger_mode
                     ):
                         if _normalized_rule_state(r.get("state")) != "fired":
-                            already_exists = True
-                            break
+                            conflicts.append(r)
                 if action_key == FA_ACTION_ADD_ONLY and str(r.get("fa_add_scorer_id") or "") == fa_key:
                     if _normalized_rule_state(r.get("state")) != "fired":
-                        already_exists = True
-                        break
-            if already_exists:
-                st.warning("A manual rule already exists for this selection and period.")
+                        conflicts.append(r)
+            if conflicts:
+                _render_conflicting_rules(
+                    conflicts,
+                    heading="A manual rule already exists for this selection and period.",
+                )
                 st.stop()
 
             rec = {
@@ -5993,6 +6026,9 @@ else:
                         f"**Add/Drop rule:** When **{fa_label}** is *starting*, submit claim to add **{fa_label}** "
                         f"and drop **{drop_name}** during **{period_label}**."
                         if trigger_mode == FA_TRIGGER_MODE_FA_STARTING_ONLY
+                        else f"**Add/Drop rule:** When **{drop_name}** is *not starting*, submit claim to add **{fa_label}** "
+                        f"and drop **{drop_name}** during **{period_label}**."
+                        if trigger_mode == FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE
                         else f"**Add/Drop rule:** When **{drop_name}** is *not starting* and **{fa_label}** is *starting*, "
                         f"submit claim to add **{fa_label}** and drop **{drop_name}** during **{period_label}**."
                     )

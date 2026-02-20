@@ -77,9 +77,9 @@
         "captain": false
       },
       {
-        "id": 1006387,
-        "name": "Kevin Schade",
-        "position": "M",
+        "id": 972421,
+        "name": "Keane Lewis-Potter",
+        "position": "D",
         "team_id": 50,
         "substitute": false,
         "captain": false
@@ -127,9 +127,9 @@
         "captain": false
       },
       {
-        "id": 219572,
-        "name": "Joël Veltman",
-        "position": "D",
+        "id": 959628,
+        "name": "Mats Wieffer",
+        "position": "M",
         "team_id": 30,
         "substitute": false,
         "captain": false
@@ -159,6 +159,14 @@
         "captain": false
       },
       {
+        "id": 1199043,
+        "name": "Carlos Baleba",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
         "id": 1142315,
         "name": "Jack Hinshelwood",
         "position": "D",
@@ -167,24 +175,16 @@
         "captain": false
       },
       {
-        "id": 48480,
-        "name": "Pascal Groß",
-        "position": "M",
-        "team_id": 30,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 1400106,
-        "name": "Yankuba Minteh",
-        "position": "M",
-        "team_id": 30,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 1065588,
         "name": "Diego Gómez",
+        "position": "M",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 48480,
+        "name": "Pascal Groß",
         "position": "M",
         "team_id": 30,
         "substitute": false,
@@ -235,5 +235,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-19 20:00:14+0000"
+  "fetched_at_utc": "2026-02-20 22:00:13+0000"
 }

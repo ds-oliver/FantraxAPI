@@ -37,17 +37,9 @@
         "captain": false
       },
       {
-        "id": 96538,
-        "name": "Lucas Digne",
+        "id": 976263,
+        "name": "Ian Maatsen",
         "position": "D",
-        "team_id": 40,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 923973,
-        "name": "Amadou Onana",
-        "position": "M",
         "team_id": 40,
         "substitute": false,
         "captain": false
@@ -55,6 +47,14 @@
       {
         "id": 867887,
         "name": "Douglas Luiz",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 923973,
+        "name": "Amadou Onana",
         "position": "M",
         "team_id": 40,
         "substitute": false,
@@ -108,12 +108,6 @@
         "reason": 13
       },
       {
-        "id": 1457536,
-        "name": "Andrés García",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 250223,
         "name": "John McGinn",
         "position": "M",
@@ -130,6 +124,12 @@
         "name": "Matty Cash",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 1631879,
+        "name": "Alysson",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
@@ -137,17 +137,9 @@
     "formation": "3-4-2-1",
     "starters": [
       {
-        "id": 871290,
-        "name": "Lucas Perri",
+        "id": 123689,
+        "name": "Karl Darlow",
         "position": "G",
-        "team_id": 34,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 827681,
-        "name": "James Justin",
-        "position": "D",
         "team_id": 34,
         "substitute": false,
         "captain": false
@@ -169,8 +161,24 @@
         "captain": false
       },
       {
+        "id": 836675,
+        "name": "Pascal Struijk",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
         "id": 929132,
         "name": "Jayden Bogle",
+        "position": "D",
+        "team_id": 34,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 847097,
+        "name": "Ethan Ampadu",
         "position": "D",
         "team_id": 34,
         "substitute": false,
@@ -185,14 +193,6 @@
         "captain": false
       },
       {
-        "id": 847097,
-        "name": "Ethan Ampadu",
-        "position": "D",
-        "team_id": 34,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 834308,
         "name": "Gabriel Gudmundsson",
         "position": "D",
@@ -201,17 +201,17 @@
         "captain": false
       },
       {
-        "id": 973431,
-        "name": "Brenden Aaronson",
+        "id": 889861,
+        "name": "Anton Stach",
         "position": "M",
         "team_id": 34,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 865523,
-        "name": "Noah Okafor",
-        "position": "F",
+        "id": 973431,
+        "name": "Brenden Aaronson",
+        "position": "M",
         "team_id": 34,
         "substitute": false,
         "captain": false
@@ -228,30 +228,12 @@
     "subs": [],
     "missing": [
       {
-        "id": 889861,
-        "name": "Anton Stach",
-        "position": "M",
-        "reason": 1
-      },
-      {
         "id": 865523,
         "name": "Noah Okafor",
         "position": "F",
         "reason": 1
-      },
-      {
-        "id": 828639,
-        "name": "Daniel James",
-        "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 836675,
-        "name": "Pascal Struijk",
-        "position": "D",
-        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-02-19 20:00:12+0000"
+  "fetched_at_utc": "2026-02-20 22:00:13+0000"
 }

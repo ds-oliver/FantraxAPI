@@ -21,14 +21,6 @@
         "captain": false
       },
       {
-        "id": 805137,
-        "name": "Omar Alderete",
-        "position": "D",
-        "team_id": 41,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 958878,
         "name": "Daniel Ballard",
         "position": "D",
@@ -37,8 +29,16 @@
         "captain": false
       },
       {
-        "id": 831424,
-        "name": "Reinildo Mandava",
+        "id": 805137,
+        "name": "Omar Alderete",
+        "position": "D",
+        "team_id": 41,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1014987,
+        "name": "Dennis Cirkin",
         "position": "D",
         "team_id": 41,
         "substitute": false,
@@ -102,14 +102,8 @@
         "reason": 1
       },
       {
-        "id": 117777,
-        "name": "Granit Xhaka",
-        "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 805137,
-        "name": "Omar Alderete",
+        "id": 831424,
+        "name": "Reinildo Mandava",
         "position": "D",
         "reason": 1
       }
@@ -119,8 +113,8 @@
     "formation": "4-2-3-1",
     "starters": [
       {
-        "id": 123207,
-        "name": "Benjamin Lecomte",
+        "id": 103335,
+        "name": "Bernd Leno",
         "position": "G",
         "team_id": 43,
         "substitute": false,
@@ -151,17 +145,9 @@
         "captain": false
       },
       {
-        "id": 803174,
-        "name": "Antonee Robinson",
+        "id": 836698,
+        "name": "Ryan Sessegnon",
         "position": "D",
-        "team_id": 43,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 793167,
-        "name": "Sander Berge",
-        "position": "M",
         "team_id": 43,
         "substitute": false,
         "captain": false
@@ -169,6 +155,14 @@
       {
         "id": 352770,
         "name": "Alex Iwobi",
+        "position": "M",
+        "team_id": 43,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 793167,
+        "name": "Sander Berge",
         "position": "M",
         "team_id": 43,
         "substitute": false,
@@ -210,18 +204,18 @@
     "subs": [],
     "missing": [
       {
-        "id": 371222,
-        "name": "Saša Lukić",
-        "position": "M",
-        "reason": 1
-      },
-      {
         "id": 82566,
         "name": "Tom Cairney",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 822470,
+        "name": "Samuel Chukwueze",
+        "position": "F",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-02-19 20:00:17+0000"
+  "fetched_at_utc": "2026-02-20 22:00:18+0000"
 }
