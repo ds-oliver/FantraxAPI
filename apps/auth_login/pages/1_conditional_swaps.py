@@ -339,6 +339,13 @@ def _mark_period_manual_override() -> None:
     st.session_state["period_override_round"] = st.session_state.get("current_sofascore_round")
 
 
+def _mark_advanced_period_manual_override() -> None:
+    """
+    Track that the user explicitly changed the Create Rule period selector.
+    """
+    st.session_state["advanced_rule_period_manual_override"] = True
+
+
 def _record_immediate_swap_event(
     *,
     action: str,
@@ -3921,15 +3928,33 @@ adv_period_id = None
 adv_period_label = ""
 if period_id_map:
     period_choices = list(period_id_map.keys())
-    default_period_id = st.session_state.get("advanced_rule_period_id") or st.session_state.get("selected_gameweek_period_id")
+    selected_gw_period = st.session_state.get("selected_gameweek_period_id")
+    last_selected_gw_period = st.session_state.get("advanced_rule_period_last_selected_gameweek")
+    advanced_manual_override = bool(st.session_state.get("advanced_rule_period_manual_override"))
+    if str(last_selected_gw_period or "") != str(selected_gw_period or ""):
+        advanced_manual_override = False
+        st.session_state["advanced_rule_period_manual_override"] = False
+        st.session_state["advanced_rule_period_last_selected_gameweek"] = selected_gw_period
+
+    default_period_id = selected_gw_period or st.session_state.get("advanced_rule_period_id")
     if not default_period_id or default_period_id not in period_id_map:
         default_period_id = period_choices[0]
+
+    advanced_period_widget_key = "advanced_rule_period_select"
+    stale_advanced_period = st.session_state.get(advanced_period_widget_key) not in period_id_map
+    if (
+        (not advanced_manual_override)
+        or advanced_period_widget_key not in st.session_state
+        or stale_advanced_period
+    ):
+        st.session_state[advanced_period_widget_key] = default_period_id
+
     adv_period_id = st.selectbox(
         "Apply rule during period",
         options=period_choices,
-        index=period_choices.index(default_period_id),
         format_func=lambda pid: period_id_map.get(pid, pid),
-        key="advanced_rule_period_select",
+        key=advanced_period_widget_key,
+        on_change=_mark_advanced_period_manual_override,
     )
     adv_period_label = period_id_map.get(adv_period_id, "")
     st.session_state["advanced_rule_period_id"] = adv_period_id
