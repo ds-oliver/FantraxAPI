@@ -5089,6 +5089,33 @@ fa_candidate: Optional[Dict[str, str]] = None
 fa_bid_amount: float = 0.0
 fa_status_map: Dict[str, object] = {}
 
+known_kos_kickoffs: List[tuple[datetime, int]] = []
+for _pid, _kos_idx in kos_map.items():
+    if _kos_idx is None:
+        continue
+    _info = lineup_info_by_player.get(str(_pid))
+    _kickoff_dt = getattr(_info, "kickoff", None) if _info else None
+    if isinstance(_kickoff_dt, datetime):
+        known_kos_kickoffs.append((_kickoff_dt, int(_kos_idx)))
+
+
+def _kos_for_kickoff(kickoff_dt: Optional[datetime]) -> Optional[int]:
+    if not isinstance(kickoff_dt, datetime):
+        return None
+    best_kos: Optional[int] = None
+    best_delta: Optional[float] = None
+    for known_dt, known_kos in known_kos_kickoffs:
+        try:
+            delta = abs((known_dt - kickoff_dt).total_seconds())
+        except Exception:
+            continue
+        if delta > 300:
+            continue
+        if best_delta is None or delta < best_delta:
+            best_delta = delta
+            best_kos = known_kos
+    return best_kos
+
 if selected_action_type == RuleActionType.LINEUP_SWAP:
     if (
         active_player_id
@@ -5112,6 +5139,8 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                 )
                 info = lineup_info_by_player.get(bench_id)
                 status_known = bool(info and info.status != LineupStatus.UNKNOWN)
+                active_kos = kos_map.get(active_player_id) if active_player_id else None
+                reserve_kos = kos_map.get(bench_id)
                 kickoff_ok = bool(
                     info
                     and info.kickoff
@@ -5128,6 +5157,12 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                     swap_reason = f"status={info.status.value}"
                 elif not kickoff_ok:
                     swap_reason = "kickoff earlier than active or missing"
+                elif (
+                    active_kos is not None
+                    and reserve_kos is not None
+                    and int(reserve_kos) < int(active_kos)
+                ):
+                    swap_reason = f"earlier_kos({reserve_kos}<{active_kos})"
                 else:
                     if would_break_mandatory_slots(
                         roster_view,
@@ -5155,6 +5190,7 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                         "Player": row.player.name,
                         "Status": info.status.value if info else "unknown",
                         "Kickoff": _format_kickoff(info.kickoff) if info else "—",
+                        "KOS": reserve_kos,
                         "Locked": locked,
                         "Has lineup": status_known,
                         "Future kickoff ok": kickoff_ok,
@@ -5171,6 +5207,12 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                 if not info.kickoff or info.kickoff < now:
                     continue
                 if info.kickoff < active_lineup.kickoff:
+                    continue
+                if (
+                    active_kos is not None
+                    and reserve_kos is not None
+                    and int(reserve_kos) < int(active_kos)
+                ):
                     continue
                 if would_break_mandatory_slots(
                     roster_view,
@@ -5194,6 +5236,7 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                     {
                         "player_id": bench_id,
                         "Player": f"{row.player.name} ({pos})",
+                        "KOS": reserve_kos,
                         "Kickoff (UTC)": _format_kickoff(info.kickoff),
                         "Status": _format_status(info.status),
                         "Select": False,
@@ -5229,6 +5272,7 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                     help="Lower numbers fire first when multiple backups are eligible.",
                 ),
                 "Player": st.column_config.TextColumn("Player", disabled=True),
+                "KOS": st.column_config.NumberColumn("KOS", disabled=True),
                 "Kickoff (UTC)": st.column_config.TextColumn("Kickoff (UTC)", disabled=True),
                 "Status": st.column_config.TextColumn("Status", disabled=True),
             },
@@ -5342,6 +5386,7 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                         "Status": status_label,
                         "ProjFPts": proj_fpts,
                         "ProjGS": proj_gs,
+                        "KOS": _kos_for_kickoff(kickoff_dt),
                         "Kickoff (UTC)": _format_kickoff(kickoff_dt),
                         "Select": False,
                     }
@@ -5352,14 +5397,17 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
         display_rows = fa_confirmed_rows or fa_candidate_rows
         if fa_candidate_rows and not fa_confirmed_rows:
             st.info("No confirmed starters right now; showing all available free agents.")
+            st.caption("Kickoff/KOS can be blank when Fantrax does not return a kickoff for the free agent snapshot yet.")
 
         if display_rows:
             fa_df = pd.DataFrame(display_rows)
             fa_df["ProjFPts"] = pd.to_numeric(fa_df["ProjFPts"], errors="coerce")
             fa_df["ProjGS"] = pd.to_numeric(fa_df["ProjGS"], errors="coerce")
+            fa_df["KOS"] = pd.to_numeric(fa_df["KOS"], errors="coerce")
             fa_df = fa_df.sort_values(
-                by=["ProjFPts", "ProjGS"],
-                ascending=[False, False],
+                by=["KOS", "ProjGS", "ProjFPts"],
+                ascending=[True, False, False],
+                na_position="last",
             )
             edited_fa_df = st.data_editor(
                 fa_df,
@@ -5373,6 +5421,7 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                     "Status": st.column_config.TextColumn("Status", disabled=True),
                     "ProjFPts": st.column_config.NumberColumn("ProjFPts", format="%.1f", disabled=True),
                     "ProjGS": st.column_config.NumberColumn("ProjGS", disabled=True),
+                    "KOS": st.column_config.NumberColumn("KOS", disabled=True),
                     "Kickoff (UTC)": st.column_config.TextColumn("Kickoff (UTC)", disabled=True),
                     "id": st.column_config.TextColumn("id", disabled=True),
                     "default_pos_id": st.column_config.TextColumn("default_pos_id", disabled=True),
