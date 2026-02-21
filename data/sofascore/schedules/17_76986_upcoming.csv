@@ -1,8 +1,4 @@
 event_id,kickoff_utc,home_team,away_team,home_team_id,away_team_id,tournament_id,season_id,round,status_code
-14024007,2026-02-21 15:00:00+0000,Chelsea,Burnley,38,6,17,76986,27,
-14025215,2026-02-21 15:00:00+0000,Aston Villa,Leeds United,40,34,17,76986,27,
-14024006,2026-02-21 15:00:00+0000,Brentford,Brighton & Hove Albion,50,30,17,76986,27,
-14023969,2026-02-21 17:30:00+0000,West Ham United,Bournemouth,37,60,17,76986,27,
 14024010,2026-02-21 20:00:00+0000,Manchester City,Newcastle United,17,39,17,76986,27,
 14024013,2026-02-22 14:00:00+0000,Nottingham Forest,Liverpool,14,44,17,76986,27,
 14024008,2026-02-22 14:00:00+0000,Crystal Palace,Wolverhampton,7,3,17,76986,27,

@@ -298,6 +298,14 @@
         "captain": false
       },
       {
+        "id": 1199043,
+        "name": "Carlos Baleba",
+        "position": "M",
+        "team_id": 30,
+        "substitute": true,
+        "captain": false
+      },
+      {
         "id": 31867,
         "name": "Jason Steele",
         "position": "G",
@@ -344,14 +352,6 @@
         "team_id": 169150,
         "substitute": true,
         "captain": false
-      },
-      {
-        "id": 1199043,
-        "name": "Carlos Baleba",
-        "position": "M",
-        "team_id": 30,
-        "substitute": true,
-        "captain": false
       }
     ],
     "missing": [
@@ -381,5 +381,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-21 16:50:07+0000"
+  "fetched_at_utc": "2026-02-21 16:55:06+0000"
 }

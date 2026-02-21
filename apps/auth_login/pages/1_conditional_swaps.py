@@ -3146,6 +3146,39 @@ if gw_meta:
 
 projections_map = _get_projections_map()
 
+
+def _build_team_kickoff_map(events: List[dict]) -> Dict[str, datetime]:
+    out: Dict[str, datetime] = {}
+    for ev in events or []:
+        kickoff = ev.get("kickoff")
+        if not isinstance(kickoff, datetime):
+            continue
+        for team_raw in (ev.get("home_team"), ev.get("away_team")):
+            team_code = _team_code_for_display(team_raw)
+            if not team_code or team_code == "-":
+                continue
+            existing = out.get(team_code)
+            if existing is None or kickoff < existing:
+                out[team_code] = kickoff
+    return out
+
+
+_overview_team_kickoff_map = _build_team_kickoff_map(schedule_events if "schedule_events" in locals() else [])
+
+
+def _preferred_kickoff_for_player(
+    pid: str,
+    info: Optional[PlayerLineupInfo],
+    *,
+    lineup_info_by_player: Dict[str, PlayerLineupInfo],
+    player_lookup: Dict[str, RosterRow],
+) -> Optional[datetime]:
+    team_code, _opp = _team_and_opponent_for_player(pid, lineup_info_by_player, player_lookup)
+    mapped = _overview_team_kickoff_map.get(team_code) if team_code else None
+    if isinstance(mapped, datetime):
+        return mapped
+    return getattr(info, "kickoff", None) if info else None
+
 feed_rows = _build_lineup_feed_rows(
     roster_view=roster_view,
     lineup_info_by_player=lineup_info_by_player,
@@ -5015,14 +5048,26 @@ claims_ack_checkbox = False
 
 if active_row:
     status_text = _format_status(active_lineup.status) if active_lineup else "Unknown"
-    kickoff_text = _format_kickoff(active_lineup.kickoff if active_lineup else None)
+    active_kickoff_pref = _preferred_kickoff_for_player(
+        str(active_player_id),
+        active_lineup,
+        lineup_info_by_player=lineup_info_by_player,
+        player_lookup=player_lookup,
+    )
+    kickoff_text = _format_kickoff(active_kickoff_pref)
     st.markdown(
         f"**Selected**: {active_row.player.name} (`{active_player_id}`) — lineup status: "
         f"`{status_text}` (kickoff {kickoff_text})"
     )
 if drop_row:
     status_text = _format_status(drop_lineup.status) if drop_lineup else "Unknown"
-    kickoff_text = _format_kickoff(drop_lineup.kickoff if drop_lineup else None)
+    drop_kickoff_pref = _preferred_kickoff_for_player(
+        str(drop_player_id),
+        drop_lineup,
+        lineup_info_by_player=lineup_info_by_player,
+        player_lookup=player_lookup,
+    )
+    kickoff_text = _format_kickoff(drop_kickoff_pref)
     st.markdown(
         f"**Drop candidate**: {drop_row.player.name} (`{drop_player_id}`) — lineup status: "
         f"`{status_text}` (kickoff {kickoff_text})"
@@ -5141,11 +5186,23 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                 status_known = bool(info and info.status != LineupStatus.UNKNOWN)
                 active_kos = kos_map.get(active_player_id) if active_player_id else None
                 reserve_kos = kos_map.get(bench_id)
+                active_kickoff_pref = _preferred_kickoff_for_player(
+                    str(active_player_id),
+                    active_lineup,
+                    lineup_info_by_player=lineup_info_by_player,
+                    player_lookup=player_lookup,
+                )
+                reserve_kickoff_pref = _preferred_kickoff_for_player(
+                    bench_id,
+                    info,
+                    lineup_info_by_player=lineup_info_by_player,
+                    player_lookup=player_lookup,
+                )
                 kickoff_ok = bool(
-                    info
-                    and info.kickoff
-                    and info.kickoff >= now
-                    and info.kickoff >= active_lineup.kickoff
+                    reserve_kickoff_pref
+                    and active_kickoff_pref
+                    and reserve_kickoff_pref >= now
+                    and reserve_kickoff_pref >= active_kickoff_pref
                 )
                 can_swap_flag = False
                 swap_reason = ""
@@ -5189,7 +5246,7 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                     {
                         "Player": row.player.name,
                         "Status": info.status.value if info else "unknown",
-                        "Kickoff": _format_kickoff(info.kickoff) if info else "—",
+                        "Kickoff": _format_kickoff(reserve_kickoff_pref),
                         "KOS": reserve_kos,
                         "Locked": locked,
                         "Has lineup": status_known,
@@ -5202,11 +5259,17 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                 if locked:
                     continue
                 info = lineup_info_by_player.get(bench_id)
+                reserve_kickoff_pref = _preferred_kickoff_for_player(
+                    bench_id,
+                    info,
+                    lineup_info_by_player=lineup_info_by_player,
+                    player_lookup=player_lookup,
+                )
                 if not info or info.status != LineupStatus.STARTING:
                     continue
-                if not info.kickoff or info.kickoff < now:
+                if not reserve_kickoff_pref or reserve_kickoff_pref < now:
                     continue
-                if info.kickoff < active_lineup.kickoff:
+                if not active_kickoff_pref or reserve_kickoff_pref < active_kickoff_pref:
                     continue
                 if (
                     active_kos is not None
@@ -5237,7 +5300,7 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
                         "player_id": bench_id,
                         "Player": f"{row.player.name} ({pos})",
                         "KOS": reserve_kos,
-                        "Kickoff (UTC)": _format_kickoff(info.kickoff),
+                        "Kickoff (UTC)": _format_kickoff(reserve_kickoff_pref),
                         "Status": _format_status(info.status),
                         "Select": False,
                         "Priority": len(candidate_rows) + 1,
@@ -5305,7 +5368,12 @@ open_active_slots, open_reserve_slots = _open_roster_slots(roster)
 
 if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
     st.markdown("**Free agent candidate (conditional claim target)**")
-    drop_kickoff = drop_lineup.kickoff if drop_lineup else None
+    drop_kickoff = _preferred_kickoff_for_player(
+        str(drop_player_id),
+        drop_lineup,
+        lineup_info_by_player=lineup_info_by_player,
+        player_lookup=player_lookup,
+    ) if drop_player_id else None
     if selected_action_type == RuleActionType.FA_CLAIM_DROP and fa_simple_mode == FA_SIMPLE_MODE_DROP_BASED and not drop_kickoff:
         st.caption(
             "Drop candidate kickoff is unknown; evaluating FA targets anyway and applying kickoff ordering only when available."
@@ -5485,7 +5553,14 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
             drop_lineup = lineup_info_by_player.get(drop_player_id) if drop_player_id else None
             if drop_row:
                 status_text = _format_status(drop_lineup.status) if drop_lineup else "Unknown"
-                kickoff_text = _format_kickoff(drop_lineup.kickoff if drop_lineup else None)
+                kickoff_text = _format_kickoff(
+                    _preferred_kickoff_for_player(
+                        str(drop_player_id),
+                        drop_lineup,
+                        lineup_info_by_player=lineup_info_by_player,
+                        player_lookup=player_lookup,
+                    )
+                )
                 st.markdown(
                     f"**Drop candidate**: {drop_row.player.name} (`{drop_player_id}`) — lineup status: "
                     f"`{status_text}` (kickoff {kickoff_text})"

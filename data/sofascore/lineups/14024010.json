@@ -234,12 +234,6 @@
         "reason": 1
       },
       {
-        "id": 1400650,
-        "name": "Lewis Miley",
-        "position": "M",
-        "reason": 1
-      },
-      {
         "id": 980634,
         "name": "Valentino Livramento",
         "position": "D",
@@ -252,6 +246,12 @@
         "reason": 1
       },
       {
+        "id": 1400650,
+        "name": "Lewis Miley",
+        "position": "M",
+        "reason": 1
+      },
+      {
         "id": 910046,
         "name": "Sven Botman",
         "position": "D",
@@ -259,5 +259,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-21 04:00:19+0000"
+  "fetched_at_utc": "2026-02-21 18:00:12+0000"
 }

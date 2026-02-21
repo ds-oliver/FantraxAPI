@@ -1,8 +1,8 @@
 {
   "event_id": 14023969,
-  "confirmed": true,
+  "confirmed": false,
   "home": {
-    "formation": "4-2-3-1",
+    "formation": "4-3-3",
     "starters": [
       {
         "id": 856640,
@@ -37,8 +37,16 @@
         "captain": false
       },
       {
-        "id": 1471764,
-        "name": "El Hadji Malick Diouf",
+        "id": 1150952,
+        "name": "Oliver Scarles",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 799041,
+        "name": "Tomáš Souček",
         "position": "M",
         "team_id": 37,
         "substitute": false,
@@ -66,12 +74,12 @@
         "position": "M",
         "team_id": 37,
         "substitute": false,
-        "captain": true
+        "captain": false
       },
       {
-        "id": 799041,
-        "name": "Tomáš Souček",
-        "position": "M",
+        "id": 877013,
+        "name": "Valentín Castellanos",
+        "position": "F",
         "team_id": 37,
         "substitute": false,
         "captain": false
@@ -83,91 +91,16 @@
         "team_id": 37,
         "substitute": false,
         "captain": false
-      },
-      {
-        "id": 877013,
-        "name": "Valentín Castellanos",
-        "position": "F",
-        "team_id": 37,
-        "substitute": false,
-        "captain": false
       }
     ],
-    "subs": [
-      {
-        "id": 96531,
-        "name": "Alphonse Aréola",
-        "position": "G",
-        "team_id": 37,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 823085,
-        "name": "Kyle Walker-Peters",
-        "position": "D",
-        "team_id": 37,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 894474,
-        "name": "Max Kilman",
-        "position": "D",
-        "team_id": 37,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 945217,
-        "name": "Jean-Clair Todibo",
-        "position": "D",
-        "team_id": 37,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1652590,
-        "name": "Ezra Mayers",
-        "position": "D",
-        "team_id": 36552,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1150952,
-        "name": "Oliver Scarles",
-        "position": "M",
-        "team_id": 37,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1523623,
-        "name": "Mohamadou Kanté",
-        "position": "M",
-        "team_id": 36552,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 113956,
-        "name": "Callum Wilson",
-        "position": "F",
-        "team_id": 37,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 286165,
-        "name": "Adama Traoré",
-        "position": "F",
-        "team_id": 37,
-        "substitute": true,
-        "captain": false
-      }
-    ],
+    "subs": [],
     "missing": [
+      {
+        "id": 15479,
+        "name": "Łukasz Fabiański",
+        "position": "G",
+        "reason": 1
+      },
       {
         "id": 1101174,
         "name": "Pablo Felipe",
@@ -179,12 +112,6 @@
         "name": "Freddie Potts",
         "position": "M",
         "reason": 13
-      },
-      {
-        "id": 15479,
-        "name": "Łukasz Fabiański",
-        "position": "G",
-        "reason": 1
       }
     ]
   },
@@ -221,7 +148,7 @@
         "position": "D",
         "team_id": 60,
         "substitute": false,
-        "captain": true
+        "captain": false
       },
       {
         "id": 999028,
@@ -232,16 +159,16 @@
         "captain": false
       },
       {
-        "id": 1104986,
-        "name": "Alex Scott",
+        "id": 548188,
+        "name": "Lewis Cook",
         "position": "M",
         "team_id": 60,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 800419,
-        "name": "Tyler Adams",
+        "id": 1104986,
+        "name": "Alex Scott",
         "position": "M",
         "team_id": 60,
         "substitute": false,
@@ -280,80 +207,7 @@
         "captain": false
       }
     ],
-    "subs": [
-      {
-        "id": 913762,
-        "name": "Christos Mandas",
-        "position": "G",
-        "team_id": 60,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 44566,
-        "name": "Adam Smith",
-        "position": "D",
-        "team_id": 60,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 962408,
-        "name": "Bafodé Diakité",
-        "position": "D",
-        "team_id": 60,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1406130,
-        "name": "Veljko Milosavljević",
-        "position": "D",
-        "team_id": 60,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 855731,
-        "name": "David Brooks",
-        "position": "M",
-        "team_id": 60,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 895576,
-        "name": "Marcus Tavernier",
-        "position": "M",
-        "team_id": 60,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1476524,
-        "name": "Alex Tóth",
-        "position": "M",
-        "team_id": 60,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 322391,
-        "name": "Ryan Christie",
-        "position": "M",
-        "team_id": 60,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 336655,
-        "name": "Enes Ünal",
-        "position": "F",
-        "team_id": 60,
-        "substitute": true,
-        "captain": false
-      }
-    ],
+    "subs": [],
     "missing": [
       {
         "id": 1154861,
@@ -374,6 +228,12 @@
         "reason": 1
       },
       {
+        "id": 895576,
+        "name": "Marcus Tavernier",
+        "position": "M",
+        "reason": 1
+      },
+      {
         "id": 1190712,
         "name": "Matai Akinmboni",
         "position": "D",
@@ -381,5 +241,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-21 17:45:05+0000"
+  "fetched_at_utc": "2026-02-21 04:00:18+0000"
 }
