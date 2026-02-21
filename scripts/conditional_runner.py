@@ -678,6 +678,8 @@ def _summarize_candidates(candidates: List[Dict[str, Any]], user_timezone: str =
             {
                 "reserve_id": c.get("reserve_id"),
                 "status": c.get("status"),
+                "candidate_classification": c.get("candidate_classification"),
+                "proj_gs": c.get("proj_gs"),
                 "proj_fpts": c.get("proj_fpts"),
                 "kos_index": c.get("kos_index"),
                 "locked": c.get("locked"),
@@ -729,6 +731,49 @@ def _rule_priority_key(rule: Dict[str, Any]) -> tuple:
     created_at = str(rule.get("created_at") or "")
     rule_id = str(rule.get("rule_id") or "")
     return (priority, created_at, rule_id)
+
+
+def _order_auto_unconfirmed_fallback_candidates(
+    candidates: List[Dict[str, Any]],
+    *,
+    active_kos_index: Optional[int],
+) -> List[Dict[str, Any]]:
+    """
+    Rank auto fallback reserves by:
+    1) KOS ordering relative to active
+    2) projected starts (ProjGS)
+    3) projected fantasy points (ProjFPts)
+    4) deterministic reserve id tie-breaker
+    """
+
+    def _kos_rank(kos_val: Optional[int]) -> int:
+        if kos_val is None:
+            return 999
+        if active_kos_index is None:
+            return int(kos_val)
+        if kos_val == active_kos_index:
+            return 0
+        if kos_val > active_kos_index:
+            return int(kos_val - active_kos_index)
+        return 100 + int(active_kos_index - kos_val)
+
+    def _sort_key(c: Dict[str, Any]) -> tuple:
+        try:
+            proj_gs = int(c.get("proj_gs") or 0)
+        except Exception:
+            proj_gs = 0
+        try:
+            proj_fpts = float(c.get("proj_fpts") or 0.0)
+        except Exception:
+            proj_fpts = 0.0
+        return (
+            _kos_rank(c.get("kos_index")),
+            -proj_gs,
+            -proj_fpts,
+            str(c.get("reserve_id") or ""),
+        )
+
+    return sorted(candidates, key=_sort_key)
 
 
 def _apply_inverse_rule_guard(
@@ -2549,6 +2594,7 @@ def main() -> None:
                                     )
                                     continue
                             proj_val = r.get("proj_fpts")
+                            proj_gs_val = r.get("proj_gs")
                             row = id_to_row.get(reserve_id)
                             if not _has_projection_for_row(row, projections):
                                 logger.info(
@@ -2558,18 +2604,34 @@ def main() -> None:
                                 )
                                 continue
                             if proj_val is None:
-                                proj_val, _proj_gs = _projection_for_row(row, projections) if row else (0.0, 0)
+                                proj_val, fallback_proj_gs = _projection_for_row(row, projections) if row else (0.0, 0)
+                                if proj_gs_val is None:
+                                    proj_gs_val = fallback_proj_gs
+                            elif proj_gs_val is None:
+                                _p, fallback_proj_gs = _projection_for_row(row, projections) if row else (0.0, 0)
+                                proj_gs_val = fallback_proj_gs
                             try:
                                 proj_val = float(proj_val or 0.0)
                             except Exception:
                                 proj_val = 0.0
+                            try:
+                                proj_gs_val = int(proj_gs_val or 0)
+                            except Exception:
+                                proj_gs_val = 0
+                            candidate_status = (
+                                _sim_status_kind(reserve_id)
+                                if args.simulate_lineups
+                                else status_kind_fn(reserve_info)
+                            )
                             reserve_candidates.append(
                                 {
                                     "rule": r,
                                     "reserve_id": reserve_id,
-                                    "status": _sim_status_kind(reserve_id)
-                                    if args.simulate_lineups
-                                    else status_kind_fn(reserve_info),
+                                    "status": candidate_status,
+                                    "candidate_classification": (
+                                        "confirmed_starter" if candidate_status == "starting" else "unconfirmed_or_not_starting"
+                                    ),
+                                    "proj_gs": proj_gs_val,
                                     "proj_fpts": proj_val,
                                     "kos_index": kos_index_map.get(reserve_id),
                                     "kickoff": getattr(reserve_info, "kickoff", None) if reserve_info else None,
@@ -2600,13 +2662,37 @@ def main() -> None:
                                 preferred = confirmed
                             else:
                                 if not args.force_trigger and trigger == "confirmed_lineup":
-                                    logger.info(
-                                        "Rule %s skipped: no confirmed reserve starters for %s.",
-                                        active_rules[0].get("rule_id"),
-                                        _player_label(roster_view, active_id),
-                                    )
-                                    continue
-                                preferred = reserve_candidates
+                                    if is_auto_rule:
+                                        preferred = _order_auto_unconfirmed_fallback_candidates(
+                                            reserve_candidates,
+                                            active_kos_index=active_kos_index,
+                                        )
+                                        logger.info(
+                                            "Rule %s fallback_unconfirmed_reserve: active confirmed non-starter (%s); "
+                                            "confirmed=0 fallback_candidates=%s",
+                                            active_rules[0].get("rule_id"),
+                                            _player_label(roster_view, active_id),
+                                            len(preferred),
+                                        )
+                                        if args.trace:
+                                            trace_meta["fallback_reason"] = "fallback_unconfirmed_reserve"
+                                            trace_meta["fallback_candidate_count"] = len(preferred)
+                                    else:
+                                        logger.info(
+                                            "Rule %s skipped: no confirmed reserve starters for %s.",
+                                            active_rules[0].get("rule_id"),
+                                            _player_label(roster_view, active_id),
+                                        )
+                                        _log_trace(
+                                            args.trace,
+                                            logger=logger,
+                                            meta=trace_meta,
+                                            ready=False,
+                                            skip_reason="no_confirmed_reserve_starters",
+                                        )
+                                        continue
+                                else:
+                                    preferred = reserve_candidates
 
                         else:  # unconfirmed
                             if late_kos_policy == "cover" and active_id == late_cover_active_id and active_kickoff:
@@ -2720,6 +2806,8 @@ def main() -> None:
                                         candidates=trace_candidates,
                                         chosen={
                                             "reserve_id": reserve_id,
+                                            "candidate_classification": candidate.get("candidate_classification"),
+                                            "proj_gs": candidate.get("proj_gs"),
                                             "proj_fpts": candidate.get("proj_fpts"),
                                             "lock_bypass": candidate.get("lock_bypass"),
                                         },

@@ -1,8 +1,8 @@
 sofascore_id,name,team_name,role,source
 1464966,Rayan,,starter,14023969.json
 361352,Adam Armstrong,,starter,14024008.json
+867441,Angel Gomes,,missing,14024008.json
 962364,Lorenzo Lucca,,starter,14024013.json
-867441,Angel Gomes,,starter,14025018.json
 1445189,Tom Edozie,,sub,14025018.json
 1432254,Timur Tutierov,,sub,14025027.json
 1160554,Cuiabano,,missing,14025028.json
@@ -21,4 +21,4 @@ sofascore_id,name,team_name,role,source
 1116571,Nilson Angulo,,starter,14025197.json
 1099795,Melker Ellborg,,sub,14025197.json
 1861676,Charlie Stevens,,sub,15129445.json
-979144,Luca Netz,Nottingham Forest,ratings,sofascore_players_20260220_220039.csv
+979144,Luca Netz,Nottingham Forest,ratings,sofascore_players_20260221_010037.csv

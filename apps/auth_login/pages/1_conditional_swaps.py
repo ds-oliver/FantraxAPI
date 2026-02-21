@@ -6231,6 +6231,10 @@ else:
             "Use the auto lineup swaps toggle to enable or disable them per league. "
             "If the backups changed, rerun the runner so the rules regenerate against the current roster."
         )
+        st.caption(
+            "Auto rules default behavior: if an active player is confirmed non-starter and no reserve is "
+            "confirmed starter yet, the runner may fallback to the best unconfirmed reserve candidate."
+        )
     if swap_period_int is not None and active_candidates and reserve_candidates:
         if st.checkbox("Show auto-rule legality diagnostics", key="auto_swap_legality_debug"):
             debug_rows = _build_swap_legality_debug(

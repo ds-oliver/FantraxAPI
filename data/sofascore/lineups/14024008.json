@@ -244,8 +244,14 @@
         "name": "Hee-Chan Hwang",
         "position": "F",
         "reason": 1
+      },
+      {
+        "id": 867441,
+        "name": "Angel Gomes",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-02-20 22:00:17+0000"
+  "fetched_at_utc": "2026-02-21 01:00:15+0000"
 }

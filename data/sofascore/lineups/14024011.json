@@ -106,6 +106,18 @@
         "name": "Reinildo Mandava",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 117777,
+        "name": "Granit Xhaka",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 805137,
+        "name": "Omar Alderete",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
@@ -214,8 +226,14 @@
         "name": "Samuel Chukwueze",
         "position": "F",
         "reason": 1
+      },
+      {
+        "id": 371222,
+        "name": "Saša Lukić",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-02-20 22:00:18+0000"
+  "fetched_at_utc": "2026-02-21 01:00:16+0000"
 }

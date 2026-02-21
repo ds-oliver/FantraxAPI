@@ -2,6 +2,14 @@
 
 Purpose: a concise, repeatable guide for maintaining the repo, the VPS app, and the background jobs.
 
+## Port Policy (Use This Everywhere)
+
+- Local Streamlit on Mac: `127.0.0.1:8502`
+- VPS Streamlit on VPS host: `127.0.0.1:8501`
+- VPS Streamlit on Mac via SSH tunnel: `127.0.0.1:8511` (`-L 8511:127.0.0.1:8501`)
+
+Do not run local Streamlit on `8501` when using the VPS tunnel workflow.
+
 ## Terminal Count (How Many Windows You Need)
 
 - `1 terminal`: Any one-off VPS maintenance command (pull/restart/check logs).
@@ -19,8 +27,8 @@ Important shell context rule:
 Use this when you want to test both apps at the same time.
 
 - Mac local app: `http://127.0.0.1:8502`
-- VPS app via tunnel: `http://127.0.0.1:8501`
-- Why these ports: avoids conflict on your Mac (`8501` cannot be used by both local Streamlit and SSH tunnel at once).
+- VPS app via tunnel: `http://127.0.0.1:8511`
+- Why these ports: local and tunneled VPS access are always separate on your Mac.
 
 ### Terminal 1 (Mac local app)
 ```bash
@@ -41,13 +49,13 @@ Use this terminal for VPS checks/restarts.
 
 ### Terminal 3 (Mac SSH tunnel to VPS app)
 ```bash
-ssh -N -L 8501:127.0.0.1:8501 fantrax-vps-root
+ssh -N -L 8511:127.0.0.1:8501 fantrax-vps-root
 ```
 Keep this running.
 
 ### Browser URLs
 - Local app (Terminal 1): `http://127.0.0.1:8502`
-- VPS app (Terminal 3 tunnel): `http://127.0.0.1:8501`
+- VPS app (Terminal 3 tunnel): `http://127.0.0.1:8511`
 
 Rule:
 - If Terminal 3 closes, VPS URL stops working until tunnel is restarted.
@@ -130,7 +138,7 @@ ssh fantrax-vps-root "ss -ltnp | grep -E ':8501\\b' || true; tail -n 40 /opt/Fan
 
 6. (Optional) Tunnel VPS Streamlit to your Mac.
 ```
-ssh -N -o ExitOnForwardFailure=yes -L 8501:127.0.0.1:8501 fantrax-vps-root
+ssh -N -o ExitOnForwardFailure=yes -L 8511:127.0.0.1:8501 fantrax-vps-root
 ```
 
 ## Restart Streamlit on VPS (Load Latest Changes)
@@ -197,12 +205,12 @@ PYTHONPATH=/opt/FantraxAPI /opt/FantraxAPI/.venv/bin/streamlit run apps/auth_log
 
 5. Open a new terminal on your Mac and create the tunnel (leave it running).
 ```bash
-ssh -N -o ExitOnForwardFailure=yes -L 8501:127.0.0.1:8501 fantrax-vps-root
+ssh -N -o ExitOnForwardFailure=yes -L 8511:127.0.0.1:8501 fantrax-vps-root
 ```
 
 6. Open the app in your Mac browser.
 ```text
-http://127.0.0.1:8501
+http://127.0.0.1:8511
 ```
 
 ### When your shell is busy ("Restarting Streamlit / Launching Streamlit")
@@ -223,12 +231,12 @@ tail -n 80 /opt/FantraxAPI/logs/streamlit.out 2>/dev/null || true
 
 3. Open **Terminal B (new)** on Mac for tunnel:
 ```bash
-ssh -N -o ExitOnForwardFailure=yes -L 8501:127.0.0.1:8501 fantrax-vps-root
+ssh -N -o ExitOnForwardFailure=yes -L 8511:127.0.0.1:8501 fantrax-vps-root
 ```
 
 4. Open browser:
 ```text
-http://127.0.0.1:8501
+http://127.0.0.1:8511
 ```
 
 Rule:
@@ -243,15 +251,15 @@ Terminal requirement: `2 terminals`.
 
 ### 1) From your Mac: tunnel as `hogan`
 ```bash
-ssh -L 8501:127.0.0.1:8501 hogan@5.78.118.108
+ssh -L 8511:127.0.0.1:8501 hogan@5.78.118.108
 ```
-Then open: `http://127.0.0.1:8501`
+Then open: `http://127.0.0.1:8511`
 
 ### 1b) From your Mac: tunnel as `root` (if root SSH key auth is configured)
 ```bash
-ssh -L 8501:127.0.0.1:8501 fantrax-vps-root
+ssh -L 8511:127.0.0.1:8501 fantrax-vps-root
 ```
-Then open: `http://127.0.0.1:8501`
+Then open: `http://127.0.0.1:8511`
 
 ### 2) If you want it even simpler (no typing IP/user each time): add an SSH alias on your Mac
 Add to `~/.ssh/config`:
@@ -263,7 +271,7 @@ Host fantrax-vps
 
 Then you can run:
 ```bash
-ssh -L 8501:127.0.0.1:8501 fantrax-vps
+ssh -L 8511:127.0.0.1:8501 fantrax-vps
 ```
 
 ### 3) If you’re unsure whether you have SSH keys set up (Mac)
@@ -273,7 +281,7 @@ ls -la ~/.ssh
 
 ## Local Streamlit (Mac)
 
-1. Run Streamlit locally (`8502` recommended when VPS tunnel uses `8501`).
+1. Run Streamlit locally on `8502`.
 ```
 cd /Users/hogan/FantraxAPI
 PYTHONPATH=/Users/hogan/FantraxAPI streamlit run apps/auth_login/overview.py --server.address 127.0.0.1 --server.port 8502
@@ -344,6 +352,13 @@ Canonical state controls:
 - `CONDITIONAL_STATE_ROLE=writer|reader`
 - `CONDITIONAL_WRITER_ENV=vps|local`
 - VPS should run as writer; local should run as reader unless explicitly doing maintenance.
+
+Auto lineup fallback behavior:
+- For auto-generated lineup rules (`source=auto_lineup_swaps`), if the active player is confirmed non-starter and no reserve is confirmed starter yet, runner falls back to unconfirmed reserves by ranking:
+  1. KOS ordering
+  2. `ProjGS`
+  3. `ProjFPts`
+- Manual rules remain strict to user-authored semantics and do not implicitly broaden to this fallback path.
 
 Quick checks:
 ```
@@ -496,18 +511,18 @@ ss -ltnp 'sport = :8501' || true
 
 5. Re-open the tunnel from your Mac (keep it running in a terminal):
 ```
-ssh -N -o ExitOnForwardFailure=yes -L 8501:127.0.0.1:8501 fantrax-vps-root
-```
-Then open: `http://127.0.0.1:8501`
-
-If tunnel startup says `Address already in use`:
-- A local process already owns Mac port `8501` (often an existing SSH tunnel).
-- Check owner: `lsof -nP -iTCP:8501 -sTCP:LISTEN`
-- Either stop the existing tunnel/process, or tunnel to another local port:
-```
 ssh -N -o ExitOnForwardFailure=yes -L 8511:127.0.0.1:8501 fantrax-vps-root
 ```
 Then open: `http://127.0.0.1:8511`
+
+If tunnel startup says `Address already in use`:
+- A local process already owns Mac port `8511` (often an existing SSH tunnel).
+- Check owner: `lsof -nP -iTCP:8511 -sTCP:LISTEN`
+- Either stop the existing tunnel/process, or tunnel to another local port:
+```
+ssh -N -o ExitOnForwardFailure=yes -L 8521:127.0.0.1:8501 fantrax-vps-root
+```
+Then open: `http://127.0.0.1:8521`
 
 If port 8501 is still not listening:
 - Streamlit likely failed to start; the reason will be in `journalctl` or `streamlit.out`.
