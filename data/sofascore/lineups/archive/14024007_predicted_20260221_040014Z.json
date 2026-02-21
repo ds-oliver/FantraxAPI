@@ -1,6 +1,6 @@
 {
   "event_id": 14024007,
-  "confirmed": true,
+  "confirmed": false,
   "home": {
     "formation": "4-2-3-1",
     "starters": [
@@ -18,7 +18,7 @@
         "position": "D",
         "team_id": 38,
         "substitute": false,
-        "captain": true
+        "captain": false
       },
       {
         "id": 923894,
@@ -37,8 +37,8 @@
         "captain": false
       },
       {
-        "id": 996958,
-        "name": "Malo Gusto",
+        "id": 1153079,
+        "name": "Jorrel Hato",
         "position": "D",
         "team_id": 38,
         "substitute": false,
@@ -61,6 +61,14 @@
         "captain": false
       },
       {
+        "id": 879349,
+        "name": "Pedro Neto",
+        "position": "M",
+        "team_id": 38,
+        "substitute": false,
+        "captain": false
+      },
+      {
         "id": 982780,
         "name": "Cole Palmer",
         "position": "M",
@@ -77,14 +85,6 @@
         "captain": false
       },
       {
-        "id": 879349,
-        "name": "Pedro Neto",
-        "position": "M",
-        "team_id": 38,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 975079,
         "name": "João Pedro",
         "position": "F",
@@ -93,80 +93,7 @@
         "captain": false
       }
     ],
-    "subs": [
-      {
-        "id": 352668,
-        "name": "Tosin Adarabioyo",
-        "position": "D",
-        "team_id": 38,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1153079,
-        "name": "Jorrel Hato",
-        "position": "D",
-        "team_id": 38,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 997087,
-        "name": "Liam Delap",
-        "position": "F",
-        "team_id": 38,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1154657,
-        "name": "Mamadou Sarr",
-        "position": "D",
-        "team_id": 38,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1403050,
-        "name": "Josh Acheampong",
-        "position": "D",
-        "team_id": 38,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 978787,
-        "name": "Gabriel Słonina",
-        "position": "G",
-        "team_id": 38,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1069488,
-        "name": "Roméo Lavia",
-        "position": "M",
-        "team_id": 36539,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1135873,
-        "name": "Alejandro Garnacho",
-        "position": "F",
-        "team_id": 38,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1414933,
-        "name": "Marc Guiu",
-        "position": "F",
-        "team_id": 38,
-        "substitute": true,
-        "captain": false
-      }
-    ],
+    "subs": [],
     "missing": [
       {
         "id": 1110006,
@@ -178,6 +105,12 @@
         "id": 962053,
         "name": "Filip Jørgensen",
         "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 794939,
+        "name": "Marc Cucurella",
+        "position": "D",
         "reason": 1
       },
       {
@@ -196,12 +129,6 @@
         "id": 1140599,
         "name": "Jamie Gittens",
         "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 794939,
-        "name": "Marc Cucurella",
-        "position": "D",
         "reason": 1
       },
       {
@@ -224,12 +151,12 @@
         "captain": false
       },
       {
-        "id": 44614,
-        "name": "Kyle Walker",
-        "position": "D",
+        "id": 552036,
+        "name": "Josh Laurent",
+        "position": "M",
         "team_id": 6,
         "substitute": false,
-        "captain": true
+        "captain": false
       },
       {
         "id": 838399,
@@ -248,9 +175,9 @@
         "captain": false
       },
       {
-        "id": 552036,
-        "name": "Josh Laurent",
-        "position": "M",
+        "id": 44614,
+        "name": "Kyle Walker",
+        "position": "D",
         "team_id": 6,
         "substitute": false,
         "captain": false
@@ -304,80 +231,7 @@
         "captain": false
       }
     ],
-    "subs": [
-      {
-        "id": 1136896,
-        "name": "Lucas Pires",
-        "position": "D",
-        "team_id": 6,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 161717,
-        "name": "James Ward-Prowse",
-        "position": "M",
-        "team_id": 6,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 809276,
-        "name": "Jacob Bruun Larsen",
-        "position": "M",
-        "team_id": 6,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1004505,
-        "name": "Loum Tchaouna",
-        "position": "F",
-        "team_id": 6,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 27028,
-        "name": "Ashley Barnes",
-        "position": "M",
-        "team_id": 6,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1128801,
-        "name": "Max Weiss",
-        "position": "G",
-        "team_id": 6,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1392044,
-        "name": "Quilindschy Hartman",
-        "position": "D",
-        "team_id": 6,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 875360,
-        "name": "Hjalmar Ekdal",
-        "position": "D",
-        "team_id": 6,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 855845,
-        "name": "Florentino Luís",
-        "position": "M",
-        "team_id": 6,
-        "substitute": true,
-        "captain": false
-      }
-    ],
+    "subs": [],
     "missing": [
       {
         "id": 804613,
@@ -389,6 +243,12 @@
         "id": 826183,
         "name": "Mike Trésor",
         "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 817979,
+        "name": "Axel Tuanzebe",
+        "position": "D",
         "reason": 1
       },
       {
@@ -410,12 +270,6 @@
         "reason": 1
       },
       {
-        "id": 817979,
-        "name": "Axel Tuanzebe",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 996985,
         "name": "Armando Broja",
         "position": "F",
@@ -423,5 +277,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-21 16:50:06+0000"
+  "fetched_at_utc": "2026-02-21 04:00:14+0000"
 }

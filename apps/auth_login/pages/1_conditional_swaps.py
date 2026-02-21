@@ -5353,26 +5353,28 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                     else:
                         is_confirmed = True
                 if selected_action_type == RuleActionType.FA_CLAIM_DROP:
-                    if not drop_player_id:
-                        continue
-                    if drop_player_id in never_drop_ids and not override_never_drop:
-                        continue
-                    if not ConditionalSwapEngine._drop_would_keep_roster_legal(
-                        roster_view,
-                        drop_id=drop_player_id,
-                        min_gks=1,
-                    ):
-                        continue
-                    if (
-                        fa_trigger_mode in (
-                            FA_TRIGGER_MODE_DROP_AND_FA_STARTING,
-                            FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE,
-                        )
-                        and drop_kickoff
-                        and kickoff_dt
-                        and kickoff_dt < drop_kickoff
-                    ):
-                        continue
+                    # In claim-based mode, FA target is selected first; drop candidate is chosen later.
+                    if fa_simple_mode == FA_SIMPLE_MODE_DROP_BASED:
+                        if not drop_player_id:
+                            continue
+                        if drop_player_id in never_drop_ids and not override_never_drop:
+                            continue
+                        if not ConditionalSwapEngine._drop_would_keep_roster_legal(
+                            roster_view,
+                            drop_id=drop_player_id,
+                            min_gks=1,
+                        ):
+                            continue
+                        if (
+                            fa_trigger_mode in (
+                                FA_TRIGGER_MODE_DROP_AND_FA_STARTING,
+                                FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE,
+                            )
+                            and drop_kickoff
+                            and kickoff_dt
+                            and kickoff_dt < drop_kickoff
+                        ):
+                            continue
                 proj_row = _fa_projection_row(p.get("name"), p.get("team"), projections_map or {})
                 proj_fpts = proj_row.get("ProjFPts") if proj_row else None
                 proj_gs = proj_row.get("ProjGS") if proj_row else None

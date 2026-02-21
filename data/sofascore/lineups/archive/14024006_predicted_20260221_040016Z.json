@@ -1,6 +1,6 @@
 {
   "event_id": 14024006,
-  "confirmed": true,
+  "confirmed": false,
   "home": {
     "formation": "4-2-3-1",
     "starters": [
@@ -13,8 +13,8 @@
         "captain": false
       },
       {
-        "id": 966869,
-        "name": "Aaron Hickey",
+        "id": 1137431,
+        "name": "Michael Kayode",
         "position": "D",
         "team_id": 50,
         "substitute": false,
@@ -45,8 +45,8 @@
         "captain": false
       },
       {
-        "id": 42694,
-        "name": "Jordan Henderson",
+        "id": 1031258,
+        "name": "Yehor Yarmolyuk",
         "position": "M",
         "team_id": 50,
         "substitute": false,
@@ -61,9 +61,9 @@
         "captain": false
       },
       {
-        "id": 972421,
-        "name": "Keane Lewis-Potter",
-        "position": "D",
+        "id": 1106451,
+        "name": "Dango Ouattara",
+        "position": "F",
         "team_id": 50,
         "substitute": false,
         "captain": false
@@ -74,12 +74,12 @@
         "position": "M",
         "team_id": 50,
         "substitute": false,
-        "captain": true
+        "captain": false
       },
       {
-        "id": 1106451,
-        "name": "Dango Ouattara",
-        "position": "F",
+        "id": 972421,
+        "name": "Keane Lewis-Potter",
+        "position": "D",
         "team_id": 50,
         "substitute": false,
         "captain": false
@@ -93,80 +93,7 @@
         "captain": false
       }
     ],
-    "subs": [
-      {
-        "id": 958916,
-        "name": "Nathan Collins",
-        "position": "D",
-        "team_id": 50,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1006387,
-        "name": "Kevin Schade",
-        "position": "M",
-        "team_id": 50,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1031258,
-        "name": "Yehor Yarmolyuk",
-        "position": "M",
-        "team_id": 50,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 907072,
-        "name": "Mikkel Damsgaard",
-        "position": "M",
-        "team_id": 50,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1586020,
-        "name": "Romelle Donovan",
-        "position": "F",
-        "team_id": 50,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1005959,
-        "name": "Hákon Rafn Valdimarsson",
-        "position": "G",
-        "team_id": 50,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 855864,
-        "name": "Ethan Pinnock",
-        "position": "D",
-        "team_id": 50,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 826139,
-        "name": "Reiss Nelson",
-        "position": "M",
-        "team_id": 50,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1403098,
-        "name": "Kaye Furo",
-        "position": "F",
-        "team_id": 50,
-        "substitute": true,
-        "captain": false
-      }
-    ],
+    "subs": [],
     "missing": [
       {
         "id": 856260,
@@ -189,7 +116,7 @@
     ]
   },
   "away": {
-    "formation": "4-3-3",
+    "formation": "4-2-3-1",
     "starters": [
       {
         "id": 994363,
@@ -221,12 +148,20 @@
         "position": "D",
         "team_id": 30,
         "substitute": false,
-        "captain": true
+        "captain": false
       },
       {
         "id": 825844,
         "name": "Ferdi Kadıoğlu",
         "position": "D",
+        "team_id": 30,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1199043,
+        "name": "Carlos Baleba",
+        "position": "M",
         "team_id": 30,
         "substitute": false,
         "captain": false
@@ -240,8 +175,8 @@
         "captain": false
       },
       {
-        "id": 791,
-        "name": "James Milner",
+        "id": 1065588,
+        "name": "Diego Gómez",
         "position": "M",
         "team_id": 30,
         "substitute": false,
@@ -256,8 +191,8 @@
         "captain": false
       },
       {
-        "id": 1065588,
-        "name": "Diego Gómez",
+        "id": 936849,
+        "name": "Kaoru Mitoma",
         "position": "M",
         "team_id": 30,
         "substitute": false,
@@ -270,91 +205,16 @@
         "team_id": 30,
         "substitute": false,
         "captain": false
-      },
-      {
-        "id": 936849,
-        "name": "Kaoru Mitoma",
-        "position": "M",
-        "team_id": 30,
-        "substitute": false,
-        "captain": false
       }
     ],
-    "subs": [
-      {
-        "id": 219572,
-        "name": "Joël Veltman",
-        "position": "D",
-        "team_id": 30,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 997152,
-        "name": "Maxim De Cuyper",
-        "position": "D",
-        "team_id": 30,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 31867,
-        "name": "Jason Steele",
-        "position": "G",
-        "team_id": 30,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 788784,
-        "name": "Olivier Boscagli",
-        "position": "D",
-        "team_id": 30,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 946695,
-        "name": "Georginio Rutter",
-        "position": "M",
-        "team_id": 30,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1400106,
-        "name": "Yankuba Minteh",
-        "position": "M",
-        "team_id": 30,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1416535,
-        "name": "Charalampos Kostoulas",
-        "position": "M",
-        "team_id": 30,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1627806,
-        "name": "Harry Howell",
-        "position": "M",
-        "team_id": 169150,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1199043,
-        "name": "Carlos Baleba",
-        "position": "M",
-        "team_id": 30,
-        "substitute": true,
-        "captain": false
-      }
-    ],
+    "subs": [],
     "missing": [
+      {
+        "id": 1036269,
+        "name": "Yasin Ayari",
+        "position": "M",
+        "reason": 1
+      },
       {
         "id": 301288,
         "name": "Solly March",
@@ -372,14 +232,8 @@
         "name": "Stefanos Tzimas",
         "position": "F",
         "reason": 1
-      },
-      {
-        "id": 1036269,
-        "name": "Yasin Ayari",
-        "position": "M",
-        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-02-21 16:50:07+0000"
+  "fetched_at_utc": "2026-02-21 04:00:16+0000"
 }
