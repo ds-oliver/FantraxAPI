@@ -1,8 +1,8 @@
 {
   "event_id": 14024010,
-  "confirmed": true,
+  "confirmed": false,
   "home": {
-    "formation": "4-1-3-2",
+    "formation": "4-3-3",
     "starters": [
       {
         "id": 824509,
@@ -45,6 +45,14 @@
         "captain": false
       },
       {
+        "id": 331209,
+        "name": "Bernardo Silva",
+        "position": "M",
+        "team_id": 17,
+        "substitute": false,
+        "captain": false
+      },
+      {
         "id": 827606,
         "name": "Rodri",
         "position": "M",
@@ -53,25 +61,17 @@
         "captain": false
       },
       {
-        "id": 934354,
-        "name": "Antoine Semenyo",
-        "position": "M",
+        "id": 1142703,
+        "name": "Nico O'Reilly",
+        "position": "D",
         "team_id": 17,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 331209,
-        "name": "Bernardo Silva",
+        "id": 859765,
+        "name": "Phil Foden",
         "position": "M",
-        "team_id": 17,
-        "substitute": false,
-        "captain": true
-      },
-      {
-        "id": 1142703,
-        "name": "Nico O'Reilly",
-        "position": "D",
         "team_id": 17,
         "substitute": false,
         "captain": false
@@ -85,88 +85,15 @@
         "captain": false
       },
       {
-        "id": 873554,
-        "name": "Omar Marmoush",
-        "position": "F",
+        "id": 934354,
+        "name": "Antoine Semenyo",
+        "position": "M",
         "team_id": 17,
         "substitute": false,
         "captain": false
       }
     ],
-    "subs": [
-      {
-        "id": 1194333,
-        "name": "Abdukodir Khusanov",
-        "position": "D",
-        "team_id": 17,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 979128,
-        "name": "Rayan Cherki",
-        "position": "M",
-        "team_id": 17,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 859765,
-        "name": "Phil Foden",
-        "position": "M",
-        "team_id": 17,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 980643,
-        "name": "James Trafford",
-        "position": "G",
-        "team_id": 17,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 152077,
-        "name": "John Stones",
-        "position": "D",
-        "team_id": 17,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1136731,
-        "name": "Rico Lewis",
-        "position": "D",
-        "team_id": 17,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 893549,
-        "name": "Tijjani Reijnders",
-        "position": "M",
-        "team_id": 17,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1046795,
-        "name": "Savinho",
-        "position": "M",
-        "team_id": 17,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 954056,
-        "name": "Nico González",
-        "position": "M",
-        "team_id": 17,
-        "substitute": true,
-        "captain": false
-      }
-    ],
+    "subs": [],
     "missing": [
       {
         "id": 136710,
@@ -211,7 +138,7 @@
         "position": "D",
         "team_id": 39,
         "substitute": false,
-        "captain": true
+        "captain": false
       },
       {
         "id": 1014286,
@@ -238,8 +165,8 @@
         "captain": false
       },
       {
-        "id": 975937,
-        "name": "Jacob Ramsey",
+        "id": 888550,
+        "name": "Joe Willock",
         "position": "M",
         "team_id": 39,
         "substitute": false,
@@ -254,8 +181,8 @@
         "captain": false
       },
       {
-        "id": 888550,
-        "name": "Joe Willock",
+        "id": 560128,
+        "name": "Joelinton",
         "position": "M",
         "team_id": 39,
         "substitute": false,
@@ -270,96 +197,23 @@
         "captain": false
       },
       {
-        "id": 980623,
-        "name": "Nick Woltemade",
-        "position": "F",
-        "team_id": 39,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 914902,
         "name": "Anthony Gordon",
         "position": "F",
         "team_id": 39,
         "substitute": false,
         "captain": false
-      }
-    ],
-    "subs": [
+      },
       {
-        "id": 560128,
-        "name": "Joelinton",
+        "id": 975937,
+        "name": "Jacob Ramsey",
         "position": "M",
         "team_id": 39,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 855647,
-        "name": "Harvey Barnes",
-        "position": "F",
-        "team_id": 39,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1122603,
-        "name": "William Osula",
-        "position": "F",
-        "team_id": 39,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 372336,
-        "name": "Jacob Murphy",
-        "position": "F",
-        "team_id": 39,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1131,
-        "name": "John Ruddy",
-        "position": "G",
-        "team_id": 39,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 839410,
-        "name": "Aaron Ramsdale",
-        "position": "G",
-        "team_id": 39,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1125214,
-        "name": "Alex Murphy",
-        "position": "D",
-        "team_id": 39,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1479682,
-        "name": "Leo Shahar",
-        "position": "D",
-        "team_id": 43511,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1511675,
-        "name": "Sean Neave",
-        "position": "F",
-        "team_id": 43511,
-        "substitute": true,
+        "substitute": false,
         "captain": false
       }
     ],
+    "subs": [],
     "missing": [
       {
         "id": 150396,
@@ -405,5 +259,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-21 21:50:06+0000"
+  "fetched_at_utc": "2026-02-21 18:00:12+0000"
 }
