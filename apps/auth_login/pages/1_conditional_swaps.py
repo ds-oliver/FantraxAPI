@@ -6145,7 +6145,7 @@ else:
                 str(r.get("fa_add_scorer_id") or ""),
             ),
         )
-        for rule in manual_claim_rules:
+        for claim_idx, rule in enumerate(manual_claim_rules):
             action = str(rule.get("action_type") or RuleActionType.FA_CLAIM_DROP.value)
             drop_id = str(rule.get("active_id") or "")
             drop_row = player_lookup.get(drop_id)
@@ -6191,12 +6191,33 @@ else:
             st.caption(
                 f"Type: {action} | State: {state_text} | Max fires: {rule.get('max_fires', 1)}"
             )
+            claim_rule_id = str(rule.get("rule_id") or "").strip()
+            claim_key_suffix = (
+                claim_rule_id
+                if claim_rule_id
+                else f"idx_{claim_idx}_{action}_{drop_id}_{rule.get('fa_add_scorer_id')}_{rule.get('period')}"
+            )
+            if claim_rule_id:
+                claim_selector: Dict[str, Any] = {"rule_ids": [claim_rule_id]}
+            else:
+                claim_selector = {
+                    "matcher": {
+                        "action_type": action,
+                        "active_id": drop_id,
+                        "fa_add_scorer_id": str(rule.get("fa_add_scorer_id") or ""),
+                        "fa_trigger_mode": str(rule.get("fa_trigger_mode") or ""),
+                        "period": str(rule.get("period") or ""),
+                        "league_id": str(league_id),
+                        "team_id": str(team_id),
+                        "source": "manual",
+                    }
+                }
             action_cols = st.columns(2)
             if state_text != "fired":
                 toggle_label = "Disable" if state_text == "active" else "Enable"
                 if action_cols[0].button(
                     f"{toggle_label} Rule",
-                    key=f"toggle_manual_claim_{rule.get('rule_id')}",
+                    key=f"toggle_manual_claim_{claim_key_suffix}",
                     use_container_width=True,
                     disabled=not state_writer_enabled,
                 ):
@@ -6206,7 +6227,7 @@ else:
                             operations=[
                                 {
                                     "op": "patch_rules",
-                                    "selector": {"rule_ids": [str(rule.get("rule_id"))]},
+                                    "selector": claim_selector,
                                     "patch": {
                                         "state": "disabled" if state_text == "active" else "active",
                                     },
@@ -6220,7 +6241,7 @@ else:
                 action_cols[0].write("")
             if action_cols[1].button(
                 "Delete",
-                key=f"delete_manual_claim_{rule.get('rule_id')}",
+                key=f"delete_manual_claim_{claim_key_suffix}",
                 use_container_width=True,
                 disabled=not state_writer_enabled,
             ):
@@ -6230,7 +6251,7 @@ else:
                         operations=[
                             {
                                 "op": "delete_rules",
-                                "selector": {"rule_ids": [str(rule.get("rule_id"))]},
+                                "selector": claim_selector,
                             }
                         ],
                     )

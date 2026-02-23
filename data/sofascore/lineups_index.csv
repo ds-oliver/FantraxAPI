@@ -1490,3 +1490,4 @@ event_id,confirmed,home_starters,away_starters,saved_at_utc
 14024011,False,11,11,2026-02-22 05:00:11+0000,predicted
 14024012,False,11,11,2026-02-22 05:00:12+0000,predicted
 15238290,False,11,11,2026-02-22 05:00:12+0000,predicted
+15238290,True,11,11,2026-02-23 18:47:21+0000,confirmed

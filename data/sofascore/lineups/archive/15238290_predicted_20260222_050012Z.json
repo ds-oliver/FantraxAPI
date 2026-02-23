@@ -1,6 +1,6 @@
 {
   "event_id": 15238290,
-  "confirmed": true,
+  "confirmed": false,
   "home": {
     "formation": "4-2-3-1",
     "starters": [
@@ -13,18 +13,10 @@
         "captain": false
       },
       {
-        "id": 927361,
-        "name": "James Garner",
-        "position": "M",
-        "team_id": 48,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 110846,
-        "name": "Michael Keane",
+        "id": 1020141,
+        "name": "Nathan Patterson",
         "position": "D",
-        "team_id": 48,
+        "team_id": 36553,
         "substitute": false,
         "captain": false
       },
@@ -45,8 +37,16 @@
         "captain": false
       },
       {
-        "id": 1085950,
-        "name": "Tim Iroegbunam",
+        "id": 876643,
+        "name": "Vitaliy Mykolenko",
+        "position": "D",
+        "team_id": 48,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927361,
+        "name": "James Garner",
         "position": "M",
         "team_id": 48,
         "substitute": false,
@@ -137,8 +137,8 @@
         "captain": false
       },
       {
-        "id": 1153315,
-        "name": "Leny Yoro",
+        "id": 859999,
+        "name": "Lisandro Martínez",
         "position": "D",
         "team_id": 35,
         "substitute": false,
@@ -223,5 +223,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-23 18:47:21+0000"
+  "fetched_at_utc": "2026-02-22 05:00:12+0000"
 }
