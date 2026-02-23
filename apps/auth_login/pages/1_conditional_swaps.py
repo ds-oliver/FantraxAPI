@@ -5031,6 +5031,7 @@ if selected_action_type == RuleActionType.FA_CLAIM_DROP:
         if fa_simple_mode == FA_SIMPLE_MODE_CLAIM_BASED
         else FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE
     )
+    st.caption("Reserve drops are supported. If you drop a reserve player, the added FA is kept on reserve.")
     if fa_simple_mode == FA_SIMPLE_MODE_DROP_BASED:
         drop_player_id = st.selectbox(
             "Roster player to drop/monitor",
@@ -5516,6 +5517,7 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
         else:
             st.info("No free agents available for this league/period.")
 
+    # Claim-based mode selects drop after FA target, so recompute drop-derived state here.
     if selected_action_type == RuleActionType.FA_CLAIM_DROP and fa_simple_mode == FA_SIMPLE_MODE_CLAIM_BASED and fa_candidate:
         fa_snapshot = fa_status_map.get(str(fa_candidate["id"])) if fa_status_map else None
         fa_kickoff = getattr(fa_snapshot, "kickoff", None) if fa_snapshot else None
@@ -5575,49 +5577,63 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                     if not override_never_drop:
                         st.warning("This player is in your never-drop list; saving is disabled until you override.")
 
+    # Ensure placement logic reflects latest drop selection in either FA mode.
+    drop_row = player_lookup.get(drop_player_id) if drop_player_id else None
+    drop_lineup = lineup_info_by_player.get(drop_player_id) if drop_player_id else None
+    drop_is_active = bool(drop_row and getattr(drop_row, "pos_id", "0") != "0")
+
     if fa_candidate:
-        active_targets: list[tuple[str, str]] = []
-        if drop_is_active:
-            active_targets.append(("Active (replace drop slot)", "active_drop"))
-        if open_active_slots:
-            active_targets.append(("Active (open slot)", "active_open"))
-
-        if active_targets:
-            target_choice = st.selectbox(
-                "Active placement",
-                options=[label for label, _ in active_targets],
-                index=0,
-                key="claim_destination_select",
-            )
-            target_key = dict(active_targets).get(target_choice)
-        else:
-            target_key = None
-
-        if target_key == "active_drop" and drop_row:
-            claim_to_status_id = "1"
-            claim_position_id = str(getattr(drop_row, "pos_id", "") or "")
-        elif target_key == "active_open" and open_active_slots:
-            slot_labels = [_slot_label(row) for row in open_active_slots]
-            slot_choice = st.selectbox(
-                "Active slot to fill",
-                options=slot_labels,
-                key="claim_active_slot_select",
-            )
-            slot_index = slot_labels.index(slot_choice)
-            slot_row = open_active_slots[slot_index]
-            claim_to_status_id = "1"
-            claim_position_id = str(getattr(slot_row, "pos_id", "") or "")
-        else:
+        # Policy: when dropping a reserve player, always claim to reserve.
+        if selected_action_type == RuleActionType.FA_CLAIM_DROP and drop_row and not drop_is_active:
             claim_to_status_id = "2"
             claim_position_id = str(fa_candidate.get("default_pos_id") or "")
-            st.caption("No open active slots; FA will claim to reserve then swap into active.")
-            st.markdown("**Active player to move to reserve after claim**")
-            post_claim_swap_out_id = st.selectbox(
-                "Active player to replace",
-                options=list(active_labels.keys()),
-                format_func=lambda pid: active_labels.get(pid, pid),
-                key="post_claim_swap_out_select",
-            )
+            post_claim_swap_out_id = None
+            st.caption("Dropping a reserve player keeps added FA on reserve.")
+        else:
+            active_targets: list[tuple[str, str]] = []
+            if drop_is_active:
+                active_targets.append(("Active (replace drop slot)", "active_drop"))
+            if open_active_slots:
+                active_targets.append(("Active (open slot)", "active_open"))
+
+            if active_targets:
+                target_choice = st.selectbox(
+                    "Active placement",
+                    options=[label for label, _ in active_targets],
+                    index=0,
+                    key="claim_destination_select",
+                )
+                target_key = dict(active_targets).get(target_choice)
+            else:
+                target_key = None
+
+            if target_key == "active_drop" and drop_row:
+                claim_to_status_id = "1"
+                claim_position_id = str(getattr(drop_row, "pos_id", "") or "")
+                post_claim_swap_out_id = None
+            elif target_key == "active_open" and open_active_slots:
+                slot_labels = [_slot_label(row) for row in open_active_slots]
+                slot_choice = st.selectbox(
+                    "Active slot to fill",
+                    options=slot_labels,
+                    key="claim_active_slot_select",
+                )
+                slot_index = slot_labels.index(slot_choice)
+                slot_row = open_active_slots[slot_index]
+                claim_to_status_id = "1"
+                claim_position_id = str(getattr(slot_row, "pos_id", "") or "")
+                post_claim_swap_out_id = None
+            else:
+                claim_to_status_id = "2"
+                claim_position_id = str(fa_candidate.get("default_pos_id") or "")
+                st.caption("No open active slots; FA will claim to reserve then swap into active.")
+                st.markdown("**Active player to move to reserve after claim**")
+                post_claim_swap_out_id = st.selectbox(
+                    "Active player to replace",
+                    options=list(active_labels.keys()),
+                    format_func=lambda pid: active_labels.get(pid, pid),
+                    key="post_claim_swap_out_select",
+                )
 
 if selected_action_type == RuleActionType.LINEUP_SWAP:
     submit_disabled = not (
@@ -5635,7 +5651,13 @@ elif selected_action_type == RuleActionType.FA_CLAIM_DROP:
         and claim_to_status_id
         and claim_position_id
     )
-    if claim_to_status_id == "2" and not post_claim_swap_out_id:
+    reserve_drop_forced = bool(
+        selected_action_type == RuleActionType.FA_CLAIM_DROP
+        and drop_row
+        and not drop_is_active
+        and claim_to_status_id == "2"
+    )
+    if claim_to_status_id == "2" and not post_claim_swap_out_id and not reserve_drop_forced:
         submit_disabled = True
     if drop_player_id in never_drop_ids and not override_never_drop:
         submit_disabled = True
@@ -6156,6 +6178,7 @@ else:
                 or "unknown FA"
             )
             post_swap_out = rule.get("post_claim_swap_out_id")
+            claim_to_status = str(rule.get("fa_claim_to_status_id") or "")
             period_label = (
                 rule.get("period_label")
                 or period_id_map.get(str(rule.get("period")), str(rule.get("period")))
@@ -6188,6 +6211,8 @@ else:
                 swap_row = player_lookup.get(str(post_swap_out))
                 swap_label = swap_row.player.name if swap_row else post_swap_out  # type: ignore[union-attr]
                 st.caption(f"After claim, swap into active (send to reserve): {swap_label}")
+            elif action == RuleActionType.FA_CLAIM_DROP.value and claim_to_status == "2":
+                st.caption("Claim to reserve")
             st.caption(
                 f"Type: {action} | State: {state_text} | Max fires: {rule.get('max_fires', 1)}"
             )

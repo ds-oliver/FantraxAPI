@@ -21,16 +21,16 @@
         "captain": false
       },
       {
-        "id": 110846,
-        "name": "Michael Keane",
+        "id": 145188,
+        "name": "James Tarkowski",
         "position": "D",
         "team_id": 48,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
-        "id": 145188,
-        "name": "James Tarkowski",
+        "id": 110846,
+        "name": "Michael Keane",
         "position": "D",
         "team_id": 48,
         "substitute": false,
@@ -61,8 +61,8 @@
         "captain": false
       },
       {
-        "id": 1627560,
-        "name": "Harrison Armstrong",
+        "id": 914309,
+        "name": "Iliman Ndiaye",
         "position": "M",
         "team_id": 48,
         "substitute": false,
@@ -77,8 +77,8 @@
         "captain": false
       },
       {
-        "id": 914309,
-        "name": "Iliman Ndiaye",
+        "id": 1627560,
+        "name": "Harrison Armstrong",
         "position": "M",
         "team_id": 48,
         "substitute": false,
@@ -93,7 +93,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 603922,
+        "name": "Tom King",
+        "position": "G",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1020141,
+        "name": "Nathan Patterson",
+        "position": "D",
+        "team_id": 36553,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 876643,
+        "name": "Vitaliy Mykolenko",
+        "position": "D",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 76632,
+        "name": "Séamus Coleman",
+        "position": "D",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 935543,
+        "name": "Dwight McNeil",
+        "position": "M",
+        "team_id": 36553,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1174472,
+        "name": "Tyler Dibling",
+        "position": "M",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1064082,
+        "name": "Merlin Röhl",
+        "position": "M",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 987489,
+        "name": "Beto",
+        "position": "F",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1403061,
+        "name": "Tyrique George",
+        "position": "F",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 998253,
@@ -129,16 +202,16 @@
         "captain": false
       },
       {
-        "id": 149380,
-        "name": "Harry Maguire",
+        "id": 1153315,
+        "name": "Leny Yoro",
         "position": "D",
         "team_id": 35,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 1153315,
-        "name": "Leny Yoro",
+        "id": 149380,
+        "name": "Harry Maguire",
         "position": "D",
         "team_id": 35,
         "substitute": false,
@@ -182,7 +255,7 @@
         "position": "M",
         "team_id": 35,
         "substitute": false,
-        "captain": false
+        "captain": true
       },
       {
         "id": 886363,
@@ -201,7 +274,80 @@
         "captain": false
       }
     ],
-    "subs": [],
+    "subs": [
+      {
+        "id": 815890,
+        "name": "Altay Bayındır",
+        "position": "G",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1445799,
+        "name": "Ayden Heaven",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 825839,
+        "name": "Tyrell Malacia",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 847030,
+        "name": "Noussair Mazraoui",
+        "position": "D",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 846425,
+        "name": "Manuel Ugarte",
+        "position": "M",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1533758,
+        "name": "Jack Moorhouse",
+        "position": "M",
+        "team_id": 36380,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 1402850,
+        "name": "Tyler Fletcher",
+        "position": "M",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 917007,
+        "name": "Joshua Zirkzee",
+        "position": "F",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 986397,
+        "name": "Benjamin Šeško",
+        "position": "F",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      }
+    ],
     "missing": [
       {
         "id": 1397168,
@@ -223,5 +369,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-23 18:47:21+0000"
+  "fetched_at_utc": "2026-02-23 20:05:06+0000"
 }

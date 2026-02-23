@@ -1943,11 +1943,20 @@ def main() -> None:
                             if action_type == "fa_add_only" and claim_to_status == "1" and not open_active_slots:
                                 continue
                             if claim_to_status == "2" and not post_swap_out:
-                                logger.info(
-                                    "FA rule %s skipped: missing post-claim swap target",
-                                    rule.get("rule_id"),
-                                )
-                                continue
+                                if action_type == "fa_claim_drop":
+                                    # Reserve-drop claim/drop rules intentionally keep the FA on reserve.
+                                    logger.info(
+                                        "FA rule %s claim-to-reserve without post-claim swap target; proceeding (drop=%s add=%s).",
+                                        rule.get("rule_id"),
+                                        drop_id or "none",
+                                        add_id or "none",
+                                    )
+                                else:
+                                    logger.info(
+                                        "FA rule %s skipped: missing post-claim swap target",
+                                        rule.get("rule_id"),
+                                    )
+                                    continue
 
                             if post_swap_out:
                                 if not roster_view.get_row(post_swap_out):
