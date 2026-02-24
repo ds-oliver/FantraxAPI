@@ -95,6 +95,22 @@
     ],
     "subs": [
       {
+        "id": 1403061,
+        "name": "Tyrique George",
+        "position": "F",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 987489,
+        "name": "Beto",
+        "position": "F",
+        "team_id": 48,
+        "substitute": true,
+        "captain": false
+      },
+      {
         "id": 603922,
         "name": "Tom King",
         "position": "G",
@@ -146,22 +162,6 @@
         "id": 1064082,
         "name": "Merlin Röhl",
         "position": "M",
-        "team_id": 48,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 987489,
-        "name": "Beto",
-        "position": "F",
-        "team_id": 48,
-        "substitute": true,
-        "captain": false
-      },
-      {
-        "id": 1403061,
-        "name": "Tyrique George",
-        "position": "F",
         "team_id": 48,
         "substitute": true,
         "captain": false
@@ -276,9 +276,17 @@
     ],
     "subs": [
       {
-        "id": 815890,
-        "name": "Altay Bayındır",
-        "position": "G",
+        "id": 986397,
+        "name": "Benjamin Šeško",
+        "position": "F",
+        "team_id": 35,
+        "substitute": true,
+        "captain": false
+      },
+      {
+        "id": 847030,
+        "name": "Noussair Mazraoui",
+        "position": "D",
         "team_id": 35,
         "substitute": true,
         "captain": false
@@ -292,16 +300,16 @@
         "captain": false
       },
       {
-        "id": 825839,
-        "name": "Tyrell Malacia",
-        "position": "D",
+        "id": 815890,
+        "name": "Altay Bayındır",
+        "position": "G",
         "team_id": 35,
         "substitute": true,
         "captain": false
       },
       {
-        "id": 847030,
-        "name": "Noussair Mazraoui",
+        "id": 825839,
+        "name": "Tyrell Malacia",
         "position": "D",
         "team_id": 35,
         "substitute": true,
@@ -338,14 +346,6 @@
         "team_id": 35,
         "substitute": true,
         "captain": false
-      },
-      {
-        "id": 986397,
-        "name": "Benjamin Šeško",
-        "position": "F",
-        "team_id": 35,
-        "substitute": true,
-        "captain": false
       }
     ],
     "missing": [
@@ -369,5 +369,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-02-23 20:05:06+0000"
+  "fetched_at_utc": "2026-02-23 21:55:06+0000"
 }
