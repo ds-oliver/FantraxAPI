@@ -6375,22 +6375,32 @@ if not user_id:
     st.info("Log in to view auto-generated rules for this league.")
 else:
     auto_rules: List[Dict[str, Any]] = []
+    auto_rules_all_periods: List[Dict[str, Any]] = []
     try:
         raw_rules = _load_rules_for_user_with_revision(str(user_id))
     except Exception:
         raw_rules = []
+    current_auto_period = str(period_id or current_rule_period or "")
     for rule in raw_rules:
         if str(rule.get("league_id")) != str(league_id) or str(rule.get("team_id")) != str(team_id):
             continue
         source = normalize_rule_source(str(rule.get("source") or ""))
         if source != SOURCE_AUTO_LINEUP_SWAPS:
             continue
+        auto_rules_all_periods.append(rule)
+        if current_auto_period and str(rule.get("period") or "") != current_auto_period:
+            continue
         auto_rules.append(rule)
 
     if not auto_rules:
-        st.caption(
-            "Either: 1. You have not toggled the Auto lineup swaps toggle in the sidebar (most likely), or 2. No auto rules are available for this roster/period right now."
-        )
+        if auto_rules_all_periods and current_auto_period:
+            st.caption(
+                f"No auto lineup swap rules for {period_id_map.get(current_auto_period, current_auto_period)}."
+            )
+        else:
+            st.caption(
+                "Either: 1. You have not toggled the Auto lineup swaps toggle in the sidebar (most likely), or 2. No auto rules are available for this roster/period right now."
+            )
     else:
         auto_rules = sorted(
             auto_rules,
@@ -6407,9 +6417,13 @@ else:
         rows = []
         for (period, active_id), group in grouped.items():
             group = sorted(group, key=lambda r: int(r.get("priority") or 999))
-            active_row = player_lookup.get(active_id)
-            active_name = active_row.player.name if active_row else active_id  # type: ignore[union-attr]
+            first_rule = group[0] if group else {}
+            active_name = _rule_player_name(
+                active_id,
+                fallback_label=first_rule.get("out_label"),
+            )
             active_locked = False
+            active_row = player_lookup.get(active_id)
             if active_row:
                 active_lock_flags = get_row_lock_flags(
                     active_row,
@@ -6438,21 +6452,27 @@ else:
                 eligible_ids.append(bid)
 
             configured_names = []
+            backup_label_map: Dict[str, str] = {}
+            for r in group:
+                bid = str(r.get("reserve_id") or "")
+                if not bid:
+                    continue
+                fallback_label = str(r.get("in_label") or "")
+                if fallback_label and bid not in backup_label_map:
+                    backup_label_map[bid] = fallback_label
             for bid in backup_ids:
-                row = player_lookup.get(bid)
-                configured_names.append(row.player.name if row else bid)  # type: ignore[union-attr]
+                configured_names.append(
+                    _rule_player_name(bid, fallback_label=backup_label_map.get(bid))
+                )
             backup_names = []
             for bid in eligible_ids:
-                row = player_lookup.get(bid)
-                backup_names.append(row.player.name if row else bid)  # type: ignore[union-attr]
+                backup_names.append(_rule_player_name(bid, fallback_label=backup_label_map.get(bid)))
             ineligible_names = []
             for bid in ineligible_ids:
-                row = player_lookup.get(bid)
-                ineligible_names.append(row.player.name if row else bid)  # type: ignore[union-attr]
+                ineligible_names.append(_rule_player_name(bid, fallback_label=backup_label_map.get(bid)))
             locked_names = []
             for bid in locked_ids:
-                row = player_lookup.get(bid)
-                locked_names.append(row.player.name if row else bid)  # type: ignore[union-attr]
+                locked_names.append(_rule_player_name(bid, fallback_label=backup_label_map.get(bid)))
             if active_locked:
                 desc = "Active locked; no eligible backups right now."
                 backup_names = []
