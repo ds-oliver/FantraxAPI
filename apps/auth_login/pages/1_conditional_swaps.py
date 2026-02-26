@@ -2945,7 +2945,7 @@ def _build_lineup_feed_rows(
                 "ss_pred": ss_pred_code,
                 "fx": fx_code,
                 "confirmed": ss_confirmed,
-                "tds": ("MISS" if projection_missing else proj_gs),
+                "tds": (-1 if projection_missing else int(proj_gs)),
                 "projection_missing": projection_missing,
                 "kickoff": kickoff,
                 "kickoff_label": _format_kickoff(kickoff),
