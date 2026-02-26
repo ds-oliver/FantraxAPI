@@ -2,6 +2,11 @@
 
 Purpose: a concise, repeatable guide for maintaining the repo, the VPS app, and the background jobs.
 
+## Conditional Swaps Deprecations
+
+- Sidebar controls `Late KOS coverage` and `Do not move unless confirmed out` are deprecated.
+- Stored `users.json` values (`late_kos_policy`, `do_not_move`) may still exist but are ignored at runtime.
+
 ## Port Policy (Use This Everywhere)
 
 - Local Streamlit on Mac: `127.0.0.1:8502`

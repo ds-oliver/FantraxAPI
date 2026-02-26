@@ -183,10 +183,9 @@ Double-check the period and lineup before you click any action buttons.
 2. Auto lineup swaps (per league).
 3. Auto claims/drops (disabled during testing).
 4. (Beta) FA add/drop builder toggle (per league).
-5. Late KOS coverage note (warns when a late kickoff lacks same-KOS cover).
-6. Late KOS policy (what to do when late KOS has no same-KOS cover).
-7. Do not move unless confirmed out (block swaps for selected players unless "OUT").
-8. Never drop list (default = top 50 FPts, league-wide).
+5. Never drop list (default = top 50 FPts, league-wide).
+
+Deprecated settings note: stored `late_kos_policy` and `do_not_move` values may still exist, but runtime now ignores them.
 
 **League scope**
 Rules and sidebar settings are saved per league. Swaps and claims only apply to the league you select.
@@ -1943,26 +1942,6 @@ def _render_gameweek_overview_table(gw_meta: dict, gw_label: str) -> None:
     st.markdown(table_html, unsafe_allow_html=True)
 
 
-def _late_kos_risk(
-    roster_view: RosterView,
-    kos_map: dict[str, int],
-    last_kos_index: Optional[int],
-) -> list[str]:
-    if last_kos_index is None:
-        return []
-    active_ids = [str(pid) for pid in roster_view.active_player_ids()]
-    reserve_ids = [str(pid) for pid in roster_view.reserve_player_ids()]
-    reserve_kos = {rid: kos_map.get(rid) for rid in reserve_ids}
-    risks = []
-    for aid in active_ids:
-        if kos_map.get(aid) != last_kos_index:
-            continue
-        has_same_kos = any(kos == last_kos_index for kos in reserve_kos.values())
-        if not has_same_kos:
-            risks.append(aid)
-    return risks
-
-
 def _build_event_index_from_lineups(lineup_info_by_player: Dict[str, PlayerLineupInfo]) -> dict:
     """
     Build event_id -> {home, away, kickoff} map from lineup info.
@@ -2619,7 +2598,7 @@ with st.spinner("Refreshing lineup data..."):
     #     else:
     #         st.write("No event data available for this roster.")
 
-kos_map, last_kos_index = _build_kos_index_map(lineup_info_by_player)
+kos_map, _last_kos_index = _build_kos_index_map(lineup_info_by_player)
 never_drop_ids: set[str] = set()
 with st.sidebar:
     st.markdown("**Projections sync**")
@@ -2643,18 +2622,6 @@ projection_stale_message = _projection_stale_message()
 
 if user_id:
     user_mgr = UserManager()
-    late_kos_risks = _late_kos_risk(roster_view, kos_map, last_kos_index)
-    policy_value = user_mgr.get_late_kos_policy(str(user_id), str(league_id))
-    policy_options = {
-        "Trust projections (no cover swap)": "trust",
-        "Cover with earlier confirmed starter": "cover",
-    }
-    policy_labels = list(policy_options.keys())
-    policy_index = 0
-    for idx, label in enumerate(policy_labels):
-        if policy_options[label] == policy_value:
-            policy_index = idx
-            break
 
     player_options = []
     for row in roster.rows:
@@ -2666,8 +2633,6 @@ if user_id:
     player_options.sort(key=lambda x: x[0])
     id_to_label = {pid: label for label, pid in player_options}
     label_to_id = {label: pid for label, pid in player_options}
-    stored_do_not_move = user_mgr.get_do_not_move(str(user_id), str(league_id))
-    default_labels = [id_to_label[pid] for pid in stored_do_not_move if pid in id_to_label]
     auto_never_drop: list[str] = []
     top_fpts_ids = _top_fpts_ids_cached(
         waivers_service,
@@ -2709,41 +2674,6 @@ if user_id:
     never_drop_ids = set(stored_effective or [])
 
     with st.sidebar:
-        st.markdown("**Late KOS coverage**")
-        if late_kos_risks:
-            risk_labels = [id_to_label.get(pid, pid) for pid in late_kos_risks]
-            st.warning("Late KOS actives without same-KOS cover: " + ", ".join(risk_labels))
-        policy_choice = st.selectbox(
-            "Late KOS policy",
-            options=policy_labels,
-            index=policy_index,
-            help="Applies per league when late-KOS actives have no same-KOS cover.",
-            key="late_kos_policy_select",
-        )
-        if policy_options.get(policy_choice) != policy_value:
-            user_mgr.set_late_kos_policy(
-                user_id=str(user_id),
-                league_id=str(league_id),
-                mode=policy_options.get(policy_choice, "trust"),
-                team_id=str(team_id),
-            )
-
-        st.markdown("**Do not move unless confirmed out**")
-        selected_labels = st.multiselect(
-            "Players",
-            options=[label for label, _ in player_options],
-            default=default_labels,
-            key="do_not_move_players",
-        )
-        selected_ids = [label_to_id[label] for label in selected_labels if label in label_to_id]
-        if set(selected_ids) != set(stored_do_not_move):
-            user_mgr.set_do_not_move(
-                user_id=str(user_id),
-                league_id=str(league_id),
-                player_ids=selected_ids,
-                team_id=str(team_id),
-            )
-
         st.markdown("**Never drop (default = top 50 by FPts, league-wide)**")
         if st.button("Reset to auto list", key="never_drop_reset"):
             auto_set = set(auto_never_drop) if auto_never_drop else set(stored_auto)

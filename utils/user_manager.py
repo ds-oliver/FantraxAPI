@@ -426,7 +426,7 @@ class UserManager:
 			return False
 
 	def get_do_not_move(self, user_id: str, league_id: str) -> list[str]:
-		"""Return list of player ids that should not move unless confirmed out."""
+		"""Deprecated runtime knob; returns stored do_not_move values for compatibility only."""
 		user = self.get_user_by_id(user_id) or {}
 		do_not_move = user.get("do_not_move") or {}
 		return list(do_not_move.get(str(league_id)) or [])
@@ -438,7 +438,7 @@ class UserManager:
 		player_ids: list[str],
 		team_id: Optional[str] = None,
 	) -> bool:
-		"""Set the do-not-move list for a user/league."""
+		"""Deprecated runtime knob; stores do_not_move values for compatibility only."""
 		try:
 			data = self._load_users()
 			users = data.get("users", {})
@@ -581,7 +581,7 @@ class UserManager:
 			return False
 
 	def get_late_kos_policy(self, user_id: str, league_id: str) -> str:
-		"""Return late KOS policy for this user/league."""
+		"""Deprecated runtime knob; returns stored late_kos_policy for compatibility only."""
 		user = self.get_user_by_id(user_id) or {}
 		policies = user.get("late_kos_policy") or {}
 		entry = policies.get(str(league_id)) or {}
@@ -594,7 +594,7 @@ class UserManager:
 		mode: str,
 		team_id: Optional[str] = None,
 	) -> bool:
-		"""Set late KOS coverage policy for this user/league."""
+		"""Deprecated runtime knob; stores late_kos_policy for compatibility only."""
 		try:
 			data = self._load_users()
 			users = data.get("users", {})

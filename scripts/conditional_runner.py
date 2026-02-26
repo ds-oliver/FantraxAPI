@@ -1856,12 +1856,11 @@ def main() -> None:
                 if _apply_inverse_rule_guard(rules, league_id=league_id, team_id=team_id):
                     updated = True
 
-                base_do_not_move: set[str] = set()
-                late_kos_policy = "trust"
-                if user_id and user_mgr and hasattr(user_mgr, "get_do_not_move"):
-                    base_do_not_move = set(user_mgr.get_do_not_move(str(user_id), str(league_id)) or [])
-                if user_id and user_mgr and hasattr(user_mgr, "get_late_kos_policy"):
-                    late_kos_policy = user_mgr.get_late_kos_policy(str(user_id), str(league_id)) or "trust"
+                logger.info(
+                    "Deprecated conditional settings ignored at runtime: late_kos_policy, do_not_move (league=%s team=%s).",
+                    league_id,
+                    team_id,
+                )
 
                 fa_action_executed = False
                 fa_pending = [
@@ -2306,8 +2305,6 @@ def main() -> None:
 
                     roster_view = RosterView(roster)
                     now = _now()
-                    do_not_move = set(base_do_not_move)
-
                     id_to_row: Dict[str, RosterRow] = {}
                     for row in roster.rows:
                         player = getattr(row, "player", None)
@@ -2394,28 +2391,6 @@ def main() -> None:
                     for r in team_pending:
                         aid = str(r.get("active_id"))
                         rules_by_active.setdefault(aid, []).append(r)
-
-                    last_kos_index = max(kos_index_map.values(), default=None)
-                    late_cover_active_id: Optional[str] = None
-                    if late_kos_policy == "cover" and last_kos_index is not None:
-                        late_candidates = []
-                        for active in active_candidates:
-                            if active.get("kos_index") != last_kos_index:
-                                continue
-                            active_id = active["active_id"]
-                            if active_id in do_not_move:
-                                continue
-                            active_rules = rules_by_active.get(active_id) or []
-                            has_same_kos_backup = any(
-                                kos_index_map.get(str(r.get("reserve_id"))) == last_kos_index for r in active_rules
-                            )
-                            if has_same_kos_backup:
-                                continue
-                            late_candidates.append(active)
-                        if late_candidates:
-                            late_cover_active_id = min(
-                                late_candidates, key=lambda a: (a.get("proj_fpts") or 0.0)
-                            ).get("active_id")
 
                     swap_executed = False
                     for active in active_candidates:
@@ -2542,12 +2517,6 @@ def main() -> None:
                                 reserve_id = str(r.get("reserve_id"))
                                 if reserve_id in used_reserves:
                                     continue
-                                if active_id in do_not_move and active_confirmed_status != "not_starting":
-                                    logger.info(
-                                        "Rule %s skipped: do-not-move active.",
-                                        r.get("rule_id"),
-                                    )
-                                    continue
                                 if roster_view.is_locked(
                                     active_id,
                                     now=now,
@@ -2672,17 +2641,6 @@ def main() -> None:
                                 active_status,
                                 _player_label(roster_view, active_id),
                             )
-                            continue
-
-                        if active_id in do_not_move and active_status != "not_starting":
-                            _log_trace(
-                                args.trace,
-                                logger=logger,
-                                meta=trace_meta,
-                                ready=False,
-                                skip_reason="do_not_move",
-                            )
-                            logger.info("Rule %s skipped: do-not-move active.", head_rule.get("rule_id"))
                             continue
 
                         if not args.force_trigger:
@@ -2876,17 +2834,6 @@ def main() -> None:
                                         continue
                                 else:
                                     preferred = reserve_candidates
-
-                        else:  # unconfirmed
-                            if late_kos_policy == "cover" and active_id == late_cover_active_id and active_kickoff:
-                                earlier_confirmed = [
-                                    c
-                                    for c in reserve_candidates
-                                    if c["status"] == "starting" and c.get("kickoff") and c["kickoff"] < active_kickoff
-                                ]
-                                if earlier_confirmed:
-                                    earlier_confirmed.sort(key=lambda c: c["proj_fpts"], reverse=True)
-                                    preferred = earlier_confirmed
 
                         trace_candidates = _summarize_candidates(preferred, user_timezone)
                         trace_logged = False
