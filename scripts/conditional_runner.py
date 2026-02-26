@@ -25,6 +25,7 @@ import argparse
 import json
 import logging
 import os
+from dataclasses import dataclass
 from logging.handlers import RotatingFileHandler
 import time
 import uuid
@@ -731,6 +732,131 @@ def _rule_priority_key(rule: Dict[str, Any]) -> tuple:
     created_at = str(rule.get("created_at") or "")
     rule_id = str(rule.get("rule_id") or "")
     return (priority, created_at, rule_id)
+
+
+@dataclass(frozen=True)
+class ActionCandidate:
+    action_family: str
+    source: str
+    rule_id: str
+    rule_ref: Dict[str, Any]
+    kos_index: Optional[int]
+    kickoff: Optional[datetime]
+    tie_rank: int
+    priority_key: tuple
+
+
+def _kickoff_to_kos_index(
+    kickoff: Optional[datetime],
+    kos_index_map: Dict[str, int],
+    lineup_info_by_player: Dict[str, Any],
+) -> Optional[int]:
+    if kickoff is None:
+        return None
+    best_kos: Optional[int] = None
+    best_delta: Optional[float] = None
+    for pid, info in lineup_info_by_player.items():
+        if not info:
+            continue
+        player_kickoff = getattr(info, "kickoff", None)
+        kos_idx = kos_index_map.get(str(pid))
+        if player_kickoff is None or kos_idx is None:
+            continue
+        try:
+            delta = abs((player_kickoff - kickoff).total_seconds())
+        except Exception:
+            continue
+        if delta > 300:
+            continue
+        if best_delta is None or delta < best_delta:
+            best_delta = delta
+            best_kos = int(kos_idx)
+    return best_kos
+
+
+def _fa_action_kickoff(
+    rule: Dict[str, Any],
+    lineup_info_by_player: Dict[str, Any],
+    fa_status_map: Dict[str, Any],
+) -> Optional[datetime]:
+    action_type = _rule_action_type(rule)
+    drop_id = str(rule.get("drop_player_id") or rule.get("active_id") or "")
+    add_id = str(rule.get("fa_add_scorer_id") or rule.get("fa_add_id") or "")
+    drop_info = lineup_info_by_player.get(drop_id) if drop_id else None
+    drop_kickoff = getattr(drop_info, "kickoff", None) if drop_info else None
+    fa_snapshot = fa_status_map.get(add_id) if add_id else None
+    add_kickoff = getattr(fa_snapshot, "kickoff", None) if fa_snapshot else None
+    if action_type == "drop_only":
+        return drop_kickoff
+    if action_type == "fa_add_only":
+        return add_kickoff
+    kickoffs = [dt for dt in (drop_kickoff, add_kickoff) if dt is not None]
+    return min(kickoffs) if kickoffs else None
+
+
+def _action_precedence_key(candidate: ActionCandidate) -> tuple:
+    # Lower wins: known earlier KOS first, then earlier kickoff, then family/source tie-breaks.
+    kos_key = candidate.kos_index if candidate.kos_index is not None else 999
+    kickoff_key = candidate.kickoff or datetime.max.replace(tzinfo=timezone.utc)
+    return (
+        kos_key,
+        kickoff_key,
+        candidate.tie_rank,
+        candidate.priority_key,
+    )
+
+
+def _best_pending_swap_candidate(
+    rules: List[Dict[str, Any]],
+    *,
+    league_id: str,
+    team_id: str,
+    chosen_period: Optional[int],
+    kos_index_map: Dict[str, int],
+    lineup_info_by_player: Dict[str, Any],
+    user_mgr: Optional[UserManager] = None,
+    user_id: Optional[str] = None,
+) -> Optional[ActionCandidate]:
+    best: Optional[ActionCandidate] = None
+    for rule in rules:
+        if not _eligible(rule):
+            continue
+        if _is_fa_action(rule):
+            continue
+        if str(rule.get("league_id")) != str(league_id) or str(rule.get("team_id")) != str(team_id):
+            continue
+        rule_period = rule.get("period")
+        if rule_period is not None and chosen_period is not None and str(rule_period) != str(chosen_period):
+            continue
+        active_id = str(rule.get("active_id") or "")
+        if not active_id:
+            continue
+        info = lineup_info_by_player.get(active_id)
+        kickoff = getattr(info, "kickoff", None) if info else None
+        kos_index = kos_index_map.get(active_id)
+        source = normalize_rule_source(str(rule.get("source") or "manual"))
+        if (
+            source == SOURCE_AUTO_LINEUP_SWAPS
+            and user_id
+            and user_mgr
+            and not user_mgr.is_auto_rules_enabled(str(user_id), str(league_id), "lineup_swaps")
+        ):
+            continue
+        # Tie rank: claim/drop beats swap elsewhere (0). Here we rank swaps and prefer manual over auto.
+        tie_rank = 2 if source == SOURCE_AUTO_LINEUP_SWAPS else 1
+        candidate = ActionCandidate(
+            action_family="lineup_swap",
+            source=source,
+            rule_id=str(rule.get("rule_id") or ""),
+            rule_ref=rule,
+            kos_index=kos_index,
+            kickoff=kickoff,
+            tie_rank=tie_rank,
+            priority_key=_rule_priority_key(rule),
+        )
+        if best is None or _action_precedence_key(candidate) < _action_precedence_key(best):
+            best = candidate
+    return best
 
 
 def _order_auto_unconfirmed_fallback_candidates(
@@ -1757,6 +1883,17 @@ def main() -> None:
                         league_id,
                     )
                     fa_pending = []
+                best_swap_candidate = _best_pending_swap_candidate(
+                    rules,
+                    league_id=str(league_id),
+                    team_id=str(team_id),
+                    chosen_period=chosen_period,
+                    kos_index_map=kos_index_map,
+                    lineup_info_by_player=lineup_info_by_player,
+                    user_mgr=user_mgr,
+                    user_id=user_id,
+                )
+                fa_deferred_to_swap = False
                 if fa_pending:
                     if not fa_status_map:
                         try:
@@ -1783,8 +1920,6 @@ def main() -> None:
                     for _group_key, group_rules in sorted(grouped_fa.items(), key=_group_priority):
                         group_rules = sorted(group_rules, key=_rule_priority_key)
                         for rule in group_rules:
-                            if str(rule.get("source") or "") == "auto_claims":
-                                continue
                             if (
                                 user_id
                                 and user_mgr
@@ -1811,6 +1946,37 @@ def main() -> None:
 
                             info_drop = lineup_info_by_player.get(drop_id) if drop_id else None
                             drop_kickoff = getattr(info_drop, "kickoff", None) if info_drop else None
+
+                            fa_kickoff_candidate = _fa_action_kickoff(rule, lineup_info_by_player, fa_status_map)
+                            fa_kos_candidate = _kickoff_to_kos_index(
+                                fa_kickoff_candidate, kos_index_map, lineup_info_by_player
+                            )
+                            fa_candidate = ActionCandidate(
+                                action_family="claim_drop",
+                                source=str(rule.get("source") or "manual"),
+                                rule_id=str(rule.get("rule_id") or ""),
+                                rule_ref=rule,
+                                kos_index=fa_kos_candidate,
+                                kickoff=fa_kickoff_candidate,
+                                tie_rank=0,
+                                priority_key=_rule_priority_key(rule),
+                            )
+                            if best_swap_candidate is not None:
+                                fa_key = _action_precedence_key(fa_candidate)
+                                swap_key = _action_precedence_key(best_swap_candidate)
+                                if fa_key > swap_key:
+                                    logger.info(
+                                        "FA rule %s deferred to swap rule %s by precedence "
+                                        "(fa_kos=%s fa_kickoff=%s swap_kos=%s swap_kickoff=%s).",
+                                        rule.get("rule_id"),
+                                        best_swap_candidate.rule_id or "(no-id)",
+                                        fa_candidate.kos_index,
+                                        fa_candidate.kickoff,
+                                        best_swap_candidate.kos_index,
+                                        best_swap_candidate.kickoff,
+                                    )
+                                    fa_deferred_to_swap = True
+                                    break
 
                             if action_type == "drop_only":
                                 if not drop_id:
@@ -2093,6 +2259,8 @@ def main() -> None:
 
                         if fa_action_executed:
                             break
+                        if fa_deferred_to_swap:
+                            break
 
                 if fa_action_executed:
                     if updated or updated_locks:
@@ -2103,6 +2271,12 @@ def main() -> None:
                             actor_env=str(os.getenv("CONDITIONAL_WRITER_ENV", "unknown")),
                         )
                     continue
+                if fa_deferred_to_swap:
+                    logger.info(
+                        "FA execution skipped for league=%s team=%s in this pass; lineup swaps win precedence.",
+                        league_id,
+                        team_id,
+                    )
 
                 iteration = 0
                 max_iterations = max(

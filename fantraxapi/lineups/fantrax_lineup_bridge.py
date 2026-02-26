@@ -272,6 +272,24 @@ def _parse_fx_cell_opponent_kickoff(
     return opponent, kickoff
 
 
+def _parse_epoch_kickoff_utc(value: Optional[object]) -> Optional[datetime]:
+    """
+    Parse Fantrax epoch kickoff values in either seconds or milliseconds.
+    """
+    if value in (None, ""):
+        return None
+    try:
+        raw = float(value)
+    except Exception:
+        return None
+    if raw > 1e12:
+        raw = raw / 1000.0
+    try:
+        return datetime.fromtimestamp(raw, tz=timezone.utc)
+    except Exception:
+        return None
+
+
 @dataclass(frozen=True)
 class FantraxPlayerStatus:
     fantrax_player_id: str
@@ -304,6 +322,7 @@ def parse_fantrax_player_statuses(
     misc_display_type = misc_display_type or _extract_displayed_misc_display_type(payload)
     misc_display_type = str(misc_display_type) if misc_display_type is not None else None
     results: Dict[str, FantraxPlayerStatus] = {}
+    now_utc = datetime.now(timezone.utc)
 
     for row in stats_table:
         scorer = row.get("scorer") or {}
@@ -328,16 +347,19 @@ def parse_fantrax_player_statuses(
         if len(cells) >= 3 and isinstance(cells[2], dict):
             event_id = cells[2].get("eventId")
 
-        kickoff = None
-        start_ts = scorer.get("startTime") or scorer.get("startTimestamp")
-        if start_ts:
-            try:
-                kickoff = datetime.fromtimestamp(int(start_ts), tz=timezone.utc)
-            except Exception:
-                kickoff = None
+        kickoff = _parse_epoch_kickoff_utc(scorer.get("startTime") or scorer.get("startTimestamp"))
+        fallback_opp = None
+        if cells and isinstance(cells[0], dict):
+            fallback_opp, fallback_kickoff = _parse_fx_cell_opponent_kickoff(
+                cells[0].get("content"), now=now_utc
+            )
+            if kickoff is None:
+                kickoff = fallback_kickoff
 
         team_name = scorer.get("teamShortName") or scorer.get("teamName")
         opponent_name = scorer.get("nextOpponentShortName") or scorer.get("nextOpponentName") or scorer.get("nextOpponent")
+        if not opponent_name and fallback_opp:
+            opponent_name = fallback_opp
         is_home = scorer.get("nextOpponentIsAway")
 
         results[str(fantrax_id)] = FantraxPlayerStatus(

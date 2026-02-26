@@ -5419,6 +5419,11 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                 status_val = getattr(snapshot, "status", None) if snapshot else None
                 status_label = _format_status(status_val)
                 kickoff_dt = getattr(snapshot, "kickoff", None) if snapshot else None
+                if kickoff_dt is None:
+                    team_code = _team_code_for_display(p.get("team"))
+                    mapped_kickoff = _overview_team_kickoff_map.get(team_code) if team_code and team_code != "-" else None
+                    if isinstance(mapped_kickoff, datetime):
+                        kickoff_dt = mapped_kickoff
                 # Exclude players we can positively identify as already played.
                 # If kickoff is missing, keep the player visible (we'll show kickoff as blank/unknown).
                 if kickoff_dt and kickoff_dt <= now:
@@ -5995,7 +6000,32 @@ else:
     legacy_rules = legacy_storage.load_rules_for_team(league_id, team_id)
     legacy_fa_rules = [r for r in legacy_rules if r.action_type == RuleActionType.FA_CLAIM_DROP]
 
-if not manual_swap_rules and not manual_claim_rules and not legacy_fa_rules:
+current_rule_period = str(period_id or "")
+
+
+def _rule_player_name(player_id: Optional[str], *, fallback_label: Optional[str] = None) -> str:
+    pid = str(player_id or "")
+    if pid:
+        row = player_lookup.get(pid)
+        if row and getattr(row, "player", None):
+            return str(row.player.name)
+        roster_label = roster_labels.get(pid)
+        if roster_label:
+            return str(roster_label)
+    label = str(fallback_label or "").strip()
+    if label:
+        return label
+    return pid or "unknown"
+
+
+manual_claim_rules_current_period = [
+    r for r in manual_claim_rules if str(r.get("period") or "") == current_rule_period
+]
+legacy_fa_rules_current_period = [
+    r for r in legacy_fa_rules if str(getattr(r, "period_id", "") or "") == current_rule_period
+]
+
+if not manual_swap_rules and not manual_claim_rules_current_period and not legacy_fa_rules_current_period:
     st.info("No manual conditional rules configured yet.")
 else:
     if manual_swap_rules:
@@ -6173,22 +6203,24 @@ else:
             st.caption(f"Rule group ID: {group_id}")
             st.markdown("---")
 
-    if manual_claim_rules and claims_allowed:
+    if manual_claim_rules_current_period and claims_allowed:
         st.divider()
         st.subheader("Existing Claim/Drop Rules")
-        manual_claim_rules = sorted(
-            manual_claim_rules,
+        manual_claim_rules_current_period = sorted(
+            manual_claim_rules_current_period,
             key=lambda r: (
                 int(r.get("period") or 0),
                 str(r.get("active_id") or ""),
                 str(r.get("fa_add_scorer_id") or ""),
             ),
         )
-        for claim_idx, rule in enumerate(manual_claim_rules):
+        for claim_idx, rule in enumerate(manual_claim_rules_current_period):
             action = str(rule.get("action_type") or RuleActionType.FA_CLAIM_DROP.value)
             drop_id = str(rule.get("active_id") or "")
-            drop_row = player_lookup.get(drop_id)
-            drop_name = drop_row.player.name if drop_row else drop_id  # type: ignore[union-attr]
+            drop_name = _rule_player_name(
+                drop_id,
+                fallback_label=rule.get("drop_label") or rule.get("out_label"),
+            )
             fa_label = (
                 rule.get("fa_add_display_name")
                 or rule.get("fa_add_scorer_id")
@@ -6225,8 +6257,7 @@ else:
                     )
                 )
             if post_swap_out:
-                swap_row = player_lookup.get(str(post_swap_out))
-                swap_label = swap_row.player.name if swap_row else post_swap_out  # type: ignore[union-attr]
+                swap_label = _rule_player_name(str(post_swap_out))
                 st.caption(f"After claim, swap into active (send to reserve): {swap_label}")
             elif action == RuleActionType.FA_CLAIM_DROP.value and claim_to_status == "2":
                 st.caption("Claim to reserve")
@@ -6300,22 +6331,28 @@ else:
                     st.rerun()
                 except Exception:
                     st.warning("Failed to delete rule.")
-            st.caption(f"Rule ID: {rule.get('rule_id')}")
+            if claim_rule_id:
+                st.caption(f"Rule ID: {claim_rule_id}")
             st.markdown("---")
-    elif manual_claim_rules and not claims_allowed:
+    elif manual_claim_rules and claims_allowed:
+        st.divider()
+        st.subheader("Existing Claim/Drop Rules")
+        st.caption(
+            f"No claim/drop rules for {period_id_map.get(current_rule_period, current_rule_period)}."
+        )
+    elif manual_claim_rules_current_period and not claims_allowed:
         st.divider()
         st.subheader("Existing Claim/Drop Rules")
         st.caption("Claim/drop rules are locked to the test league during the pilot.")
 
-    if legacy_fa_rules:
+    if legacy_fa_rules_current_period:
         st.divider()
         st.subheader("Legacy FA claim/drop rules")
         st.caption("Legacy FA claim rules are stored in legacy storage.")
-        for rule in legacy_fa_rules:
-            active_name = (
-                player_lookup.get(rule.active_player_id).player.name  # type: ignore[union-attr]
-                if player_lookup.get(rule.active_player_id)
-                else rule.active_player_id
+        for rule in legacy_fa_rules_current_period:
+            active_name = _rule_player_name(
+                rule.active_player_id,
+                fallback_label=getattr(rule, "drop_label", None),
             )
             fa_label = (
                 getattr(rule, "fa_add_display_name", None)
