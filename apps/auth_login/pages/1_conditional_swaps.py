@@ -1246,7 +1246,18 @@ def _normalize_projection_columns(df: pd.DataFrame) -> pd.DataFrame:
         "rost%": "Ros%",
         "projmins": "ProjMins",
     }
-    return df.rename(columns={col: rename_map.get(col.lower(), col) for col in df.columns})
+    normalized = df.rename(columns={col: rename_map.get(col.lower(), col) for col in df.columns})
+    return _replace_missing_projgs_with_minus_one(normalized)
+
+
+def _replace_missing_projgs_with_minus_one(df: pd.DataFrame) -> pd.DataFrame:
+    if "ProjGS" not in df.columns:
+        return df
+    projgs = df["ProjGS"].astype(str)
+    mask = projgs.str.strip().str.upper() == "MISS"
+    if mask.any():
+        df.loc[mask, "ProjGS"] = -1
+    return df
 
 
 def _fetch_projections_from_sheet() -> Optional[pd.DataFrame]:
@@ -3332,6 +3343,12 @@ st.write(
     "Because of that, the current starting XI is the foundation for every rule. "
     "If you want more options later—especially for early kickoffs—make sure your active spots start with those players now."
 )
+lineup_refresh_requested = st.session_state.pop("lineup_refresh_requested", False)
+if lineup_refresh_requested:
+    st.caption("Lineup data re-synced with the latest Fantrax status.")
+if st.button("Refresh lineup sync", key="refresh_lineup_sync"):
+    st.session_state["lineup_refresh_requested"] = True
+    _safe_rerun()
 
 # Ensure we have a resolved Fantrax period early (used by optimized lineup apply)
 if "swap_period_int" not in locals():
