@@ -360,6 +360,10 @@ def _fa_trigger_mode(rule: Dict[str, Any]) -> str:
         return FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE
     if raw == FA_TRIGGER_MODE_DROP_AND_FA_STARTING:
         return FA_TRIGGER_MODE_DROP_AND_FA_STARTING
+    if _rule_action_type(rule) == "fa_claim_drop":
+        # Claim/drop rules default to explicit drop-then-claim because many
+        # leagues require an open slot before a claim can be accepted.
+        return FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE
     return FA_TRIGGER_MODE_FA_STARTING_ONLY
 
 
@@ -788,6 +792,28 @@ def _rule_participant_ids(rule: Dict[str, Any]) -> set[str]:
         if val:
             ids.add(val)
     return ids
+
+
+def _claim_error_from_response(resp: Any) -> Optional[str]:
+    if not isinstance(resp, dict):
+        return None
+    direct = resp.get("error") or resp.get("errorMsg") or resp.get("pageError")
+    if direct:
+        return str(direct)
+    tx_responses = resp.get("txResponses")
+    if isinstance(tx_responses, list) and tx_responses:
+        first = tx_responses[0] or {}
+        code = first.get("code")
+        detail = first.get("detailMessages") or []
+        if isinstance(code, int):
+            if code != 0:
+                return str("; ".join(str(x) for x in detail if x) or f"tx_code={code}")
+            return None
+        if code is not None:
+            code_norm = str(code).strip().upper()
+            if code_norm not in {"0", "OK", "SUCCESS"}:
+                return str("; ".join(str(x) for x in detail if x) or f"tx_code={code_norm}")
+    return None
 
 
 def _lock_bucket_key(league_id: str, team_id: str, period_id: Optional[int]) -> str:
@@ -2539,28 +2565,81 @@ def main() -> None:
                                     if not legal:
                                         continue
 
+                            drop_first_mode = (
+                                action_type == "fa_claim_drop"
+                                and fa_mode == FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE
+                            )
+                            claim_drop_scorer_id: Optional[str] = drop_id or None
+
                             if args.dry_run:
-                                logger.info(
-                                    "FA rule %s DRY RUN: would claim %s drop=%s",
-                                    rule.get("rule_id"),
-                                    add_id,
-                                    drop_id or "none",
-                                )
+                                if drop_first_mode:
+                                    logger.info(
+                                        "FA rule %s DRY RUN: would drop %s then claim %s",
+                                        rule.get("rule_id"),
+                                        drop_id or "none",
+                                        add_id,
+                                    )
+                                else:
+                                    logger.info(
+                                        "FA rule %s DRY RUN: would claim %s drop=%s",
+                                        rule.get("rule_id"),
+                                        add_id,
+                                        drop_id or "none",
+                                    )
                                 fa_action_executed = True
                                 break
+
+                            if drop_first_mode:
+                                try:
+                                    drops_service.drop_player(
+                                        team_id=team_id,
+                                        scorer_id=drop_id,
+                                        period=int(rule_period) if rule_period is not None else None,
+                                    )
+                                    roster = api.roster_info(team_id)
+                                    roster_view = RosterView(roster)
+                                    open_active_slots, open_reserve_slots = _open_roster_slots(roster)
+                                    claim_drop_scorer_id = None
+                                    logger.info(
+                                        "FA rule %s drop-first succeeded: dropped %s before claim add=%s",
+                                        rule.get("rule_id"),
+                                        drop_id,
+                                        add_id,
+                                    )
+                                except Exception as exc:
+                                    logger.info(
+                                        "FA rule %s drop-first failed; skipping claim add=%s drop=%s err=%s",
+                                        rule.get("rule_id"),
+                                        add_id,
+                                        drop_id,
+                                        exc,
+                                    )
+                                    _record_execution_event(
+                                        user_id=user_id,
+                                        league_id=league_id,
+                                        team_id=team_id,
+                                        period=rule_period,
+                                        rule=rule,
+                                        result="drop_failed_before_claim",
+                                        reason=str(exc),
+                                        run_id=run_id,
+                                        worker_id=worker_id,
+                                        phase="claims",
+                                        period_source=period_source,
+                                        kickoff=fa_kickoff,
+                                    )
+                                    continue
 
                             try:
                                 resp = waivers_service.submit_claim(
                                     team_id=team_id,
                                     claim_scorer_id=add_id,
                                     bid_amount=float(rule.get("fa_bid_amount") or 0.0),
-                                    drop_scorer_id=drop_id or None,
+                                    drop_scorer_id=claim_drop_scorer_id,
                                     to_position_id=claim_pos_id,
                                     to_status_id=claim_to_status,
                                 )
-                                error_msg = None
-                                if isinstance(resp, dict):
-                                    error_msg = resp.get("error") or resp.get("errorMsg") or resp.get("pageError")
+                                error_msg = _claim_error_from_response(resp)
                                 if error_msg:
                                     logger.info(
                                         "FA rule %s claim rejected: %s",
@@ -2614,7 +2693,7 @@ def main() -> None:
                                     "FA rule %s submitted claim add=%s drop=%s",
                                     rule.get("rule_id"),
                                     add_id,
-                                    drop_id or "none",
+                                    claim_drop_scorer_id or "none",
                                 )
                                 if post_swap_out:
                                     try:
