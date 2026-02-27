@@ -497,18 +497,19 @@ def _resolve_period_like_ui(
         return None, None, "fallback"
 
     inferred_round = infer_current_gameweek()
+    inferred_round_str = str(inferred_round).strip() if inferred_round is not None else ""
     inferred_match = _match_period_from_round(inferred_round, period_id_map)
     if inferred_match and inferred_match in period_id_map:
         return int(inferred_match), period_id_map.get(inferred_match, ""), "inferred"
-
-    detected_period = None
-    try:
-        detected_period = str(api.resolve_active_period(team_id))
-    except Exception:
-        detected_period = None
-
-    if detected_period and detected_period in period_id_map:
-        return int(detected_period), period_id_map.get(detected_period, ""), "active"
+    # Enforce inferred GW even when it is not present in Fantrax period options.
+    if inferred_round_str.isdigit():
+        logger.info(
+            "Using inferred period=%s even though it was not found in Fantrax choices for league=%s team=%s",
+            inferred_round_str,
+            league_id,
+            team_id,
+        )
+        return int(inferred_round_str), None, "inferred_unmapped"
 
     if preferred_period is not None and str(preferred_period) in period_id_map:
         chosen = str(preferred_period)
@@ -1873,7 +1874,16 @@ def _run_coordinator(args) -> None:
                 logger.info("Worker stderr tail user=%s: %s", info["user_id"], info["stderr_tail"])
 
     end = _now()
-    users_failed = sum(1 for r in results if int(r.get("exit_code") or 1) != 0)
+    def _exit_code_nonzero(entry: Dict[str, Any]) -> bool:
+        code = entry.get("exit_code")
+        if code is None:
+            return True
+        try:
+            return int(code) != 0
+        except Exception:
+            return True
+
+    users_failed = sum(1 for r in results if _exit_code_nonzero(r))
     users_succeeded = len(results) - users_failed
     _record_run_event(
         {
@@ -2264,7 +2274,7 @@ def main() -> None:
                 fa_pending = [
                     r
                     for r in fa_pending_all
-                    if bool(_rule_participant_ids(r) & relevant_player_ids)
+                    if args.force_trigger or bool(_rule_participant_ids(r) & relevant_player_ids)
                 ]
                 _record_action_event(
                     {
@@ -2680,7 +2690,7 @@ def main() -> None:
                     if _eligible(r)
                     and str(r.get("league_id")) == str(league_id)
                     and str(r.get("team_id")) == str(team_id)
-                    and bool(_rule_participant_ids(r) & relevant_player_ids)
+                    and (args.force_trigger or bool(_rule_participant_ids(r) & relevant_player_ids))
                 ]
                 swap_pending_total = [
                     r
@@ -2810,7 +2820,7 @@ def main() -> None:
                         if _eligible(r)
                         and str(r.get("league_id")) == str(league_id)
                         and str(r.get("team_id")) == str(team_id)
-                        and bool(_rule_participant_ids(r) & relevant_player_ids)
+                        and (args.force_trigger or bool(_rule_participant_ids(r) & relevant_player_ids))
                     ]
                     if not team_pending:
                         break
