@@ -82,7 +82,7 @@ A sample crontab lives in `deploy/sofascore_crontab`. It sets `ROOT_DIR`, `LOG_D
 |--------|--------|
 | **Schedule** | `*/5 * * * *` (every 5 minutes) |
 | **Script**   | `scripts/conditional_runner.py` (run with repo as cwd; use `PYTHONPATH` or `bin/run_all_cron_scripts.sh` for env) |
-| **Args**     | `--all-users` |
+| **Args**     | `--mode coordinator --all-users --max-workers 4` |
 | **Log**      | `data/logs/conditional_runner.log` (rotating, 2 MB × 5 backups) |
 
 **What it does:** Loads conditional swap rules from `data/conditional_rules.json` and per-user rules under `data/conditional_rules/<user_id>.json`. For each user with stored auth (cookies in `data/auth/` or shared auth artifacts), it:
@@ -91,12 +91,14 @@ A sample crontab lives in `deploy/sofascore_crontab`. It sets `ROOT_DIR`, `LOG_D
 - Evaluates rules (e.g. “when lineup is confirmed and active player is not starting, swap in bench player”)
 - Calls Fantrax SubsService to execute eligible swaps and marks rules as fired
 
+The runner also writes persistent JSONL diagnostics to `data/logs/conditional_runner_runs.jsonl` and `data/logs/conditional_runner_actions.jsonl`.
+
 **Role in the app:** This is the automation that actually performs subs on Fantrax. The UI is where users create and edit rules; cron runs the runner so those rules are applied on a schedule without the app being open.
 
 **Defined in:** `deploy/sofascore_crontab` (recommended on VPS). If you are installing your own crontab manually, the line looks like:
 
 ```cron
-*/5 * * * * cd "$ROOT_DIR" && PYTHONPATH="$ROOT_DIR" "$PYTHON_BIN" scripts/conditional_runner.py --all-users >> "$LOG_DIR/conditional_runner.cron.out" 2>&1
+*/5 * * * * cd "$ROOT_DIR" && PYTHONPATH="$ROOT_DIR" "$PYTHON_BIN" scripts/conditional_runner.py --mode coordinator --all-users --max-workers 4 >> "$LOG_DIR/conditional_runner.cron.out" 2>&1
 ```
 
 (Or use `bin/run_all_cron_scripts.sh` for a single combined run; the runner logs to `data/logs/conditional_runner.log` itself.)
@@ -151,7 +153,7 @@ A sample crontab lives in `deploy/sofascore_crontab`. It sets `ROOT_DIR`, `LOG_D
 
 1. Copy the contents of `deploy/sofascore_crontab`.
 2. Set `ROOT_DIR` and `LOG_DIR` (and optionally `PYTHON_BIN`) for your environment (e.g. `ROOT_DIR=/opt/FantraxAPI`, `LOG_DIR=/opt/FantraxAPI/logs`).
-3. If you use conditional swaps, add a line for `conditional_runner.py --all-users` as in section 3.
+3. If you use conditional swaps, add a line for `conditional_runner.py --mode coordinator --all-users --max-workers 4` as in section 3.
 4. Optionally add the log-trim line from section 4.
 5. Install: `crontab -e` and paste the full crontab.
 

@@ -22,9 +22,13 @@ Notes:
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import logging
 import os
+import socket
+import subprocess
+import sys
 from dataclasses import dataclass
 from logging.handlers import RotatingFileHandler
 import time
@@ -106,11 +110,48 @@ FA_TRIGGER_MODE_DROP_AND_FA_STARTING = "drop_not_starting_and_fa_starting"
 FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE = "drop_not_starting_then_claim_immediate"
 ENABLE_AUTO_CLAIMS = False
 CLAIMS_TEST_LEAGUE_ID = "0z7r5871mc1yqc0s"
-CONFIRM_WINDOW_MINUTES = 60
+CONFIRM_WINDOW_MINUTES = 75
 LOCK_DIR = Path("data/locks/conditional_runner")
 LOCK_DIR.mkdir(parents=True, exist_ok=True)
 LOCK_TTL_SECONDS = 300
 STATE_WRITER_ENABLED = is_conditional_state_writer()
+RUNS_JOURNAL_PATH = Path("data/logs/conditional_runner_runs.jsonl")
+ACTIONS_JOURNAL_PATH = Path("data/logs/conditional_runner_actions.jsonl")
+STATE_SNAPSHOT_DIR = Path("data/state/conditional_runner")
+STATE_SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _append_jsonl(path: Path, payload: Dict[str, Any]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=True, separators=(",", ":")) + "\n")
+    except Exception as exc:
+        logger.info("JSONL append failed path=%s: %s", path, exc)
+
+
+def _current_git_sha() -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return None
+        sha = (result.stdout or "").strip()
+        return sha or None
+    except Exception:
+        return None
+
+
+def _record_run_event(payload: Dict[str, Any]) -> None:
+    _append_jsonl(RUNS_JOURNAL_PATH, payload)
+
+
+def _record_action_event(payload: Dict[str, Any]) -> None:
+    _append_jsonl(ACTIONS_JOURNAL_PATH, payload)
 
 
 def _record_execution_event(
@@ -124,10 +165,19 @@ def _record_execution_event(
     reason: str = "",
     fantrax_tx_set_id: Optional[str] = None,
     event_type: str = "execution",
+    run_id: Optional[str] = None,
+    worker_id: Optional[str] = None,
+    phase: Optional[str] = None,
+    period_source: Optional[str] = None,
+    kickoff: Optional[datetime] = None,
+    latency_ms: Optional[int] = None,
 ) -> None:
     if not user_id:
         return
     try:
+        kickoff_iso = None
+        if kickoff is not None:
+            kickoff_iso = kickoff.isoformat()
         append_execution_event_for_user(
             str(user_id),
             {
@@ -145,9 +195,36 @@ def _record_execution_event(
                 "result": str(result or ""),
                 "reason": str(reason or ""),
                 "fantrax_tx_set_id": fantrax_tx_set_id,
+                "run_id": str(run_id or ""),
+                "worker_id": str(worker_id or ""),
+                "phase": str(phase or ""),
+                "period_source": str(period_source or ""),
+                "kickoff": kickoff_iso,
+                "latency_ms": latency_ms,
                 "rule_snapshot": dict(rule),
                 "fired_at": str(rule.get("fired_at") or ""),
             },
+        )
+        _record_action_event(
+            {
+                "event": event_type,
+                "run_id": str(run_id or ""),
+                "worker_id": str(worker_id or ""),
+                "user_id": str(user_id or ""),
+                "league_id": str(league_id or ""),
+                "team_id": str(team_id or ""),
+                "period": str(period or ""),
+                "period_selected": str(period or ""),
+                "period_source": str(period_source or ""),
+                "phase": str(phase or ""),
+                "rule_id": str(rule.get("rule_id") or ""),
+                "action_type": str(rule.get("action_type") or "lineup_swap"),
+                "result": str(result or ""),
+                "reason": str(reason or ""),
+                "kickoff": kickoff_iso,
+                "latency_ms": latency_ms,
+                "occurred_at_utc": _now().isoformat(),
+            }
         )
     except Exception as exc:
         logger.info(
@@ -406,27 +483,23 @@ def _resolve_period_like_ui(
     team_id: str,
     session: Any,
     preferred_period: Optional[int],
-) -> Tuple[Optional[int], Optional[str]]:
+) -> Tuple[Optional[int], Optional[str], str]:
     periods: List[Dict[str, str]] = []
     try:
         periods = get_available_periods(league_id=league_id, team_id=team_id, session=session)
     except Exception as exc:
         logger.info("Failed to load roster-change periods for league=%s team=%s: %s", league_id, team_id, exc)
-        return None, None
+        return None, None, "fallback"
 
     period_id_map = {str(opt["id"]): opt["label"] for opt in periods}
     period_choices = list(period_id_map.keys())
     if not period_choices:
-        return None, None
-
-    if preferred_period is not None and str(preferred_period) in period_id_map:
-        chosen = str(preferred_period)
-        return int(chosen), period_id_map.get(chosen, "")
+        return None, None, "fallback"
 
     inferred_round = infer_current_gameweek()
     inferred_match = _match_period_from_round(inferred_round, period_id_map)
     if inferred_match and inferred_match in period_id_map:
-        return int(inferred_match), period_id_map.get(inferred_match, "")
+        return int(inferred_match), period_id_map.get(inferred_match, ""), "inferred"
 
     detected_period = None
     try:
@@ -435,12 +508,16 @@ def _resolve_period_like_ui(
         detected_period = None
 
     if detected_period and detected_period in period_id_map:
-        return int(detected_period), period_id_map.get(detected_period, "")
+        return int(detected_period), period_id_map.get(detected_period, ""), "active"
+
+    if preferred_period is not None and str(preferred_period) in period_id_map:
+        chosen = str(preferred_period)
+        return int(chosen), period_id_map.get(chosen, ""), "preferred"
 
     try:
-        return int(period_choices[0]), period_id_map.get(period_choices[0], "")
+        return int(period_choices[0]), period_id_map.get(period_choices[0], ""), "fallback"
     except Exception:
-        return None, None
+        return None, None, "fallback"
 
 
 def _normalize_projection_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -625,6 +702,91 @@ def _confirmed_status_kind(info: Optional[Any]) -> str:
     }:
         return "not_starting"
     return "unconfirmed"
+
+
+def _status_snapshot_path(user_id: Optional[str], league_id: str, team_id: str) -> Path:
+    user_seg = str(user_id or "global")
+    return STATE_SNAPSHOT_DIR / f"{user_seg}_{league_id}_{team_id}.json"
+
+
+def _load_status_snapshot(path: Path) -> Dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _save_status_snapshot(path: Path, payload: Dict[str, Any]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload, ensure_ascii=True), encoding="utf-8")
+    except Exception as exc:
+        logger.info("Failed to write status snapshot %s: %s", path, exc)
+
+
+def _build_relevance_player_ids(
+    *,
+    lineup_info_by_player: Dict[str, Any],
+    now: datetime,
+    prior_snapshot: Dict[str, Any],
+    imminent_start_minutes: int = 90,
+    imminent_end_minutes: int = 10,
+) -> set[str]:
+    relevant: set[str] = set()
+    prior_statuses = prior_snapshot.get("confirmed_status_by_player") or {}
+    if not isinstance(prior_statuses, dict):
+        prior_statuses = {}
+    lower = now - timedelta(minutes=imminent_start_minutes)
+    upper = now + timedelta(minutes=imminent_end_minutes)
+    for pid, info in lineup_info_by_player.items():
+        pid_str = str(pid)
+        kickoff = getattr(info, "kickoff", None)
+        if kickoff and lower <= kickoff <= upper:
+            relevant.add(pid_str)
+        current_status = _confirmed_status_kind(info)
+        previous_status = str(prior_statuses.get(pid_str) or "unconfirmed")
+        if current_status != "unconfirmed" and current_status != previous_status:
+            relevant.add(pid_str)
+    return relevant
+
+
+def _build_status_snapshot_payload(
+    *,
+    lineup_info_by_player: Dict[str, Any],
+    now: datetime,
+) -> Dict[str, Any]:
+    statuses: Dict[str, str] = {}
+    kickoff_iso: Dict[str, str] = {}
+    for pid, info in lineup_info_by_player.items():
+        pid_str = str(pid)
+        statuses[pid_str] = _confirmed_status_kind(info)
+        kickoff = getattr(info, "kickoff", None)
+        if kickoff is not None:
+            kickoff_iso[pid_str] = kickoff.isoformat()
+    return {
+        "updated_at_utc": now.isoformat(),
+        "confirmed_status_by_player": statuses,
+        "kickoff_by_player": kickoff_iso,
+    }
+
+
+def _rule_participant_ids(rule: Dict[str, Any]) -> set[str]:
+    ids: set[str] = set()
+    for key in (
+        "active_id",
+        "reserve_id",
+        "drop_player_id",
+        "fa_add_scorer_id",
+        "fa_add_id",
+        "post_claim_swap_out_id",
+    ):
+        val = str(rule.get(key) or "").strip()
+        if val:
+            ids.add(val)
+    return ids
 
 
 def _lock_bucket_key(league_id: str, team_id: str, period_id: Optional[int]) -> str:
@@ -1584,8 +1746,167 @@ def _collect_runs(args) -> List[Tuple[Optional[str], Path, List[Dict[str, Any]],
     return runs
 
 
+def _discover_target_users(args) -> List[str]:
+    if not (args.all_users or args.user_id):
+        return []
+    user_mgr = UserManager()
+    if args.user_id:
+        user = user_mgr.get_user_by_id(args.user_id)
+        if not user or not user.get("user_id"):
+            return []
+        return [str(user["user_id"])]
+    users = user_mgr.list_all_users()
+    return [str(u.get("user_id")) for u in users if u.get("user_id")]
+
+
+def _spawn_worker_process(
+    *,
+    script_path: Path,
+    args: Any,
+    user_id: str,
+    run_id: str,
+) -> Dict[str, Any]:
+    started = _now()
+    worker_id = f"{user_id}-{uuid.uuid4().hex[:8]}"
+    cmd = [
+        sys.executable,
+        str(script_path),
+        "--mode",
+        "worker",
+        "--user-id",
+        str(user_id),
+        "--run-id",
+        str(run_id),
+        "--worker-id",
+        worker_id,
+        "--claims-first",
+    ]
+    if args.trace:
+        cmd.append("--trace")
+    if args.dry_run:
+        cmd.append("--dry-run")
+    if args.force_trigger:
+        cmd.append("--force-trigger")
+    if args.simulate_lineups:
+        cmd.append("--simulate-lineups")
+    if args.period is not None:
+        cmd.extend(["--period", str(args.period)])
+    if args.kos is not None:
+        cmd.extend(["--kos", str(args.kos)])
+    result = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    ended = _now()
+    return {
+        "user_id": str(user_id),
+        "worker_id": worker_id,
+        "started_at_utc": started.isoformat(),
+        "ended_at_utc": ended.isoformat(),
+        "duration_ms": int((ended - started).total_seconds() * 1000),
+        "exit_code": int(result.returncode),
+        "stdout_tail": (result.stdout or "")[-2000:],
+        "stderr_tail": (result.stderr or "")[-2000:],
+    }
+
+
+def _run_coordinator(args) -> None:
+    run_id = str(args.run_id or uuid.uuid4())
+    start = _now()
+    users = _discover_target_users(args)
+    workers = max(1, int(args.max_workers or 4))
+    if not users:
+        logger.info("Coordinator found no users to run.")
+        _record_run_event(
+            {
+                "event": "run_end",
+                "run_id": run_id,
+                "mode": "coordinator",
+                "started_at_utc": start.isoformat(),
+                "ended_at_utc": _now().isoformat(),
+                "duration_ms": 0,
+                "users_targeted": 0,
+                "users_succeeded": 0,
+                "users_failed": 0,
+                "max_workers": workers,
+                "host": socket.gethostname(),
+                "pid": os.getpid(),
+                "git_sha": _current_git_sha(),
+            }
+        )
+        return
+
+    _record_run_event(
+        {
+            "event": "run_start",
+            "run_id": run_id,
+            "mode": "coordinator",
+            "started_at_utc": start.isoformat(),
+            "users_targeted": len(users),
+            "max_workers": workers,
+            "host": socket.gethostname(),
+            "pid": os.getpid(),
+            "git_sha": _current_git_sha(),
+        }
+    )
+    script_path = Path(__file__).resolve()
+    results: List[Dict[str, Any]] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = [
+            executor.submit(
+                _spawn_worker_process,
+                script_path=script_path,
+                args=args,
+                user_id=user_id,
+                run_id=run_id,
+            )
+            for user_id in users
+        ]
+        for fut in concurrent.futures.as_completed(futures):
+            info = fut.result()
+            results.append(info)
+            logger.info(
+                "Worker finished user=%s worker=%s code=%s duration_ms=%s",
+                info["user_id"],
+                info["worker_id"],
+                info["exit_code"],
+                info["duration_ms"],
+            )
+            if info.get("stderr_tail"):
+                logger.info("Worker stderr tail user=%s: %s", info["user_id"], info["stderr_tail"])
+
+    end = _now()
+    users_failed = sum(1 for r in results if int(r.get("exit_code") or 1) != 0)
+    users_succeeded = len(results) - users_failed
+    _record_run_event(
+        {
+            "event": "run_end",
+            "run_id": run_id,
+            "mode": "coordinator",
+            "started_at_utc": start.isoformat(),
+            "ended_at_utc": end.isoformat(),
+            "duration_ms": int((end - start).total_seconds() * 1000),
+            "users_targeted": len(users),
+            "users_succeeded": users_succeeded,
+            "users_failed": users_failed,
+            "max_workers": workers,
+            "host": socket.gethostname(),
+            "pid": os.getpid(),
+            "git_sha": _current_git_sha(),
+            "workers": results,
+        }
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run conditional swaps headlessly.")
+    parser.add_argument("--mode", choices=["coordinator", "worker"], default="coordinator")
+    parser.add_argument("--max-workers", type=int, default=4, help="Max parallel worker processes in coordinator mode.")
+    parser.add_argument("--run-id", help="Run correlation id. Auto-generated when omitted.")
+    parser.add_argument("--worker-id", help="Worker correlation id for worker mode.")
+    parser.add_argument(
+        "--claims-first",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Execute claims phase before swaps phase.",
+    )
     parser.add_argument("--league-id", required=False, help="Fantrax league id (optional; will derive from rules if absent)")
     parser.add_argument("--team-id", required=False, help="Fantrax team id (optional; will derive from rules if absent)")
     parser.add_argument("--period", type=int, default=None, help="Fantrax scoring period id")
@@ -1607,6 +1928,26 @@ def main() -> None:
     )
     parser.add_argument("--trace", action="store_true", help="Log detailed per-rule trace information.")
     args = parser.parse_args()
+    if args.mode == "coordinator" and (args.all_users or args.user_id):
+        _run_coordinator(args)
+        return
+
+    run_id = str(args.run_id or uuid.uuid4())
+    worker_id = str(args.worker_id or f"worker-{os.getpid()}")
+    worker_started_at = _now()
+    _record_run_event(
+        {
+            "event": "run_start",
+            "run_id": run_id,
+            "mode": "worker",
+            "started_at_utc": worker_started_at.isoformat(),
+            "host": socket.gethostname(),
+            "pid": os.getpid(),
+            "worker_id": worker_id,
+            "claims_first": bool(args.claims_first),
+            "git_sha": _current_git_sha(),
+        }
+    )
     if not STATE_WRITER_ENABLED and not args.dry_run:
         logger.info(
             "Conditional state role is reader; forcing --dry-run for this runner process."
@@ -1616,6 +1957,21 @@ def main() -> None:
     runs = _collect_runs(args)
     if not runs:
         logger.info("No eligible rules to process.")
+        ended = _now()
+        _record_run_event(
+            {
+                "event": "run_end",
+                "run_id": run_id,
+                "mode": "worker",
+                "started_at_utc": worker_started_at.isoformat(),
+                "ended_at_utc": ended.isoformat(),
+                "duration_ms": int((ended - worker_started_at).total_seconds() * 1000),
+                "users_targeted": 0,
+                "users_succeeded": 0,
+                "users_failed": 0,
+                "worker_id": worker_id,
+            }
+        )
         return
 
     projections = _load_projections_map()
@@ -1679,13 +2035,15 @@ def main() -> None:
 
             chosen_period = None
             chosen_label = ""
+            period_source = "fallback"
             if args.period is not None:
                 try:
                     chosen_period = int(args.period)
+                    period_source = "cli"
                 except Exception:
                     chosen_period = None
             if chosen_period is None:
-                chosen_period, chosen_label = _resolve_period_like_ui(
+                chosen_period, chosen_label, period_source = _resolve_period_like_ui(
                     api=api,
                     league_id=league_id,
                     team_id=team_id,
@@ -1694,6 +2052,7 @@ def main() -> None:
                 )
             if chosen_period is None:
                 chosen_period = roster_period
+                period_source = "fallback"
 
             if chosen_period is not None and roster_period != chosen_period:
                 try:
@@ -1725,11 +2084,12 @@ def main() -> None:
                 auto_period_id = chosen_period
                 lineup_period = chosen_period
                 logger.info(
-                    "[period] runner choose period=%s label=%s preferred=%s roster=%s",
+                    "[period] runner choose period=%s label=%s preferred=%s roster=%s source=%s",
                     chosen_period,
                     chosen_label,
                     preferred_period,
                     roster_period,
+                    period_source,
                 )
 
                 mapping_manager = PlayerMappingManager()
@@ -1750,6 +2110,37 @@ def main() -> None:
                     continue
 
                 kos_index_map, _first_kos, last_kos = _build_kos_index_map(lineup_info_by_player)
+                now = _now()
+                snapshot_path = _status_snapshot_path(user_id, str(league_id), str(team_id))
+                prior_snapshot = _load_status_snapshot(snapshot_path)
+                relevant_player_ids = _build_relevance_player_ids(
+                    lineup_info_by_player=lineup_info_by_player,
+                    now=now,
+                    prior_snapshot=prior_snapshot,
+                )
+                _save_status_snapshot(
+                    snapshot_path,
+                    _build_status_snapshot_payload(lineup_info_by_player=lineup_info_by_player, now=now),
+                )
+                _record_action_event(
+                    {
+                        "event": "relevance_snapshot",
+                        "run_id": run_id,
+                        "worker_id": worker_id,
+                        "user_id": str(user_id or ""),
+                        "league_id": str(league_id),
+                        "team_id": str(team_id),
+                        "period": str(chosen_period or ""),
+                        "period_selected": str(chosen_period or ""),
+                        "period_source": period_source,
+                        "phase": "relevance",
+                        "result": "ok",
+                        "reason": "relevance_computed",
+                        "relevant_player_count": len(relevant_player_ids),
+                        "relevant_player_ids": sorted(relevant_player_ids),
+                        "at_utc": now.isoformat(),
+                    }
+                )
 
                 never_drop_ids: set[str] = _update_never_drop_auto(
                     user_mgr=user_mgr,
@@ -1863,13 +2254,37 @@ def main() -> None:
                 )
 
                 fa_action_executed = False
-                fa_pending = [
+                fa_pending_all = [
                     r
                     for r in rules
                     if _eligible_fa_rule(r)
                     and str(r.get("league_id")) == str(league_id)
                     and str(r.get("team_id")) == str(team_id)
                 ]
+                fa_pending = [
+                    r
+                    for r in fa_pending_all
+                    if bool(_rule_participant_ids(r) & relevant_player_ids)
+                ]
+                _record_action_event(
+                    {
+                        "event": "phase_start",
+                        "run_id": run_id,
+                        "worker_id": worker_id,
+                        "user_id": str(user_id or ""),
+                        "league_id": str(league_id),
+                        "team_id": str(team_id),
+                        "period": str(chosen_period or ""),
+                        "period_selected": str(chosen_period or ""),
+                        "period_source": period_source,
+                        "phase": "claims",
+                        "result": "start",
+                        "reason": "claims_first_phase",
+                        "rule_count_total": len(fa_pending_all),
+                        "rule_count": len(fa_pending),
+                        "occurred_at_utc": _now().isoformat(),
+                    }
+                )
                 if fa_pending and str(league_id) != CLAIMS_TEST_LEAGUE_ID:
                     logger.info(
                         "Skipping FA rules for league=%s; claims locked to test league.",
@@ -1882,18 +2297,7 @@ def main() -> None:
                         league_id,
                     )
                     fa_pending = []
-                best_swap_candidate = _best_pending_swap_candidate(
-                    rules,
-                    league_id=str(league_id),
-                    team_id=str(team_id),
-                    chosen_period=chosen_period,
-                    kos_index_map=kos_index_map,
-                    lineup_info_by_player=lineup_info_by_player,
-                    user_mgr=user_mgr,
-                    user_id=user_id,
-                )
-                fa_deferred_to_swap = False
-                if fa_pending:
+                if fa_pending and args.claims_first:
                     if not fa_status_map:
                         try:
                             fa_status_map = fetch_fa_status_map(session=session, league_id=league_id)
@@ -1946,37 +2350,6 @@ def main() -> None:
                             info_drop = lineup_info_by_player.get(drop_id) if drop_id else None
                             drop_kickoff = getattr(info_drop, "kickoff", None) if info_drop else None
 
-                            fa_kickoff_candidate = _fa_action_kickoff(rule, lineup_info_by_player, fa_status_map)
-                            fa_kos_candidate = _kickoff_to_kos_index(
-                                fa_kickoff_candidate, kos_index_map, lineup_info_by_player
-                            )
-                            fa_candidate = ActionCandidate(
-                                action_family="claim_drop",
-                                source=str(rule.get("source") or "manual"),
-                                rule_id=str(rule.get("rule_id") or ""),
-                                rule_ref=rule,
-                                kos_index=fa_kos_candidate,
-                                kickoff=fa_kickoff_candidate,
-                                tie_rank=0,
-                                priority_key=_rule_priority_key(rule),
-                            )
-                            if best_swap_candidate is not None:
-                                fa_key = _action_precedence_key(fa_candidate)
-                                swap_key = _action_precedence_key(best_swap_candidate)
-                                if fa_key > swap_key:
-                                    logger.info(
-                                        "FA rule %s deferred to swap rule %s by precedence "
-                                        "(fa_kos=%s fa_kickoff=%s swap_kos=%s swap_kickoff=%s).",
-                                        rule.get("rule_id"),
-                                        best_swap_candidate.rule_id or "(no-id)",
-                                        fa_candidate.kos_index,
-                                        fa_candidate.kickoff,
-                                        best_swap_candidate.kos_index,
-                                        best_swap_candidate.kickoff,
-                                    )
-                                    fa_deferred_to_swap = True
-                                    break
-
                             if action_type == "drop_only":
                                 if not drop_id:
                                     continue
@@ -2014,6 +2387,11 @@ def main() -> None:
                                         rule=rule,
                                         result="drop_executed",
                                         reason="drop_only_triggered",
+                                        run_id=run_id,
+                                        worker_id=worker_id,
+                                        phase="claims",
+                                        period_source=period_source,
+                                        kickoff=drop_kickoff,
                                     )
                                     updated = True
                                     fa_action_executed = True
@@ -2065,6 +2443,11 @@ def main() -> None:
                                             rule=rule,
                                             result="claim_failed_kickoff_passed",
                                             reason="fa_kickoff_passed_before_claim",
+                                            run_id=run_id,
+                                            worker_id=worker_id,
+                                            phase="claims",
+                                            period_source=period_source,
+                                            kickoff=fa_kickoff,
                                         )
                                         updated = True
                                         fa_action_executed = True
@@ -2187,6 +2570,11 @@ def main() -> None:
                                             rule=rule,
                                             result="claim_rejected",
                                             reason=str(error_msg),
+                                            run_id=run_id,
+                                            worker_id=worker_id,
+                                            phase="claims",
+                                            period_source=period_source,
+                                            kickoff=fa_kickoff,
                                         )
                                         updated = True
                                         fa_action_executed = True
@@ -2204,6 +2592,11 @@ def main() -> None:
                                     rule=rule,
                                     result="claim_submitted",
                                     reason="fa_claim_submitted",
+                                    run_id=run_id,
+                                    worker_id=worker_id,
+                                    phase="claims",
+                                    period_source=period_source,
+                                    kickoff=fa_kickoff,
                                 )
                                 updated = True
                                 fa_action_executed = True
@@ -2251,14 +2644,17 @@ def main() -> None:
                                         rule=rule,
                                         result="claim_failed_exception",
                                         reason=str(exc),
+                                        run_id=run_id,
+                                        worker_id=worker_id,
+                                        phase="claims",
+                                        period_source=period_source,
+                                        kickoff=fa_kickoff,
                                     )
                                     updated = True
                                     fa_action_executed = True
                             break
 
                         if fa_action_executed:
-                            break
-                        if fa_deferred_to_swap:
                             break
 
                 if fa_action_executed:
@@ -2270,28 +2666,54 @@ def main() -> None:
                             actor_env=str(os.getenv("CONDITIONAL_WRITER_ENV", "unknown")),
                         )
                     continue
-                if fa_deferred_to_swap:
+                if fa_pending and not args.claims_first:
                     logger.info(
-                        "FA execution skipped for league=%s team=%s in this pass; lineup swaps win precedence.",
+                        "Claims phase skipped because --no-claims-first is set (league=%s team=%s).",
                         league_id,
                         team_id,
                     )
 
                 iteration = 0
+                swap_pending_relevant = [
+                    r
+                    for r in rules
+                    if _eligible(r)
+                    and str(r.get("league_id")) == str(league_id)
+                    and str(r.get("team_id")) == str(team_id)
+                    and bool(_rule_participant_ids(r) & relevant_player_ids)
+                ]
+                swap_pending_total = [
+                    r
+                    for r in rules
+                    if _eligible(r)
+                    and str(r.get("league_id")) == str(league_id)
+                    and str(r.get("team_id")) == str(team_id)
+                ]
                 max_iterations = max(
                     1,
-                    len(
-                        [
-                            r
-                            for r in rules
-                            if _eligible(r)
-                            and str(r.get("league_id")) == str(league_id)
-                            and str(r.get("team_id")) == str(team_id)
-                        ]
-                    ),
+                    len(swap_pending_relevant),
                 )
 
                 swapped_in_this_run: set[str] = set()
+                _record_action_event(
+                    {
+                        "event": "phase_start",
+                        "run_id": run_id,
+                        "worker_id": worker_id,
+                        "user_id": str(user_id or ""),
+                        "league_id": str(league_id),
+                        "team_id": str(team_id),
+                        "period": str(chosen_period or ""),
+                        "period_selected": str(chosen_period or ""),
+                        "period_source": period_source,
+                        "phase": "swaps",
+                        "result": "start",
+                        "reason": "swap_fallback_phase",
+                        "rule_count_total": len(swap_pending_total),
+                        "rule_count": len(swap_pending_relevant),
+                        "occurred_at_utc": _now().isoformat(),
+                    }
+                )
                 while True:
                     iteration += 1
                     if iteration > max_iterations:
@@ -2342,6 +2764,11 @@ def main() -> None:
                             rule=r,
                             result="satisfied_noop",
                             reason="already_swapped_before_runner",
+                            run_id=run_id,
+                            worker_id=worker_id,
+                            phase="swaps",
+                            period_source=period_source,
+                            kickoff=None,
                         )
                         updated = True
                         logger.info(
@@ -2383,6 +2810,7 @@ def main() -> None:
                         if _eligible(r)
                         and str(r.get("league_id")) == str(league_id)
                         and str(r.get("team_id")) == str(team_id)
+                        and bool(_rule_participant_ids(r) & relevant_player_ids)
                     ]
                     if not team_pending:
                         break
@@ -2902,6 +3330,11 @@ def main() -> None:
                                         rule=rule,
                                         result="executed",
                                         reason="lineup_swap_executed",
+                                        run_id=run_id,
+                                        worker_id=worker_id,
+                                        phase="swaps",
+                                        period_source=period_source,
+                                        kickoff=active_kickoff,
                                     )
                                     updated = True
                                     executed = True
@@ -3005,6 +3438,22 @@ def main() -> None:
                 player_locks=player_locks,
                 actor_env=str(os.getenv("CONDITIONAL_WRITER_ENV", "unknown")),
             )
+
+    ended = _now()
+    _record_run_event(
+        {
+            "event": "run_end",
+            "run_id": run_id,
+            "mode": "worker",
+            "started_at_utc": worker_started_at.isoformat(),
+            "ended_at_utc": ended.isoformat(),
+            "duration_ms": int((ended - worker_started_at).total_seconds() * 1000),
+            "users_targeted": len(runs),
+            "users_succeeded": len(runs),
+            "users_failed": 0,
+            "worker_id": worker_id,
+        }
+    )
 
 
 if __name__ == "__main__":

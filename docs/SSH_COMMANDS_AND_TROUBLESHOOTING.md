@@ -311,7 +311,7 @@ crontab -l
 Expected lines (paths may vary):
 ```
 */5 * * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_watcher.sh --window-minutes 80 --min-window-minutes 70 --poll-interval-seconds 10 --max-watch-minutes 15 --browser-path "$CHROME_BIN" >> "$LOG_DIR/sofascore_kickoff_watcher.log" 2>&1
-*/5 * * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHONPATH="$ROOT_DIR" "$PYTHON_BIN" scripts/conditional_runner.py --all-users >> "$LOG_DIR/conditional_runner.cron.out" 2>&1
+*/5 * * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHONPATH="$ROOT_DIR" "$PYTHON_BIN" scripts/conditional_runner.py --mode coordinator --all-users --max-workers 4 >> "$LOG_DIR/conditional_runner.cron.out" 2>&1
 ```
 
 Install/update the repo cron file:
@@ -331,6 +331,8 @@ Logs:
 ```
 tail -n 80 /opt/FantraxAPI/data/logs/conditional_runner.log
 tail -n 80 /opt/FantraxAPI/logs/conditional_runner.cron.out
+tail -n 80 /opt/FantraxAPI/data/logs/conditional_runner_runs.jsonl
+tail -n 120 /opt/FantraxAPI/data/logs/conditional_runner_actions.jsonl
 ```
 
 If you run the runner manually as `hogan` and see `PermissionError` for `/opt/FantraxAPI/data/logs/*.log`,
@@ -352,6 +354,8 @@ Rules storage (where conditional swaps live):
 - Global rules file: `/opt/FantraxAPI/data/conditional_rules.json`
 - Per-user rules dir: `/opt/FantraxAPI/data/conditional_rules/<user_id>.json`
 - Execution journal dir: `/opt/FantraxAPI/data/conditional_rules_journal/<user_id>.jsonl`
+- Coordinator run journal: `/opt/FantraxAPI/data/logs/conditional_runner_runs.jsonl`
+- Action journal: `/opt/FantraxAPI/data/logs/conditional_runner_actions.jsonl`
 
 Canonical state controls:
 - `CONDITIONAL_STATE_ROLE=writer|reader`

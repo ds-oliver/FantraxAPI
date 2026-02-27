@@ -157,10 +157,6 @@ def _extract_displayed_misc_display_type(payload: dict) -> Optional[str]:
 
 
 def _confirmed_status_from_icons(scorer: dict) -> Optional[LineupStatus]:
-    # Explicit server-side lock usually means the match is over / slot cannot change
-    if scorer.get("disableLineupChange") is True:
-        return LineupStatus.OUT
-
     icons = scorer.get("icons") or []
     for ic in icons:
         tooltip = (ic.get("tooltip") or "").lower()
@@ -430,6 +426,23 @@ def build_lineup_info_by_player_fantrax(
     period: Optional[int] = None,
     misc_display_type: str = "10",
 ) -> Dict[str, PlayerLineupInfo]:
+    def _fixture_key(info: PlayerLineupInfo) -> Optional[tuple]:
+        event_id = getattr(info, "event_id", None)
+        team = str(getattr(info, "team_name", "") or "").strip().upper()
+        if event_id is not None and team:
+            return team, f"event:{event_id}"
+
+        team = str(getattr(info, "team_name", "") or "").strip().upper()
+        opp = str(getattr(info, "opponent_name", "") or "").strip().upper()
+        kickoff = getattr(info, "fx_kickoff", None) or getattr(info, "kickoff", None)
+        if not team or not opp or kickoff is None:
+            return None
+        try:
+            kickoff_min = kickoff.astimezone(timezone.utc).replace(second=0, microsecond=0)
+        except Exception:
+            return None
+        return team, opp, kickoff_min.isoformat()
+
     mapping: Dict[str, PlayerLineupInfo] = {}
     unknown_logged = 0
     now = datetime.now(timezone.utc)
@@ -469,7 +482,7 @@ def build_lineup_info_by_player_fantrax(
         conf_status, pred_status, fx_kickoff = _derive_fx_statuses_and_kickoff(row, now=now)
         if (
             fantrax_id in confirmed_starting_ids
-            and conf_status not in (LineupStatus.BENCH, LineupStatus.OUT, LineupStatus.DOUBTFUL)
+            and conf_status not in (LineupStatus.BENCH, LineupStatus.DOUBTFUL)
         ):
             conf_status = LineupStatus.STARTING
 
@@ -511,6 +524,17 @@ def build_lineup_info_by_player_fantrax(
         # Only populate display fixture metadata if SofaScore hasn't already done so
         raw = getattr(row, "_raw", {}) or {}
         scorer_block = raw.get("scorer") or {}
+        event_id_val: Optional[int] = None
+        raw_event_id = scorer_block.get("nextEventId")
+        if raw_event_id is None:
+            cells = raw.get("cells") or []
+            if len(cells) >= 3 and isinstance(cells[2], dict):
+                raw_event_id = cells[2].get("eventId")
+        if raw_event_id is not None:
+            try:
+                event_id_val = int(raw_event_id)
+            except Exception:
+                event_id_val = None
         team_val_raw = scorer_block.get("teamShortName") or scorer_block.get("teamName")
         opp_val_raw = (
             scorer_block.get("nextOpponentShortName")
@@ -552,6 +576,39 @@ def build_lineup_info_by_player_fantrax(
                 team_val,
                 opp_val,
             )
+        if event_id_val is not None and pli.event_id is None:
+            pli.event_id = event_id_val
+
+    # If a fixture has at least one confirmed starter, treat all other players
+    # on that same team in that same fixture as confirmed non-starters.
+    fixture_has_confirmed: set[tuple] = set()
+    for p in mapping.values():
+        if p.fx_conf_status == LineupStatus.STARTING:
+            key = _fixture_key(p)
+            if key is not None:
+                fixture_has_confirmed.add(key)
+
+    inferred_nonstarters = 0
+    for p in mapping.values():
+        key = _fixture_key(p)
+        if key is None or key not in fixture_has_confirmed:
+            continue
+        if p.fx_conf_status == LineupStatus.STARTING:
+            continue
+        if p.fx_conf_status in (LineupStatus.BENCH, LineupStatus.OUT, LineupStatus.DOUBTFUL):
+            p.fx_status = p.fx_conf_status
+            p.fx_pred_status = None
+            continue
+        p.fx_conf_status = LineupStatus.BENCH
+        p.fx_status = LineupStatus.BENCH
+        p.fx_pred_status = None
+        inferred_nonstarters += 1
+
+    if inferred_nonstarters:
+        logger.info(
+            "[fantrax-status] inferred non-starters from fixture starters: %d",
+            inferred_nonstarters,
+        )
 
     if mapping:
         conf_count = sum(1 for p in mapping.values() if p.fx_conf_status == LineupStatus.STARTING)
