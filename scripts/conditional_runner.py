@@ -816,6 +816,16 @@ def _claim_error_from_response(resp: Any) -> Optional[str]:
     return None
 
 
+def _roster_contains_player(roster: Any, player_id: str) -> bool:
+    if not player_id:
+        return False
+    for row in getattr(roster, "rows", []) or []:
+        player = getattr(row, "player", None)
+        if player and str(getattr(player, "id", "")) == str(player_id):
+            return True
+    return False
+
+
 def _lock_bucket_key(league_id: str, team_id: str, period_id: Optional[int]) -> str:
     period_key = str(period_id) if period_id is not None else ""
     return f"{league_id}:{team_id}:{period_key}"
@@ -2646,41 +2656,82 @@ def main() -> None:
                                         rule.get("rule_id"),
                                         error_msg,
                                     )
-                                    if action_type == "fa_claim_drop" and fa_mode == FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE:
-                                        rule["state"] = "fired"
-                                        rule["fired_at"] = _now().isoformat()
-                                        rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
-                                        rule["result"] = "claim_rejected"
-                                        _record_execution_event(
-                                            user_id=user_id,
-                                            league_id=league_id,
-                                            team_id=team_id,
-                                            period=rule_period,
-                                            rule=rule,
-                                            result="claim_rejected",
-                                            reason=str(error_msg),
-                                            run_id=run_id,
-                                            worker_id=worker_id,
-                                            phase="claims",
-                                            period_source=period_source,
-                                            kickoff=fa_kickoff,
-                                        )
-                                        updated = True
-                                        fa_action_executed = True
-                                        break
+                                    _record_execution_event(
+                                        user_id=user_id,
+                                        league_id=league_id,
+                                        team_id=team_id,
+                                        period=rule_period,
+                                        rule=rule,
+                                        result="claim_rejected",
+                                        reason=str(error_msg),
+                                        run_id=run_id,
+                                        worker_id=worker_id,
+                                        phase="claims",
+                                        period_source=period_source,
+                                        kickoff=fa_kickoff,
+                                    )
                                     continue
+
+                                refreshed = None
+                                applied = False
+                                verify_reason = "claim_not_reflected_in_roster"
+                                for attempt in range(3):
+                                    try:
+                                        refreshed = api.roster_info(team_id)
+                                    except Exception as exc:
+                                        verify_reason = f"roster_refresh_failed:{exc}"
+                                        refreshed = None
+                                        break
+                                    add_present = _roster_contains_player(refreshed, add_id)
+                                    drop_present = _roster_contains_player(refreshed, drop_id) if drop_id else False
+                                    if action_type == "fa_add_only":
+                                        applied = add_present
+                                    else:
+                                        applied = add_present and (not drop_id or not drop_present)
+                                    if applied:
+                                        break
+                                    verify_reason = (
+                                        f"add_present={add_present};drop_present={drop_present};attempt={attempt+1}"
+                                    )
+                                    if attempt < 2:
+                                        time.sleep(1.0)
+
+                                if not applied:
+                                    _record_execution_event(
+                                        user_id=user_id,
+                                        league_id=league_id,
+                                        team_id=team_id,
+                                        period=rule_period,
+                                        rule=rule,
+                                        result="claim_not_applied",
+                                        reason=verify_reason,
+                                        run_id=run_id,
+                                        worker_id=worker_id,
+                                        phase="claims",
+                                        period_source=period_source,
+                                        kickoff=fa_kickoff,
+                                    )
+                                    logger.info(
+                                        "FA rule %s claim submit not reflected on roster (add=%s drop=%s): %s",
+                                        rule.get("rule_id"),
+                                        add_id,
+                                        drop_id or "none",
+                                        verify_reason,
+                                    )
+                                    continue
+
                                 rule["state"] = "fired"
                                 rule["fired_at"] = _now().isoformat()
                                 rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
-                                rule["result"] = "claim_submitted"
+                                rule["result"] = "claim_applied"
                                 _record_execution_event(
                                     user_id=user_id,
                                     league_id=league_id,
                                     team_id=team_id,
                                     period=rule_period,
                                     rule=rule,
-                                    result="claim_submitted",
-                                    reason="fa_claim_submitted",
+                                    result="claim_applied",
+                                    reason="fa_claim_applied",
                                     run_id=run_id,
                                     worker_id=worker_id,
                                     phase="claims",
@@ -2690,11 +2741,13 @@ def main() -> None:
                                 updated = True
                                 fa_action_executed = True
                                 logger.info(
-                                    "FA rule %s submitted claim add=%s drop=%s",
+                                    "FA rule %s claim applied add=%s drop=%s",
                                     rule.get("rule_id"),
                                     add_id,
                                     claim_drop_scorer_id or "none",
                                 )
+                                if refreshed is not None:
+                                    roster = refreshed
                                 if post_swap_out:
                                     try:
                                         refreshed = api.roster_info(team_id)
@@ -2720,27 +2773,20 @@ def main() -> None:
                                         logger.info("FA rule %s post-claim swap failed: %s", rule.get("rule_id"), exc)
                             except Exception as exc:
                                 logger.info("FA rule %s claim failed: %s", rule.get("rule_id"), exc)
-                                if action_type == "fa_claim_drop" and fa_mode == FA_TRIGGER_MODE_DROP_THEN_CLAIM_IMMEDIATE:
-                                    rule["state"] = "fired"
-                                    rule["fired_at"] = _now().isoformat()
-                                    rule["fired_count"] = int(rule.get("fired_count") or 0) + 1
-                                    rule["result"] = "claim_failed_exception"
-                                    _record_execution_event(
-                                        user_id=user_id,
-                                        league_id=league_id,
-                                        team_id=team_id,
-                                        period=rule_period,
-                                        rule=rule,
-                                        result="claim_failed_exception",
-                                        reason=str(exc),
-                                        run_id=run_id,
-                                        worker_id=worker_id,
-                                        phase="claims",
-                                        period_source=period_source,
-                                        kickoff=fa_kickoff,
-                                    )
-                                    updated = True
-                                    fa_action_executed = True
+                                _record_execution_event(
+                                    user_id=user_id,
+                                    league_id=league_id,
+                                    team_id=team_id,
+                                    period=rule_period,
+                                    rule=rule,
+                                    result="claim_failed_exception",
+                                    reason=str(exc),
+                                    run_id=run_id,
+                                    worker_id=worker_id,
+                                    phase="claims",
+                                    period_source=period_source,
+                                    kickoff=fa_kickoff,
+                                )
                             break
 
                         if fa_action_executed:
