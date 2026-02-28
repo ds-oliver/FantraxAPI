@@ -5091,10 +5091,42 @@ for _pid, _kos_idx in kos_map.items():
     if isinstance(_kickoff_dt, datetime):
         known_kos_kickoffs.append((_kickoff_dt, int(_kos_idx)))
 
+schedule_kos_kickoffs: List[tuple[datetime, int]] = []
+try:
+    _schedule_kickoffs = sorted(
+        {
+            ev.get("kickoff")
+            for ev in (schedule_events or [])
+            if isinstance(ev, dict) and isinstance(ev.get("kickoff"), datetime)
+        }
+    )
+except Exception:
+    _schedule_kickoffs = []
+for _idx, _ko in enumerate(_schedule_kickoffs, start=1):
+    schedule_kos_kickoffs.append((_ko, _idx))
+
 
 def _kos_for_kickoff(kickoff_dt: Optional[datetime]) -> Optional[int]:
     if not isinstance(kickoff_dt, datetime):
         return None
+
+    # Primary: map to global fixture kickoff slots for the selected gameweek.
+    best_sched_kos: Optional[int] = None
+    best_sched_delta: Optional[float] = None
+    for known_dt, known_kos in schedule_kos_kickoffs:
+        try:
+            delta = abs((known_dt - kickoff_dt).total_seconds())
+        except Exception:
+            continue
+        if delta > 900:
+            continue
+        if best_sched_delta is None or delta < best_sched_delta:
+            best_sched_delta = delta
+            best_sched_kos = known_kos
+    if best_sched_kos is not None:
+        return best_sched_kos
+
+    # Fallback: map to roster-derived kickoff slots.
     best_kos: Optional[int] = None
     best_delta: Optional[float] = None
     for known_dt, known_kos in known_kos_kickoffs:
@@ -5422,6 +5454,14 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
             st.info("No confirmed starters right now; showing all available free agents.")
             st.caption("Kickoff/KOS can be blank when Fantrax does not return a kickoff for the free agent snapshot yet.")
 
+        # Position filtering
+        if selected_action_type == RuleActionType.FA_CLAIM_DROP:
+            position_filter = drop_row.pos_id if drop_row else None
+        else:
+            position_filter = None
+        if position_filter:
+            display_rows = [row for row in display_rows if row["default_pos_id"] == position_filter]
+
         if display_rows:
             fa_df = pd.DataFrame(display_rows)
             fa_df["ProjFPts"] = pd.to_numeric(fa_df["ProjFPts"], errors="coerce")
@@ -5549,6 +5589,10 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                 active_targets.append(("Active (open slot)", "active_open"))
 
             if active_targets:
+                st.caption(
+                    "`Active (replace drop slot)` uses the drop player's current active position. "
+                    "`Active (open slot)` uses an already-empty active slot and does not depend on the drop slot."
+                )
                 target_choice = st.selectbox(
                     "Active placement",
                     options=[label for label, _ in active_targets],
