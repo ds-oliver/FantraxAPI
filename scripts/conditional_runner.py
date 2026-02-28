@@ -2800,7 +2800,59 @@ def main() -> None:
                             player_locks=player_locks,
                             actor_env=str(os.getenv("CONDITIONAL_WRITER_ENV", "unknown")),
                         )
-                    continue
+                        updated = False
+                        updated_locks = False
+                    # Claims fired: refresh context and continue into swaps in same combo pass.
+                    _record_action_event(
+                        {
+                            "event": "phase_transition",
+                            "run_id": run_id,
+                            "worker_id": worker_id,
+                            "user_id": str(user_id or ""),
+                            "league_id": str(league_id),
+                            "team_id": str(team_id),
+                            "period": str(chosen_period or ""),
+                            "period_selected": str(chosen_period or ""),
+                            "period_source": period_source,
+                            "from": "claims",
+                            "to": "swaps",
+                            "claim_executed": True,
+                            "occurred_at_utc": _now().isoformat(),
+                        }
+                    )
+                    try:
+                        roster = api.roster_info(team_id, period=int(chosen_period)) if chosen_period is not None else api.roster_info(team_id)
+                        roster_period, _deadline = subs_service._sniff_period_and_deadline_from_roster(roster)
+                        roster_period = int(roster_period) if roster_period else roster_period
+                    except Exception as exc:
+                        logger.error(
+                            "Failed to refresh roster after claims for league=%s team=%s: %s",
+                            league_id,
+                            team_id,
+                            exc,
+                        )
+                        continue
+                    try:
+                        round_hint = infer_current_gameweek()
+                        lineup_info_by_player = resolve_lineup_info(
+                            roster,
+                            session=session,
+                            league_id=league_id,
+                            period=lineup_period,
+                            strategy=LineupSourceStrategy.FANTRAX_PRIMARY,
+                            mapping_manager=mapping_manager,
+                            round_hint=round_hint,
+                            global_status_path=global_status_path_for_user(user_id),
+                        )
+                        kos_index_map, _first_kos, last_kos = _build_kos_index_map(lineup_info_by_player)
+                    except Exception as exc:
+                        logger.error(
+                            "Failed to refresh lineup info after claims for league=%s team=%s: %s",
+                            league_id,
+                            team_id,
+                            exc,
+                        )
+                        continue
                 if fa_pending and not args.claims_first:
                     logger.info(
                         "Claims phase skipped because --no-claims-first is set (league=%s team=%s).",
@@ -2843,7 +2895,7 @@ def main() -> None:
                         "period_source": period_source,
                         "phase": "swaps",
                         "result": "start",
-                        "reason": "swap_fallback_phase",
+                        "reason": "swap_fallback_phase_after_claim" if fa_action_executed else "swap_fallback_phase",
                         "rule_count_total": len(swap_pending_total),
                         "rule_count": len(swap_pending_relevant),
                         "occurred_at_utc": _now().isoformat(),
