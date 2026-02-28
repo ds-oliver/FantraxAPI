@@ -5454,13 +5454,36 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
             st.info("No confirmed starters right now; showing all available free agents.")
             st.caption("Kickoff/KOS can be blank when Fantrax does not return a kickoff for the free agent snapshot yet.")
 
-        # Position filtering
-        if selected_action_type == RuleActionType.FA_CLAIM_DROP:
-            position_filter = drop_row.pos_id if drop_row else None
-        else:
-            position_filter = None
-        if position_filter:
-            display_rows = [row for row in display_rows if row["default_pos_id"] == position_filter]
+        # Optional position filtering (user-controlled).
+        position_filter: Optional[str] = None
+        if display_rows:
+            pos_by_id: Dict[str, str] = {}
+            for row in display_rows:
+                pos_id = str(row.get("default_pos_id") or "")
+                pos_label = str(row.get("Position") or "").strip() or pos_id or "Unknown"
+                if pos_id:
+                    pos_by_id.setdefault(pos_id, pos_label)
+
+            if pos_by_id:
+                default_pos_filter = ""
+                if selected_action_type == RuleActionType.FA_CLAIM_DROP and drop_row:
+                    drop_pos_id = str(getattr(drop_row, "pos_id", "") or "")
+                    if drop_pos_id in pos_by_id:
+                        default_pos_filter = drop_pos_id
+                position_choices = [""] + sorted(
+                    pos_by_id.keys(),
+                    key=lambda pid: (int(pid) if str(pid).isdigit() else 999, str(pid)),
+                )
+                selected_pos = st.selectbox(
+                    "Optional position filter",
+                    options=position_choices,
+                    index=position_choices.index(default_pos_filter),
+                    format_func=lambda pid: "All positions" if not pid else f"{pos_by_id.get(pid, pid)} ({pid})",
+                    key="conditional_fa_position_filter",
+                )
+                position_filter = str(selected_pos or "")
+                if position_filter:
+                    display_rows = [row for row in display_rows if str(row.get("default_pos_id") or "") == position_filter]
 
         if display_rows:
             fa_df = pd.DataFrame(display_rows)
