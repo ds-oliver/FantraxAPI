@@ -5379,7 +5379,13 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                 sid = str(p.get("id"))
                 snapshot = fa_status_map.get(sid) if fa_status_map else None
                 status_val = getattr(snapshot, "status", None) if snapshot else None
+                expected_val = getattr(snapshot, "expected_status", None) if snapshot else None
                 status_label = _format_status(status_val)
+                if (
+                    status_val in (None, LineupStatus.UNKNOWN)
+                    and expected_val == LineupStatus.STARTING
+                ):
+                    status_label = "Expected Starting"
                 kickoff_dt = getattr(snapshot, "kickoff", None) if snapshot else None
                 if kickoff_dt is None:
                     team_code = _team_code_for_display(p.get("team"))

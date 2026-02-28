@@ -377,6 +377,7 @@ def parse_fantrax_player_statuses(
 class FALineupSnapshot:
     scorer_id: str
     status: LineupStatus
+    expected_status: Optional[LineupStatus] = None
     kickoff: Optional[datetime] = None
     event_id: Optional[int] = None
     team_name: Optional[str] = None
@@ -409,6 +410,7 @@ def fetch_fa_status_map(
         result[sid] = FALineupSnapshot(
             scorer_id=sid,
             status=s_obj.status,
+            expected_status=s_obj.expected_status,
             kickoff=s_obj.kickoff,
             event_id=event_id,
             team_name=s_obj.team_name,
