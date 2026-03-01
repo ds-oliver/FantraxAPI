@@ -181,13 +181,16 @@ def build_fired_conditional_events(
     team_id: str,
     *,
     user_id: Optional[str] = None,
+    include_action_types: Optional[set[str]] = None,
 ) -> List[dict]:
     """
-    Build normalized app-side fired conditional lineup swap events from saved rules.
+    Build normalized app-side fired conditional events from saved rules.
     Journal entries are authoritative when available.
+    Default behavior remains lineup_swap only for backward compatibility.
     """
     events: List[dict] = []
     seen_keys: set[tuple[str, str, str]] = set()
+    allowed_actions = {str(a).strip().lower() for a in (include_action_types or {"lineup_swap"}) if str(a).strip()}
 
     if user_id:
         try:
@@ -200,11 +203,11 @@ def build_fired_conditional_events(
         except Exception:
             journal_events = []
         for event in journal_events:
-            result = str(event.get("result") or "").strip().lower()
-            if result not in {"executed", "satisfied_noop"}:
+            action_type = str(event.get("action_type") or "").strip().lower() or "lineup_swap"
+            if action_type not in allowed_actions:
                 continue
-            action_type = str(event.get("action_type") or "").strip().lower()
-            if action_type and action_type != "lineup_swap":
+            result = str(event.get("result") or "").strip().lower()
+            if action_type == "lineup_swap" and result not in {"executed", "satisfied_noop"}:
                 continue
             fired_at = str(event.get("fired_at") or event.get("occurred_at_utc") or "").strip()
             if not fired_at:
@@ -217,10 +220,20 @@ def build_fired_conditional_events(
                 fired_at_utc = fired_at_utc.replace(tzinfo=timezone.utc)
             else:
                 fired_at_utc = fired_at_utc.astimezone(timezone.utc)
-            active_id = str(event.get("active_id") or "").strip()
-            reserve_id = str(event.get("reserve_id") or "").strip()
-            if not active_id or not reserve_id:
+
+            active_id = str(event.get("active_id") or event.get("drop_player_id") or "").strip()
+            reserve_id = str(
+                event.get("reserve_id")
+                or event.get("fa_add_scorer_id")
+                or event.get("fa_add_id")
+                or ""
+            ).strip()
+            if action_type == "lineup_swap":
+                if not active_id or not reserve_id:
+                    continue
+            elif not (active_id or reserve_id):
                 continue
+
             dedupe = (str(event.get("rule_id") or ""), active_id, reserve_id)
             seen_keys.add(dedupe)
             events.append(
@@ -229,6 +242,9 @@ def build_fired_conditional_events(
                     "fired_at_utc": fired_at_utc,
                     "active_id": active_id,
                     "reserve_id": reserve_id,
+                    "fa_add_scorer_id": str(event.get("fa_add_scorer_id") or event.get("fa_add_id") or reserve_id or ""),
+                    "post_claim_swap_out_id": str(event.get("post_claim_swap_out_id") or ""),
+                    "action_type": action_type,
                     "period": str(event.get("period") or ""),
                     "source": normalize_rule_source(str(event.get("source") or "")),
                     "result": str(event.get("result") or ""),
@@ -244,8 +260,8 @@ def build_fired_conditional_events(
             continue
         if str(rule.get("state") or "").lower() != "fired":
             continue
-        action_type = str(rule.get("action_type") or "").strip().lower()
-        if action_type and action_type != "lineup_swap":
+        action_type = str(rule.get("action_type") or "").strip().lower() or "lineup_swap"
+        if action_type not in allowed_actions:
             continue
         fired_at = str(rule.get("fired_at") or "").strip()
         if not fired_at:
@@ -259,9 +275,12 @@ def build_fired_conditional_events(
         else:
             fired_at_utc = fired_at_utc.astimezone(timezone.utc)
 
-        active_id = str(rule.get("active_id") or "").strip()
-        reserve_id = str(rule.get("reserve_id") or "").strip()
-        if not active_id or not reserve_id:
+        active_id = str(rule.get("active_id") or rule.get("drop_player_id") or "").strip()
+        reserve_id = str(rule.get("reserve_id") or rule.get("fa_add_scorer_id") or rule.get("fa_add_id") or "").strip()
+        if action_type == "lineup_swap":
+            if not active_id or not reserve_id:
+                continue
+        elif not (active_id or reserve_id):
             continue
         dedupe = (str(rule.get("rule_id") or ""), active_id, reserve_id)
         if dedupe in seen_keys:
@@ -272,6 +291,9 @@ def build_fired_conditional_events(
                 "fired_at_utc": fired_at_utc,
                 "active_id": active_id,
                 "reserve_id": reserve_id,
+                "fa_add_scorer_id": str(rule.get("fa_add_scorer_id") or rule.get("fa_add_id") or reserve_id or ""),
+                "post_claim_swap_out_id": str(rule.get("post_claim_swap_out_id") or ""),
+                "action_type": action_type,
                 "period": str(rule.get("period") or ""),
                 "source": normalize_rule_source(str(rule.get("source") or "")),
                 "result": str(rule.get("result") or ""),
@@ -281,6 +303,123 @@ def build_fired_conditional_events(
         )
     events.sort(key=lambda e: e["fired_at_utc"], reverse=True)
     return events
+
+
+def _claim_drop_outcome(result: str, matched: bool) -> str:
+    normalized = str(result or "").strip().lower()
+    if matched:
+        return "matched_success"
+    if normalized in {"claim_applied", "drop_executed", "executed"}:
+        return "journal_success_unmatched"
+    if normalized in {"satisfied_noop", "no_swap"}:
+        return "noop"
+    if "failed" in normalized or "rejected" in normalized or "not_applied" in normalized:
+        return "failed"
+    return "unknown"
+
+
+def build_claim_drop_health_rows(
+    app_events: List[dict],
+    fantrax_events: List[dict],
+    *,
+    window_seconds: int = 180,
+) -> List[dict]:
+    """
+    Build claim/drop health rows from journal events with best-effort Fantrax correlation.
+    Journal result is authoritative; Fantrax matching is additive evidence.
+    """
+    rows: List[dict] = []
+    used_tx_ids: set[str] = set()
+    claim_events = [e for e in app_events if str(e.get("action_type") or "").strip().lower() != "lineup_swap"]
+    for app_event in claim_events:
+        best: Optional[dict] = None
+        best_delta: Optional[int] = None
+        best_score = -1
+        app_time = app_event.get("fired_at_utc")
+        if not isinstance(app_time, datetime):
+            rows.append(
+                {
+                    **app_event,
+                    "health_status": "unmatched",
+                    "matched_tx_set_id": None,
+                    "fantrax_time_utc": None,
+                    "fantrax_time_local": None,
+                    "fantrax_week_or_period": None,
+                    "delta_seconds": None,
+                    "outcome": _claim_drop_outcome(str(app_event.get("result") or ""), matched=False),
+                }
+            )
+            continue
+
+        team_id = str(app_event.get("team_id") or "")
+        period = str(app_event.get("period") or "")
+        primary_ids = {
+            str(app_event.get("active_id") or "").strip(),
+            str(app_event.get("reserve_id") or "").strip(),
+            str(app_event.get("fa_add_scorer_id") or "").strip(),
+            str(app_event.get("post_claim_swap_out_id") or "").strip(),
+        }
+        primary_ids = {pid for pid in primary_ids if pid}
+
+        for fan_event in fantrax_events:
+            tx_id = str(fan_event.get("tx_set_id") or "")
+            if not tx_id or tx_id in used_tx_ids:
+                continue
+            if team_id and str(fan_event.get("team_id") or "") != team_id:
+                continue
+            fan_time = fan_event.get("date_utc")
+            if not isinstance(fan_time, datetime):
+                continue
+            delta = int(abs((fan_time - app_time).total_seconds()))
+            if delta > window_seconds:
+                continue
+            fan_period = str(fan_event.get("week_or_period") or "")
+            if period and fan_period and period != fan_period:
+                continue
+            fan_player_ids = {str(m.get("player_id") or "").strip() for m in (fan_event.get("moves") or [])}
+            fan_player_ids = {pid for pid in fan_player_ids if pid}
+            score = len(primary_ids.intersection(fan_player_ids))
+            if best is None:
+                best = fan_event
+                best_delta = delta
+                best_score = score
+            else:
+                if score > best_score or (score == best_score and (best_delta is None or delta < best_delta)):
+                    best = fan_event
+                    best_delta = delta
+                    best_score = score
+
+        matched = bool(best)
+        if matched:
+            tx_id = str(best.get("tx_set_id") or "")
+            if tx_id:
+                used_tx_ids.add(tx_id)
+        rows.append(
+            {
+                **app_event,
+                "health_status": "matched" if matched else "unmatched",
+                "matched_tx_set_id": str((best or {}).get("tx_set_id") or "") or None,
+                "fantrax_time_utc": (best or {}).get("date_utc"),
+                "fantrax_time_local": (best or {}).get("date_local"),
+                "fantrax_week_or_period": (best or {}).get("week_or_period"),
+                "delta_seconds": best_delta if matched else None,
+                "outcome": _claim_drop_outcome(str(app_event.get("result") or ""), matched=matched),
+            }
+        )
+    rows.sort(key=lambda e: e.get("fired_at_utc") or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    return rows
+
+
+def resolve_player_label(player_id: Optional[str], player_lookup: Optional[dict] = None, fallback_label: Optional[str] = None) -> str:
+    pid = str(player_id or "").strip()
+    if player_lookup and pid:
+        row = player_lookup.get(pid) if isinstance(player_lookup, dict) else None
+        if row and getattr(row, "player", None):
+            return str(row.player.name)
+    label = str(fallback_label or "").strip()
+    if label:
+        return label
+    return pid or "unknown"
 
 
 def _slot_has(slot: Any, needle: str) -> bool:
