@@ -2826,6 +2826,7 @@ def _build_lineup_feed_rows(
     lineup_info_by_player: Dict[str, PlayerLineupInfo],
     player_lookup: Dict[str, RosterRow],
     projections: Optional[dict] = None,
+    lock_state_by_pid: Optional[Dict[str, dict]] = None,
 ) -> list[dict]:
     """
     Build a simple feed payload sorted by Active/Reserve, then position (G/D/M/F).
@@ -2878,6 +2879,7 @@ def _build_lineup_feed_rows(
 
         pos = _display_pos(row).upper()
         slot_order = 0 if pid in active_set else 1
+        lock_state = (lock_state_by_pid or {}).get(str(pid), {})
         rows.append(
             {
                 "team": team or "-",
@@ -2894,10 +2896,171 @@ def _build_lineup_feed_rows(
                 "slot_order": slot_order,
                 "pos_order": pos_order.get(pos, 9),
                 "order": order_index.get(pid, 999),
+                "locked": bool(lock_state.get("locked", False)),
+                "lock_reason": str(lock_state.get("reason") or "Unknown"),
             }
         )
     rows.sort(key=lambda r: (r["slot_order"], r["pos_order"], r["order"]))
     return rows
+
+
+def _player_lock_flags(
+    *,
+    pid: str,
+    row: Optional[RosterRow],
+    roster_view: RosterView,
+    lineup_info_by_player: Dict[str, PlayerLineupInfo],
+    now: datetime,
+) -> tuple[dict, str]:
+    if not row:
+        return {}, "missing_row"
+    if hasattr(roster_view, "lock_flags"):
+        try:
+            return (
+                roster_view.lock_flags(  # type: ignore[attr-defined]
+                    pid,
+                    now=now,
+                    lineup_info_by_player=lineup_info_by_player,
+                )
+                or {},
+                "roster_view.lock_flags",
+            )
+        except Exception:
+            pass
+    try:
+        return (
+            get_row_lock_flags(
+                row,
+                now=now,
+                lineup_info_by_player=lineup_info_by_player,
+            )
+            or {},
+            "get_row_lock_flags",
+        )
+    except Exception:
+        return {}, "error"
+
+
+def _lock_reason_label(state: dict) -> str:
+    if not isinstance(state, dict):
+        return "Unknown"
+    if state.get("fx_locked"):
+        return "Fantrax locked"
+    if state.get("visually_locked"):
+        return "Kickoff passed / visually locked"
+    if state.get("kickoff_passed"):
+        return "Kickoff passed"
+    if state.get("finished_marker"):
+        return "Match finished"
+    return "Unlocked"
+
+
+def _player_lock_state(
+    *,
+    pid: str,
+    row: Optional[RosterRow],
+    roster_view: RosterView,
+    lineup_info_by_player: Dict[str, PlayerLineupInfo],
+    now: datetime,
+) -> dict[str, Any]:
+    flags, source = _player_lock_flags(
+        pid=pid,
+        row=row,
+        roster_view=roster_view,
+        lineup_info_by_player=lineup_info_by_player,
+        now=now,
+    )
+    state: dict[str, Any] = {
+        "locked": False,
+        "reason": "Unknown",
+        "source": source,
+        "fx_locked": bool(flags.get("fx_locked")),
+        "visually_locked": bool(flags.get("visually_locked")),
+        "kickoff_passed": bool(flags.get("kickoff_passed")),
+        "finished_marker": bool(flags.get("finished_marker")),
+    }
+    state["locked"] = bool(state["fx_locked"] or state["visually_locked"])
+    state["reason"] = _lock_reason_label(state)
+    return state
+
+
+def _build_lock_state_map(
+    *,
+    roster_view: RosterView,
+    lineup_info_by_player: Dict[str, PlayerLineupInfo],
+    player_lookup: Dict[str, RosterRow],
+    now: datetime,
+) -> Dict[str, dict]:
+    out: Dict[str, dict] = {}
+    for pid in set(list(roster_view.active_player_ids()) + list(roster_view.reserve_player_ids())):
+        pid_s = str(pid)
+        out[pid_s] = _player_lock_state(
+            pid=pid_s,
+            row=player_lookup.get(pid_s),
+            roster_view=roster_view,
+            lineup_info_by_player=lineup_info_by_player,
+            now=now,
+        )
+    return out
+
+
+def _is_locked_pid(pid: Optional[str], lock_state_by_pid: Dict[str, dict]) -> bool:
+    if not pid:
+        return False
+    return bool((lock_state_by_pid.get(str(pid)) or {}).get("locked"))
+
+
+def _player_label_for_pid(
+    pid: Optional[str],
+    *,
+    player_lookup: Dict[str, RosterRow],
+    fallback_label_map: Optional[Dict[str, str]] = None,
+) -> str:
+    pid_s = str(pid or "")
+    if not pid_s:
+        return "unknown"
+    row = player_lookup.get(pid_s)
+    if row and getattr(row, "player", None):
+        return str(row.player.name)
+    if fallback_label_map and fallback_label_map.get(pid_s):
+        return str(fallback_label_map.get(pid_s))
+    return pid_s
+
+
+def _lock_counts_for_roster(
+    *,
+    lock_state_by_pid: Dict[str, dict],
+    roster_view: RosterView,
+) -> dict[str, int]:
+    active_ids = [str(pid) for pid in roster_view.active_player_ids()]
+    reserve_ids = [str(pid) for pid in roster_view.reserve_player_ids()]
+    locked_active = sum(1 for pid in active_ids if _is_locked_pid(pid, lock_state_by_pid))
+    locked_reserve = sum(1 for pid in reserve_ids if _is_locked_pid(pid, lock_state_by_pid))
+    return {
+        "active_total": len(active_ids),
+        "reserve_total": len(reserve_ids),
+        "locked_active": locked_active,
+        "locked_reserve": locked_reserve,
+    }
+
+
+def _render_locked_players_table(rows: List[dict]) -> None:
+    if not rows:
+        return
+    st.markdown(
+        """
+        <style>
+        .locked-table-note { color: #f3f4f6; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    df = pd.DataFrame(rows)
+    styled = df.style.apply(
+        lambda _: ["background-color: #3f1010; color: #f7f5f2; text-decoration: line-through;"] * len(df.columns),
+        axis=1,
+    )
+    st.dataframe(styled, hide_index=True, use_container_width=True)
 
 
 def _fmt_debug_datetime(dt: Optional[datetime]) -> Optional[str]:
@@ -3120,11 +3283,20 @@ def _preferred_kickoff_for_player(
         return mapped
     return getattr(info, "kickoff", None) if info else None
 
+lock_state_by_pid = _build_lock_state_map(
+    roster_view=roster_view,
+    lineup_info_by_player=lineup_info_by_player,
+    player_lookup=player_lookup,
+    now=now,
+)
+lock_counts = _lock_counts_for_roster(lock_state_by_pid=lock_state_by_pid, roster_view=roster_view)
+
 feed_rows = _build_lineup_feed_rows(
     roster_view=roster_view,
     lineup_info_by_player=lineup_info_by_player,
     player_lookup=player_lookup,
     projections=projections_map,
+    lock_state_by_pid=lock_state_by_pid,
 )
 
 # Track status changes after refresh
@@ -3192,6 +3364,17 @@ feed_styles = """
 .lineup-feed-table tr:last-child td {
     border-bottom: none;
 }
+.lineup-feed-row-locked td {
+    background: #3f1010;
+    color: #f7f5f2;
+}
+.lineup-feed-row-locked .lineup-feed-team {
+    color: #fef3c7;
+    text-decoration: line-through;
+}
+.lineup-feed-row-locked .lineup-feed-player {
+    text-decoration: line-through;
+}
 .lineup-feed-team {
     color: #6df19b;
     font-weight: 700;
@@ -3203,6 +3386,8 @@ feed_styles = """
 .col-tds { width: 8%; }
 .col-conf { width: 8%; }
 .col-ko { width: 20%; }
+.col-locked { width: 8%; }
+.col-lock-reason { width: 18%; }
 </style>
 """
 
@@ -3232,20 +3417,26 @@ if feed_rows:
         <th class='col-tds'>TDS</th>
         <th class='col-conf'>Confirmed</th>
         <th class='col-ko'>KO (UTC)</th>
+        <th class='col-locked'>Locked</th>
+        <th class='col-lock-reason'>Lock reason</th>
     </tr>
     """
     body_rows = []
     for row in feed_rows:
+        row_class = "lineup-feed-row-locked" if row.get("locked") else ""
+        player_class = "lineup-feed-player"
         body_rows.append(
-            "<tr>"
+            f"<tr class='{row_class}'>"
             f"<td class='col-team'><span class='lineup-feed-team'>{row['team']}</span></td>"
-            f"<td class='col-player'>{row['player']} vs {row['opponent']}</td>"
+            f"<td class='col-player'><span class='{player_class}'>{row['player']}</span> vs {row['opponent']}</td>"
             f"<td class='col-ss'>{row['ss']}</td>"
             f"<td class='col-sspred'>{row['ss_pred']}</td>"
             f"<td class='col-fx'>{row['fx']}</td>"
             f"<td class='col-tds'>{row['tds'] if row['tds'] is not None else ''}</td>"
             f"<td class='col-conf'>{row['confirmed']}</td>"
             f"<td class='col-ko'>{row['kickoff_label']}</td>"
+            f"<td class='col-locked'>{'Yes' if row.get('locked') else 'No'}</td>"
+            f"<td class='col-lock-reason'>{row.get('lock_reason') or ''}</td>"
             "</tr>"
         )
     feed_html = (
@@ -3301,6 +3492,48 @@ st.markdown("**Suggested optimized XI (10 outfield + 1 GK if available)**")
 st.caption(
     "GS uses confirmed lineup status when available (SofaScore then Fantrax); otherwise ProjGS."
 )
+
+def _optimization_lock_window(
+    *,
+    events: Optional[List[dict]],
+    lineup_info: Dict[str, PlayerLineupInfo],
+) -> tuple[bool, Optional[datetime], Optional[datetime], str]:
+    """
+    Disable optimization while selected GW matches are in progress:
+    first kickoff has passed, but final kickoff has not.
+    """
+    now_utc = datetime.now(timezone.utc)
+    kickoffs: List[datetime] = []
+    source = "schedule"
+    for ev in events or []:
+        ko = ev.get("kickoff") if isinstance(ev, dict) else None
+        if isinstance(ko, datetime):
+            kickoffs.append(ko.astimezone(timezone.utc))
+    if not kickoffs:
+        source = "lineup"
+        for info in (lineup_info or {}).values():
+            ko = getattr(info, "kickoff", None) if info else None
+            if isinstance(ko, datetime):
+                kickoffs.append(ko.astimezone(timezone.utc))
+    if not kickoffs:
+        return False, None, None, "none"
+    first_ko = min(kickoffs)
+    last_ko = max(kickoffs)
+    is_locked = first_ko <= now_utc < last_ko
+    return is_locked, first_ko, last_ko, source
+
+
+optimize_locked_for_live_gw, optimize_first_ko, optimize_last_ko, optimize_lock_source = _optimization_lock_window(
+    events=schedule_events if "schedule_events" in locals() else None,
+    lineup_info=lineup_info_by_player,
+)
+if optimize_locked_for_live_gw:
+    st.caption(
+        "Optimization is disabled while this gameweek is in progress "
+        f"({_format_kickoff(optimize_first_ko)} to {_format_kickoff(optimize_last_ko)}, "
+        f"source: {optimize_lock_source})."
+    )
+
 st.markdown(
     """
     <style>
@@ -3536,14 +3769,30 @@ with apply_col1:
     current_starters_set = set(roster_view.active_player_ids())
     desired_set = set(opt_active_ids)
     already_optimal = bool(desired_set) and current_starters_set == desired_set
-    apply_disabled = already_optimal or not opt_active_ids
+    apply_disabled = already_optimal or not opt_active_ids or optimize_locked_for_live_gw
     apply_label = "Lineup already optimized" if already_optimal else "Apply optimized lineup to Fantrax"
     apply_type = "secondary" if already_optimal else "primary"
-    if st.button(apply_label, type=apply_type, key="apply_optimized_lineup", disabled=apply_disabled):
+    apply_help = None
+    if optimize_locked_for_live_gw:
+        apply_help = (
+            "Disabled while selected gameweek matches are in progress "
+            "(after first kickoff and before final kickoff)."
+        )
+    elif already_optimal:
+        apply_help = "Current starters already match the suggested optimized XI."
+    if st.button(
+        apply_label,
+        type=apply_type,
+        key="apply_optimized_lineup",
+        disabled=apply_disabled,
+        help=apply_help,
+    ):
         if swap_period_int is None:
             st.error("Cannot apply lineup: no valid Fantrax period selected.")
         elif not opt_active_ids:
             st.error("Cannot apply lineup: no eligible players found.")
+        elif optimize_locked_for_live_gw:
+            st.error("Cannot apply lineup while selected gameweek matches are in progress.")
         else:
             subs_service = SubsService(session=session)
             result = _apply_optimized_lineup(
@@ -3674,6 +3923,33 @@ adv_trigger_mode = st.session_state.get("advanced_trigger_mode")
 active_ids = [str(pid) for pid in roster_view.active_player_ids()]
 reserve_ids = [str(pid) for pid in roster_view.reserve_player_ids()]
 adv_active_labels: dict[str, str] = {}
+advanced_removed_locked: list[str] = []
+
+if adv_active_id and _is_locked_pid(adv_active_id, lock_state_by_pid):
+    advanced_removed_locked.append(
+        f"Active selection cleared: {_player_label_for_pid(adv_active_id, player_lookup=player_lookup)} "
+        f"({_lock_reason_label(lock_state_by_pid.get(str(adv_active_id), {}))})"
+    )
+    adv_active_id = None
+locked_backups = [pid for pid in adv_backup_order if _is_locked_pid(pid, lock_state_by_pid)]
+if locked_backups:
+    for pid in locked_backups:
+        advanced_removed_locked.append(
+            f"Backup removed: {_player_label_for_pid(pid, player_lookup=player_lookup)} "
+            f"({_lock_reason_label(lock_state_by_pid.get(str(pid), {}))})"
+        )
+    adv_backup_order = [pid for pid in adv_backup_order if not _is_locked_pid(pid, lock_state_by_pid)]
+if advanced_removed_locked:
+    st.warning("Locked selections were removed:\n- " + "\n- ".join(advanced_removed_locked))
+
+active_ids = [pid for pid in active_ids if not _is_locked_pid(pid, lock_state_by_pid)]
+reserve_ids = [pid for pid in reserve_ids if not _is_locked_pid(pid, lock_state_by_pid)]
+locked_active_ids = [
+    str(pid) for pid in roster_view.active_player_ids() if _is_locked_pid(str(pid), lock_state_by_pid)
+]
+locked_reserve_ids = [
+    str(pid) for pid in roster_view.reserve_player_ids() if _is_locked_pid(str(pid), lock_state_by_pid)
+]
 
 focus_reserve_id = None if adv_active_id else (adv_backup_order[0] if adv_backup_order else None)
 reserve_first_filter = bool(focus_reserve_id)
@@ -3715,6 +3991,8 @@ for pid in active_ids:
             "Opponent": opponent,
             "KOS": kos_map.get(pid),
             "Kickoff": _format_kickoff(getattr(info, "kickoff", None)) if info else "—",
+            "Locked": "No",
+            "Lock reason": "Unlocked",
         }
     )
     adv_active_labels[pid] = f"{row.player.name} ({_display_pos(row)})"
@@ -3740,6 +4018,46 @@ for pid in reserve_ids:
             "Opponent": opponent,
             "KOS": kos_map.get(pid),
             "Kickoff": _format_kickoff(getattr(info, "kickoff", None)) if info else "—",
+            "Locked": "No",
+            "Lock reason": "Unlocked",
+        }
+    )
+
+active_locked_rows = []
+for pid in locked_active_ids:
+    row = player_lookup.get(pid)
+    if not row:
+        continue
+    info = lineup_info_by_player.get(pid)
+    team_name, opponent = _team_and_opponent_for_player(pid, lineup_info_by_player, player_lookup)
+    active_locked_rows.append(
+        {
+            "Player": row.player.name,
+            "Pos": _display_pos(row),
+            "Team": team_name,
+            "Opponent": opponent,
+            "KOS": kos_map.get(pid),
+            "Kickoff": _format_kickoff(getattr(info, "kickoff", None)) if info else "—",
+            "Lock reason": _lock_reason_label(lock_state_by_pid.get(pid, {})),
+        }
+    )
+
+reserve_locked_rows = []
+for pid in locked_reserve_ids:
+    row = player_lookup.get(pid)
+    if not row:
+        continue
+    info = lineup_info_by_player.get(pid)
+    team_name, opponent = _team_and_opponent_for_player(pid, lineup_info_by_player, player_lookup)
+    reserve_locked_rows.append(
+        {
+            "Player": row.player.name,
+            "Pos": _display_pos(row),
+            "Team": team_name,
+            "Opponent": opponent,
+            "KOS": kos_map.get(pid),
+            "Kickoff": _format_kickoff(getattr(info, "kickoff", None)) if info else "—",
+            "Lock reason": _lock_reason_label(lock_state_by_pid.get(pid, {})),
         }
     )
 
@@ -3812,9 +4130,14 @@ with col_active:
                 "Opponent": st.column_config.TextColumn("Opponent", disabled=True),
                 "KOS": st.column_config.NumberColumn("KOS", disabled=True),
                 "Kickoff": st.column_config.TextColumn("Kickoff", disabled=True),
+                "Locked": st.column_config.TextColumn("Locked", disabled=True),
+                "Lock reason": st.column_config.TextColumn("Lock reason", disabled=True),
             },
             key="advanced_active_editor",
         )
+    if active_locked_rows:
+        st.caption(f"Locked active players (hidden from picker): {len(active_locked_rows)}")
+        _render_locked_players_table(active_locked_rows)
 
 with col_reserve:
     st.markdown("**Reserves**")
@@ -3836,9 +4159,14 @@ with col_reserve:
                 "Opponent": st.column_config.TextColumn("Opponent", disabled=True),
                 "KOS": st.column_config.NumberColumn("KOS", disabled=True),
                 "Kickoff": st.column_config.TextColumn("Kickoff", disabled=True),
+                "Locked": st.column_config.TextColumn("Locked", disabled=True),
+                "Lock reason": st.column_config.TextColumn("Lock reason", disabled=True),
             },
             key="advanced_reserve_editor",
         )
+    if reserve_locked_rows:
+        st.caption(f"Locked reserve players (hidden from picker): {len(reserve_locked_rows)}")
+        _render_locked_players_table(reserve_locked_rows)
 
 selected_active_ids = [
     str(pid)
@@ -3947,6 +4275,10 @@ adv_submit_disabled = not (
     and adv_backup_order
     and adv_period_id
 )
+if _is_locked_pid(adv_active_id, lock_state_by_pid) or any(
+    _is_locked_pid(pid, lock_state_by_pid) for pid in adv_backup_order
+):
+    adv_submit_disabled = True
 if not state_writer_enabled:
     adv_submit_disabled = True
 adv_submitted = st.button("Save Rule", disabled=adv_submit_disabled, type="primary", key="save_rule_adv_btn")
@@ -3955,6 +4287,10 @@ st.caption(
     "Test fire applies a live swap now (ignores conditions). Swap back after testing so the rule can still trigger."
 )
 test_fire_disabled = not (adv_active_id and adv_backup_order and adv_period_id)
+if _is_locked_pid(adv_active_id, lock_state_by_pid) or any(
+    _is_locked_pid(pid, lock_state_by_pid) for pid in adv_backup_order
+):
+    test_fire_disabled = True
 test_fire = st.button(
     "Test fire swap now",
     disabled=(test_fire_disabled or not state_writer_enabled),
@@ -3964,6 +4300,8 @@ test_fire = st.button(
 if test_fire:
     if not adv_active_id or not adv_backup_order:
         st.error("Select an active player and at least one backup before testing.")
+    elif _is_locked_pid(adv_active_id, lock_state_by_pid) or _is_locked_pid(adv_backup_order[0], lock_state_by_pid):
+        st.error("Cannot test fire: selected players are locked.")
     else:
         test_reserve_id = adv_backup_order[0]
         test_period_id = adv_period_id
@@ -4008,76 +4346,81 @@ if test_fire:
                     )
 
 if adv_submitted and not adv_submit_disabled:
-    try:
-        existing_rules = _load_rules_for_user_with_revision(str(user_id))
-    except Exception:
-        existing_rules = []
-    already_exists = False
-    for r in existing_rules:
-        if not _is_manual_rule(r):
-            continue
-        if str(r.get("league_id")) != str(league_id) or str(r.get("team_id")) != str(team_id):
-            continue
-        if str(r.get("active_id")) != str(adv_active_id):
-            continue
-        if str(r.get("period")) != str(adv_period_id):
-            continue
-        if _normalized_rule_state(r.get("state")) != "fired":
-            already_exists = True
-            break
-    if already_exists:
-        st.warning("A manual rule already exists for this active player and period.")
+    if _is_locked_pid(adv_active_id, lock_state_by_pid) or any(
+        _is_locked_pid(pid, lock_state_by_pid) for pid in adv_backup_order
+    ):
+        st.error("Cannot save rule: one or more selected players are locked.")
     else:
-        group_id = uuid.uuid4().hex
-        active_row = player_lookup.get(adv_active_id)
-        active_label = adv_active_labels.get(adv_active_id, adv_active_id)
-        active_name = active_row.player.name if active_row else str(adv_active_id)
-        active_row_pos = _display_pos(active_row) if active_row else ""
-        if active_row_pos and "(" not in active_label:
-            active_label = _format_player_label(active_label, active_row_pos)
-        to_persist = []
-        preview_lines = []
-        for index, pid in enumerate(adv_backup_order):
-            backup_row = player_lookup.get(pid)
-            backup_name = backup_row.player.name if backup_row else pid  # type: ignore[union-attr]
-            backup_pos = _display_pos(backup_row) if backup_row else ""
-            in_label = _format_player_label(backup_name, backup_pos)
-            preview_lines.append(
-                _format_rule_preview_line(active_name, str(backup_name), adv_trigger_mode)
+        try:
+            existing_rules = _load_rules_for_user_with_revision(str(user_id))
+        except Exception:
+            existing_rules = []
+        already_exists = False
+        for r in existing_rules:
+            if not _is_manual_rule(r):
+                continue
+            if str(r.get("league_id")) != str(league_id) or str(r.get("team_id")) != str(team_id):
+                continue
+            if str(r.get("active_id")) != str(adv_active_id):
+                continue
+            if str(r.get("period")) != str(adv_period_id):
+                continue
+            if _normalized_rule_state(r.get("state")) != "fired":
+                already_exists = True
+                break
+        if already_exists:
+            st.warning("A manual rule already exists for this active player and period.")
+        else:
+            group_id = uuid.uuid4().hex
+            active_row = player_lookup.get(adv_active_id)
+            active_label = adv_active_labels.get(adv_active_id, adv_active_id)
+            active_name = active_row.player.name if active_row else str(adv_active_id)
+            active_row_pos = _display_pos(active_row) if active_row else ""
+            if active_row_pos and "(" not in active_label:
+                active_label = _format_player_label(active_label, active_row_pos)
+            to_persist = []
+            preview_lines = []
+            for index, pid in enumerate(adv_backup_order):
+                backup_row = player_lookup.get(pid)
+                backup_name = backup_row.player.name if backup_row else pid  # type: ignore[union-attr]
+                backup_pos = _display_pos(backup_row) if backup_row else ""
+                in_label = _format_player_label(backup_name, backup_pos)
+                preview_lines.append(
+                    _format_rule_preview_line(active_name, str(backup_name), adv_trigger_mode)
+                )
+                condition_val = (
+                    SwapCondition.RESERVE_STARTING.value
+                    if adv_trigger_mode == "reserve"
+                    else SwapCondition.NOT_STARTING.value
+                )
+                rec = {
+                    "active_id": adv_active_id,
+                    "reserve_id": pid,
+                    "out_label": active_label,
+                    "in_label": in_label,
+                    "priority": index + 1,
+                    "period": adv_period_id,
+                    "period_label": adv_period_label,
+                    "trigger": "confirmed_lineup",
+                    "condition": condition_val,
+                    "max_fires": 1,
+                    "league_id": league_id,
+                    "team_id": team_id,
+                    "user_id": str(user_id),
+                    "source": "manual",
+                    "source_type": 3,
+                    "group_id": group_id,
+                    "state": "active",
+                }
+                to_persist.append(rec)
+            _apply_user_rule_ops(
+                user_id=str(user_id),
+                operations=[{"op": "upsert_rules", "items": to_persist}],
             )
-            condition_val = (
-                SwapCondition.RESERVE_STARTING.value
-                if adv_trigger_mode == "reserve"
-                else SwapCondition.NOT_STARTING.value
-            )
-            rec = {
-                "active_id": adv_active_id,
-                "reserve_id": pid,
-                "out_label": active_label,
-                "in_label": in_label,
-                "priority": index + 1,
-                "period": adv_period_id,
-                "period_label": adv_period_label,
-                "trigger": "confirmed_lineup",
-                "condition": condition_val,
-                "max_fires": 1,
-                "league_id": league_id,
-                "team_id": team_id,
-                "user_id": str(user_id),
-                "source": "manual",
-                "source_type": 3,
-                "group_id": group_id,
-                "state": "active",
-            }
-            to_persist.append(rec)
-        _apply_user_rule_ops(
-            user_id=str(user_id),
-            operations=[{"op": "upsert_rules", "items": to_persist}],
-        )
-        st.session_state["advanced_rule_preview_lines"] = preview_lines
-        st.session_state["show_advanced_rule_dialog"] = True
-        st.success("Rule saved successfully.")
-        st.rerun()
+            st.session_state["advanced_rule_preview_lines"] = preview_lines
+            st.session_state["show_advanced_rule_dialog"] = True
+            st.success("Rule saved successfully.")
+            st.rerun()
 
 preview_lines = st.session_state.get("advanced_rule_preview_lines")
 if preview_lines:
@@ -4095,21 +4438,44 @@ with st.expander("Make a single swap", expanded=False):
     live_reserve_ids = [
         pid for pid in roster_view.reserve_player_ids() if pid in player_lookup
     ]
-
-    swap_active = st.selectbox(
-        "Active to swap out",
-        options=live_active_ids,
-        format_func=lambda pid: f"{player_lookup[pid].player.name} ({getattr(player_lookup[pid].pos, 'short_name', '')})",
-        key="immediate_swap_active_top",
-    )
-    swap_reserve = st.selectbox(
-        "Reserve to swap in",
-        options=live_reserve_ids,
-        format_func=lambda pid: f"{player_lookup[pid].player.name} ({getattr(player_lookup[pid].pos, 'short_name', '')})",
-        key="immediate_swap_reserve_top",
+    live_active_ids_unlocked = [pid for pid in live_active_ids if not _is_locked_pid(str(pid), lock_state_by_pid)]
+    live_reserve_ids_unlocked = [pid for pid in live_reserve_ids if not _is_locked_pid(str(pid), lock_state_by_pid)]
+    st.caption(
+        f"Locked actives hidden: {len(live_active_ids) - len(live_active_ids_unlocked)} | "
+        f"Locked reserves hidden: {len(live_reserve_ids) - len(live_reserve_ids_unlocked)}"
     )
 
-    _dump_debug_for_player(swap_active)
+    stale_immediate_active = st.session_state.get("immediate_swap_active_top")
+    stale_immediate_reserve = st.session_state.get("immediate_swap_reserve_top")
+    removed_immediate = []
+    if stale_immediate_active and str(stale_immediate_active) not in {str(pid) for pid in live_active_ids_unlocked}:
+        st.session_state.pop("immediate_swap_active_top", None)
+        removed_immediate.append(_player_label_for_pid(str(stale_immediate_active), player_lookup=player_lookup))
+    if stale_immediate_reserve and str(stale_immediate_reserve) not in {str(pid) for pid in live_reserve_ids_unlocked}:
+        st.session_state.pop("immediate_swap_reserve_top", None)
+        removed_immediate.append(_player_label_for_pid(str(stale_immediate_reserve), player_lookup=player_lookup))
+    if removed_immediate:
+        st.warning("Locked/unavailable immediate swap selections were cleared: " + ", ".join(removed_immediate))
+
+    swap_active = None
+    swap_reserve = None
+    if not live_active_ids_unlocked or not live_reserve_ids_unlocked:
+        st.info("Immediate swap is unavailable because there are no unlocked active/reserve options.")
+    else:
+        swap_active = st.selectbox(
+            "Active to swap out",
+            options=live_active_ids_unlocked,
+            format_func=lambda pid: f"{player_lookup[pid].player.name} ({getattr(player_lookup[pid].pos, 'short_name', '')})",
+            key="immediate_swap_active_top",
+        )
+        swap_reserve = st.selectbox(
+            "Reserve to swap in",
+            options=live_reserve_ids_unlocked,
+            format_func=lambda pid: f"{player_lookup[pid].player.name} ({getattr(player_lookup[pid].pos, 'short_name', '')})",
+            key="immediate_swap_reserve_top",
+        )
+
+    _dump_debug_for_player(swap_active if isinstance(swap_active, str) else None)
 
     if selected_period_id is not None:
         try:
@@ -4133,12 +4499,38 @@ with st.expander("Make a single swap", expanded=False):
         "Execute swap now",
         type="primary",
         key="immediate_swap_button_top",
-        disabled=not state_writer_enabled,
+        disabled=(
+            not state_writer_enabled
+            or not live_active_ids_unlocked
+            or not live_reserve_ids_unlocked
+            or not swap_active
+            or not swap_reserve
+        ),
     ):
         if swap_period_int is None:
             st.error("Cannot execute swap because no valid Fantrax period is selected.")
         else:
             try:
+                live_active_state = _player_lock_state(
+                    pid=str(swap_active),
+                    row=player_lookup.get(str(swap_active)),
+                    roster_view=roster_view,
+                    lineup_info_by_player=lineup_info_by_player,
+                    now=now,
+                )
+                live_reserve_state = _player_lock_state(
+                    pid=str(swap_reserve),
+                    row=player_lookup.get(str(swap_reserve)),
+                    roster_view=roster_view,
+                    lineup_info_by_player=lineup_info_by_player,
+                    now=now,
+                )
+                if bool(live_active_state.get("locked")) or bool(live_reserve_state.get("locked")):
+                    st.error(
+                        "Cannot execute swap because one or more selected players are locked "
+                        f"({live_active_state.get('reason')} / {live_reserve_state.get('reason')})."
+                    )
+                    st.stop()
                 fresh_roster = api.roster_info(team_id)
                 starters = [r.player.id for r in fresh_roster.get_starters() if getattr(r, "player", None)]
                 if swap_active not in starters:
@@ -4382,6 +4774,10 @@ st.caption(
     "We prioritize same-KOS backups first, then later KOS, and rank by ProjFPts within each slot; "
     "Fantrax legality (including positional mins/maxes) is enforced via confirm checks."
 )
+st.caption(
+    f"Locked actives: {lock_counts.get('locked_active', 0)} | "
+    f"Locked reserves: {lock_counts.get('locked_reserve', 0)}"
+)
 
 suggestions: list[dict] = []
 active_candidates = []
@@ -4474,13 +4870,14 @@ if swap_period_int is not None:
         info = lineup_info_by_player.get(pid)
         if not row:
             continue
-        if hasattr(roster_view, "lock_flags"):
-            lock_flags = roster_view.lock_flags(pid, now=now, lineup_info_by_player=lineup_info_by_player)
-        else:
-            lock_flags = get_row_lock_flags(row, now=now, lineup_info_by_player=lineup_info_by_player)
-        if lock_flags.get("fx_locked") or lock_flags.get("visually_locked"):
+        if _is_locked_pid(str(pid), lock_state_by_pid):
             active_debug.append(
-                {"Player": row.player.name, "Reason": "locked", "Code": "-", "KO": "-"}
+                {
+                    "Player": row.player.name,
+                    "Reason": f"locked ({_lock_reason_label(lock_state_by_pid.get(str(pid), {}))})",
+                    "Code": "-",
+                    "KO": "-",
+                }
             )
             continue
         ko = info.kickoff if info else None
@@ -4529,13 +4926,14 @@ if swap_period_int is not None:
         info = lineup_info_by_player.get(pid)
         if not row:
             continue
-        if hasattr(roster_view, "lock_flags"):
-            lock_flags = roster_view.lock_flags(pid, now=now, lineup_info_by_player=lineup_info_by_player)
-        else:
-            lock_flags = get_row_lock_flags(row, now=now, lineup_info_by_player=lineup_info_by_player)
-        if lock_flags.get("fx_locked") or lock_flags.get("visually_locked"):
+        if _is_locked_pid(str(pid), lock_state_by_pid):
             reserve_debug.append(
-                {"Player": row.player.name, "Reason": "locked", "Code": "-", "KO": "-"}
+                {
+                    "Player": row.player.name,
+                    "Reason": f"locked ({_lock_reason_label(lock_state_by_pid.get(str(pid), {}))})",
+                    "Code": "-",
+                    "KO": "-",
+                }
             )
             continue
         ko = info.kickoff if info else None
@@ -4915,6 +5313,29 @@ roster_labels = {
     str(row.player.id): f"{row.player.name} ({_display_pos(row)})"
     for row in all_rows
 }
+active_labels_unlocked = {
+    pid: label for pid, label in active_labels.items() if not _is_locked_pid(pid, lock_state_by_pid)
+}
+roster_labels_unlocked = {
+    pid: label for pid, label in roster_labels.items() if not _is_locked_pid(pid, lock_state_by_pid)
+}
+
+stale_simple_removed: list[str] = []
+for key in (
+    "conditional_active_select",
+    "conditional_drop_select",
+    "conditional_drop_select_claim_mode",
+    "post_claim_swap_out_select",
+):
+    raw = st.session_state.get(key)
+    if raw and _is_locked_pid(str(raw), lock_state_by_pid):
+        st.session_state.pop(key, None)
+        stale_simple_removed.append(_player_label_for_pid(str(raw), player_lookup=player_lookup))
+if stale_simple_removed:
+    st.warning(
+        "Locked selections were removed from Create Rule (simple): "
+        + ", ".join(sorted(set(stale_simple_removed)))
+    )
 
 show_claims_builder = st.session_state.get("show_claims_builder", True)
 if not claims_allowed:
@@ -4949,12 +5370,16 @@ fa_simple_mode = FA_SIMPLE_MODE_CLAIM_BASED
 fa_trigger_mode = FA_TRIGGER_MODE_FA_STARTING_ONLY
 
 if selected_action_type == RuleActionType.LINEUP_SWAP:
-    active_player_id = st.selectbox(
-        "Active player to monitor",
-        options=list(active_labels.keys()),
-        format_func=lambda pid: active_labels.get(pid, pid),
-        key="conditional_active_select",
-    )
+    if not active_labels_unlocked:
+        st.info("No unlocked active players are available to monitor.")
+        active_player_id = None
+    else:
+        active_player_id = st.selectbox(
+            "Active player to monitor",
+            options=list(active_labels_unlocked.keys()),
+            format_func=lambda pid: active_labels_unlocked.get(pid, pid),
+            key="conditional_active_select",
+        )
 
 if selected_action_type == RuleActionType.FA_CLAIM_DROP:
     mode_options = {
@@ -4980,12 +5405,16 @@ if selected_action_type == RuleActionType.FA_CLAIM_DROP:
     )
     st.caption("Reserve drops are supported. If you drop a reserve player, the added FA is kept on reserve.")
     if fa_simple_mode == FA_SIMPLE_MODE_DROP_BASED:
-        drop_player_id = st.selectbox(
-            "Roster player to drop/monitor",
-            options=list(roster_labels.keys()),
-            format_func=lambda pid: roster_labels.get(pid, pid),
-            key="conditional_drop_select",
-        )
+        if not roster_labels_unlocked:
+            st.info("No unlocked roster players are available to drop/monitor.")
+            drop_player_id = None
+        else:
+            drop_player_id = st.selectbox(
+                "Roster player to drop/monitor",
+                options=list(roster_labels_unlocked.keys()),
+                format_func=lambda pid: roster_labels_unlocked.get(pid, pid),
+                key="conditional_drop_select",
+            )
 
 active_row = player_lookup.get(active_player_id) if active_player_id else None
 active_lineup = lineup_info_by_player.get(active_player_id) if active_player_id else None
@@ -5545,7 +5974,7 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
         st.markdown("**Roster player to drop (filtered by FA kickoff slot)**")
 
         eligible_drop_ids: List[str] = []
-        for pid in roster_labels.keys():
+        for pid in roster_labels_unlocked.keys():
             row = player_lookup.get(pid)
             if not row:
                 continue
@@ -5653,12 +6082,16 @@ if selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_ADD_ONLY):
                 claim_position_id = str(fa_candidate.get("default_pos_id") or "")
                 st.caption("No open active slots; FA will claim to reserve then swap into active.")
                 st.markdown("**Active player to move to reserve after claim**")
-                post_claim_swap_out_id = st.selectbox(
-                    "Active player to replace",
-                    options=list(active_labels.keys()),
-                    format_func=lambda pid: active_labels.get(pid, pid),
-                    key="post_claim_swap_out_select",
-                )
+                if not active_labels_unlocked:
+                    post_claim_swap_out_id = None
+                    st.info("No unlocked active player is available for post-claim swap out.")
+                else:
+                    post_claim_swap_out_id = st.selectbox(
+                        "Active player to replace",
+                        options=list(active_labels_unlocked.keys()),
+                        format_func=lambda pid: active_labels_unlocked.get(pid, pid),
+                        key="post_claim_swap_out_select",
+                    )
 
 if selected_action_type == RuleActionType.LINEUP_SWAP:
     submit_disabled = not (
@@ -5668,6 +6101,10 @@ if selected_action_type == RuleActionType.LINEUP_SWAP:
         and active_lineup
         and active_lineup.kickoff
     )
+    if _is_locked_pid(active_player_id, lock_state_by_pid) or any(
+        _is_locked_pid(pid, lock_state_by_pid) for pid in selected_backup_ids
+    ):
+        submit_disabled = True
 elif selected_action_type == RuleActionType.FA_CLAIM_DROP:
     submit_disabled = not (
         drop_player_id
@@ -5688,6 +6125,8 @@ elif selected_action_type == RuleActionType.FA_CLAIM_DROP:
         submit_disabled = True
     if claims_allowed and not (claims_acknowledged or claims_ack_checkbox):
         submit_disabled = True
+    if _is_locked_pid(drop_player_id, lock_state_by_pid) or _is_locked_pid(post_claim_swap_out_id, lock_state_by_pid):
+        submit_disabled = True
 elif selected_action_type == FA_ACTION_ADD_ONLY:
     submit_disabled = not (
         period_id
@@ -5699,11 +6138,15 @@ elif selected_action_type == FA_ACTION_ADD_ONLY:
         submit_disabled = True
     if claims_allowed and not (claims_acknowledged or claims_ack_checkbox):
         submit_disabled = True
+    if _is_locked_pid(post_claim_swap_out_id, lock_state_by_pid):
+        submit_disabled = True
 elif selected_action_type == FA_ACTION_DROP_ONLY:
     submit_disabled = not (drop_player_id and period_id)
     if drop_player_id in never_drop_ids and not override_never_drop:
         submit_disabled = True
     if claims_allowed and not (claims_acknowledged or claims_ack_checkbox):
+        submit_disabled = True
+    if _is_locked_pid(drop_player_id, lock_state_by_pid):
         submit_disabled = True
 else:
     submit_disabled = True
@@ -5740,6 +6183,23 @@ def _render_conflicting_rules(conflicts: List[Dict[str, Any]], *, heading: str) 
         st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 
 if submitted and not submit_disabled:
+    locked_submit_ids: List[str] = []
+    if selected_action_type == RuleActionType.LINEUP_SWAP:
+        if active_player_id and _is_locked_pid(active_player_id, lock_state_by_pid):
+            locked_submit_ids.append(active_player_id)
+        locked_submit_ids.extend([pid for pid in selected_backup_ids if _is_locked_pid(pid, lock_state_by_pid)])
+    elif selected_action_type in (RuleActionType.FA_CLAIM_DROP, FA_ACTION_DROP_ONLY):
+        if drop_player_id and _is_locked_pid(drop_player_id, lock_state_by_pid):
+            locked_submit_ids.append(drop_player_id)
+        if post_claim_swap_out_id and _is_locked_pid(post_claim_swap_out_id, lock_state_by_pid):
+            locked_submit_ids.append(post_claim_swap_out_id)
+    elif selected_action_type == FA_ACTION_ADD_ONLY:
+        if post_claim_swap_out_id and _is_locked_pid(post_claim_swap_out_id, lock_state_by_pid):
+            locked_submit_ids.append(post_claim_swap_out_id)
+    if locked_submit_ids:
+        locked_names = sorted({_player_label_for_pid(pid, player_lookup=player_lookup) for pid in locked_submit_ids})
+        st.error("Cannot save rule: selected player(s) are locked: " + ", ".join(locked_names))
+        st.stop()
     try:
         if selected_action_type == RuleActionType.LINEUP_SWAP:
             if not user_id:
@@ -6071,6 +6531,8 @@ else:
             )
             backup_ids = [str(r.get("reserve_id")) for r in group_rules if r.get("reserve_id")]
             eligible_ids, ineligible_ids = _partition_backups(backup_ids, roster_view)
+            locked_backup_ids = [bid for bid in eligible_ids if _is_locked_pid(bid, lock_state_by_pid)]
+            eligible_ids = [bid for bid in eligible_ids if not _is_locked_pid(bid, lock_state_by_pid)]
             eligible_names = []
             for bid in eligible_ids:
                 row = player_lookup.get(bid)
@@ -6079,6 +6541,9 @@ else:
             for bid in ineligible_ids:
                 row = player_lookup.get(bid)
                 ineligible_names.append(row.player.name if row else bid)  # type: ignore[union-attr]
+            locked_backup_names = []
+            for bid in locked_backup_ids:
+                locked_backup_names.append(_rule_player_name(bid))
             backups_chain = " > ".join(eligible_names) if eligible_names else "(none)"
             swap_type = _swap_type_label(active_id, eligible_ids, kos_map)
             rule_condition = None
@@ -6115,6 +6580,8 @@ else:
             info_line = lineup_info_by_player.get(active_id)
             status_text = _format_binary_status(info_line.status) if info_line else "UNCONFIRMED"
             kickoff_text = _format_kickoff(info_line.kickoff if info_line else None)
+            active_locked = _is_locked_pid(active_id, lock_state_by_pid)
+            active_lock_reason = _lock_reason_label(lock_state_by_pid.get(active_id, {}))
             period_label = (
                 group.get("period_label")
                 or period_id_map.get(str(group.get("period")), str(group.get("period")))
@@ -6128,8 +6595,10 @@ else:
                 state_text = "active"
             st.caption(
                 f"Period: {period_label} | Type: lineup_swap | Max fires: {group_rules[0].get('max_fires', 1)} | State: {state_text} "
-                f"| Current lineup: {status_text} ({kickoff_text})"
+                f"| Current lineup: {status_text} ({kickoff_text}) | Locked now: {'yes' if active_locked else 'no'} ({active_lock_reason})"
             )
+            if locked_backup_names:
+                st.caption("Backups locked now: " + " > ".join(locked_backup_names))
 
             action_cols = st.columns(2)
             if state_text != "fired":
@@ -6224,6 +6693,8 @@ else:
                 drop_id,
                 fallback_label=rule.get("drop_label") or rule.get("out_label"),
             )
+            drop_locked = _is_locked_pid(drop_id, lock_state_by_pid)
+            drop_lock_reason = _lock_reason_label(lock_state_by_pid.get(drop_id, {}))
             fa_label = (
                 rule.get("fa_add_display_name")
                 or rule.get("fa_add_scorer_id")
@@ -6262,8 +6733,14 @@ else:
             if post_swap_out:
                 swap_label = _rule_player_name(str(post_swap_out))
                 st.caption(f"After claim, swap into active (send to reserve): {swap_label}")
+                st.caption(
+                    f"Post-claim swap-out locked now: "
+                    f"{'yes' if _is_locked_pid(str(post_swap_out), lock_state_by_pid) else 'no'} "
+                    f"({_lock_reason_label(lock_state_by_pid.get(str(post_swap_out), {}))})"
+                )
             elif action == RuleActionType.FA_CLAIM_DROP.value and claim_to_status == "2":
                 st.caption("Claim to reserve")
+            st.caption(f"Drop player locked now: {'yes' if drop_locked else 'no'} ({drop_lock_reason})")
             st.caption(
                 f"Type: {action} | State: {state_text} | Max fires: {rule.get('max_fires', 1)}"
             )
