@@ -3584,8 +3584,8 @@ def main() -> None:
                                 result="no_swap",
                             )
 
-                        if not swap_executed:
-                            break
+                    if not swap_executed:
+                        break
                     try:
                         roster = api.roster_info(team_id)
                     except Exception as exc:
