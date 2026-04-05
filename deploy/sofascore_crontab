@@ -17,8 +17,10 @@ PYTHON_BIN=/opt/FantraxAPI/.venv/bin/python
 # Update if your VPS uses a different path.
 CHROME_BIN=/usr/bin/google-chrome
 
-# Daily predictions + mappings (refreshes schedule/lineups + cached schedule)
-0 2 * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_listener.sh --mode predictions --horizon-days 7 --with-mappings >> "$LOG_DIR/sofascore_predictions.log" 2>&1
+# Daily predictions + mappings (refreshes schedule/lineups + cached schedule).
+# Run at minute 2 (02:02 UTC), not :00, so we do not race the */5 kickoff watcher for
+# data/sofascore/.sofascore_lineup.lock (both at :00 caused "Another sofascore lineup run is in progress").
+2 2 * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_listener.sh --mode predictions --horizon-days 7 --with-mappings --browser-path "$CHROME_BIN" >> "$LOG_DIR/sofascore_predictions.log" 2>&1
 
 # High-frequency confirmed watcher (uses cached schedule; internal 10s polling)
 */5 * * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_watcher.sh --window-minutes 80 --min-window-minutes 70 --poll-interval-seconds 10 --max-watch-minutes 15 --browser-path "$CHROME_BIN" >> "$LOG_DIR/sofascore_kickoff_watcher.log" 2>&1

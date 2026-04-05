@@ -17,7 +17,7 @@ The **schedule and lineup scraping** is done by:
 
 | What                | Where it lives | In crontab? |
 |---------------------|----------------|-------------|
-| Predictions + schedule | `bin/run_sofascore_listener.sh` → `scripts/sofascore_lineup_listener.py` (uses `services/sofascore_lineup_service.py`) | Yes – `deploy/sofascore_crontab` (daily 02:00) |
+| Predictions + schedule | `bin/run_sofascore_listener.sh` → `scripts/sofascore_lineup_listener.py` (uses `services/sofascore_lineup_service.py`) | Yes – `deploy/sofascore_crontab` (daily 02:02 UTC) |
 | Confirmed lineups (pre-kickoff) | `bin/run_sofascore_watcher.sh` → `scripts/sofascore_kickoff_watcher.py` (same service) | Yes – `deploy/sofascore_crontab` (every 5 min) |
 | Alternative: schedule + lineups in one script | `esd_export_schedule_and_lineups_v2.py` (repo root) | No – optional cron; see section 5 and `docs/ESD_LINEUP_FETCHER.md` |
 
@@ -31,7 +31,7 @@ A sample crontab lives in `deploy/sofascore_crontab`. It sets `ROOT_DIR`, `LOG_D
 
 | Schedule      | Job                  | Purpose |
 |---------------|----------------------|--------|
-| `0 2 * * *`   | SofaScore predictions | Daily refresh of schedule + predicted lineups (and mappings). |
+| `2 2 * * *`   | SofaScore predictions | Daily refresh of schedule + predicted lineups (and mappings). At **02:02 UTC** (not :00) to avoid racing the `*/5` kickoff watcher for `data/sofascore/.sofascore_lineup.lock`. |
 | `*/5 * * * *` | SofaScore kickoff watcher | Every 5 minutes: poll fixtures 70–80 min before kickoff; capture confirmed lineups. |
 | `*/5 * * * *` | Conditional runner   | Every 5 minutes: evaluate swap rules for all users and execute on Fantrax. |
 | `0 3 * * 0`   | Log trim (optional)   | Weekly: trim oversized logs in `logs/` and `data/logs/`. |
@@ -43,9 +43,9 @@ A sample crontab lives in `deploy/sofascore_crontab`. It sets `ROOT_DIR`, `LOG_D
 
 | Field   | Value |
 |--------|--------|
-| **Schedule** | `0 2 * * *` (daily at 02:00) |
+| **Schedule** | `2 2 * * *` (daily at **02:02 UTC**) |
 | **Script**   | `bin/run_sofascore_listener.sh` |
-| **Args**     | `--mode predictions --horizon-days 7 --with-mappings` |
+| **Args**     | `--mode predictions --horizon-days 7 --with-mappings --browser-path "$CHROME_BIN"` (see `deploy/sofascore_crontab`) |
 | **Log**      | `logs/sofascore_predictions.log` |
 
 **What it does:** Runs the SofaScore lineup listener in “predictions” mode. Fetches the upcoming schedule (default: Premier League, tournament 17) and predicted lineups for matches within the next 7 days. `--with-mappings` updates player-mapping data. Writes:

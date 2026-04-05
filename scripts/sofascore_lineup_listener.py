@@ -14,7 +14,7 @@ Limitations / assumptions:
     - Browser path must point to a Chrome/Chromium binary that works headless under the cron user.
 
 Suggested cron usage (adjust paths and Python env as needed):
-    - Daily predictions sweep: 0 3 * * * /path/to/venv/bin/python /path/to/script.py --mode predictions --horizon-days 7
+    - Daily predictions sweep: use a minute not on the */5 grid (e.g. 2 2 * * *) so you do not race the kickoff watcher for .sofascore_lineup.lock; pass --browser-path for Linux servers.
     - Match-day confirmed listener (every 5 minutes, 70-80m before kickoff):
         */5 * * * * /path/to/venv/bin/python /path/to/script.py --mode confirmed --window-minutes 80 --min-window-minutes 70
 

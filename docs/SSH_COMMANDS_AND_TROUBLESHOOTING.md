@@ -300,7 +300,7 @@ PYTHONPATH=/Users/hogan/FantraxAPI streamlit run apps/auth_login/overview.py --s
 ## Background Jobs (Cron)
 
 ### VPS cron (expected)
-VPS should run SofaScore jobs and the conditional runner every 5 minutes.
+VPS should run the **daily** SofaScore predictions job (schedule + predicted lineups) and the **every-5-minute** kickoff watcher and conditional runner. The canonical definitions are in `deploy/sofascore_crontab` (predictions at **02:02 UTC** so it does not run in the same minute as the `*/5` jobs at :00 and lose the shared lineup lock).
 
 Check current crontab:
 ```
@@ -308,10 +308,16 @@ ssh fantrax-vps
 crontab -l
 ```
 
-Expected lines (paths may vary):
+Expected lines (paths may vary; prefer installing from the repo file):
 ```
+2 2 * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_listener.sh --mode predictions --horizon-days 7 --with-mappings --browser-path "$CHROME_BIN" >> "$LOG_DIR/sofascore_predictions.log" 2>&1
 */5 * * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHON_BIN="$PYTHON_BIN" bash bin/run_sofascore_watcher.sh --window-minutes 80 --min-window-minutes 70 --poll-interval-seconds 10 --max-watch-minutes 15 --browser-path "$CHROME_BIN" >> "$LOG_DIR/sofascore_kickoff_watcher.log" 2>&1
 */5 * * * * cd "$ROOT_DIR" && mkdir -p "$LOG_DIR" && PYTHONPATH="$ROOT_DIR" "$PYTHON_BIN" scripts/conditional_runner.py --mode coordinator --all-users --max-workers 4 >> "$LOG_DIR/conditional_runner.cron.out" 2>&1
+```
+
+Daily predictions log (last run / errors):
+```
+tail -n 80 /opt/FantraxAPI/logs/sofascore_predictions.log
 ```
 
 Install/update the repo cron file:
