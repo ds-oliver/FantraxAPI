@@ -1747,15 +1747,21 @@ def _fetch_gameweek_events(inferred_round: Optional[str]) -> Tuple[List[dict], O
         _collect(False)
         _collect(True)
         if cached_events:
-            merged = {ev["event_id"]: ev for ev in cached_events}
+            merged = {ev["event_id"]: dict(ev) for ev in cached_events}
             for ev in events:
-                existing = merged.get(ev["event_id"])
+                eid = ev["event_id"]
+                live_ko = ev.get("kickoff")
+                existing = merged.get(eid)
                 if not existing:
-                    merged[ev["event_id"]] = ev
+                    merged[eid] = dict(ev)
                     continue
-                for key, value in ev.items():
-                    if value and not existing.get(key):
-                        existing[key] = value
+                if live_ko:
+                    existing["kickoff"] = live_ko
+                for key, val in ev.items():
+                    if key == "kickoff":
+                        continue
+                    if val and not existing.get(key):
+                        existing[key] = val
             events = list(merged.values())
         source = "live"
         if cache_source and cached_events:
@@ -2286,7 +2292,7 @@ def _augment_event_kickoffs_if_empty(
         # Pull upcoming events via raw iter; filter to next match per team
         schedule_rows = []
         for ev in raw_iter_tournament_events(tournament_id, season_id or 0, upcoming=True):
-            kickoff = parse_kickoff_dt(fmt_ts := ev.get("startTimestamp") or ev.get("startTime"))
+            kickoff = parse_kickoff_dt(ev.get("startTimestamp") or ev.get("startTime"))
             home_tid = safe_team_id(ev.get("homeTeam") or ev.get("home_team"))
             away_tid = safe_team_id(ev.get("awayTeam") or ev.get("away_team"))
             schedule_rows.append(

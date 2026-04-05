@@ -182,15 +182,43 @@ def fmt_ts(ts) -> str:
         return ""
 
 
-def parse_kickoff_dt(kickoff_str: str | None) -> Optional[datetime]:
-    if not kickoff_str:
+def parse_kickoff_dt(value: str | int | float | None) -> Optional[datetime]:
+    """
+    Normalize SofaScore kickoff values to UTC datetime.
+
+    Accepts:
+    - ISO strings from schedule CSV (e.g. "2026-04-11 14:00:00+0000")
+    - Unix seconds or milliseconds from API JSON (startTimestamp / startTime)
+    """
+    if value is None:
         return None
-    try:
-        # Stored as "YYYY-mm-dd HH:MM:SS+0000"
-        sanitized = kickoff_str.replace("+0000", "+00:00")
-        return datetime.fromisoformat(sanitized)
-    except Exception:
+    if isinstance(value, bool):
         return None
+    if isinstance(value, (int, float)):
+        if value != value:  # NaN
+            return None
+        ts = float(value)
+        if ts > 1e12:  # milliseconds (SofaScore sometimes uses ms in other endpoints)
+            ts /= 1000.0
+        try:
+            return datetime.fromtimestamp(ts, tz=timezone.utc)
+        except (OSError, OverflowError, ValueError):
+            return None
+    if isinstance(value, str):
+        s = value.strip()
+        if not s:
+            return None
+        if s.isdigit() or (s.startswith("-") and s[1:].isdigit()):
+            try:
+                return parse_kickoff_dt(int(s))
+            except Exception:
+                return None
+        try:
+            sanitized = s.replace("+0000", "+00:00")
+            return datetime.fromisoformat(sanitized)
+        except Exception:
+            return None
+    return None
 
 
 def event_to_row(ev, tournament_id: int, season_id: int) -> dict:
