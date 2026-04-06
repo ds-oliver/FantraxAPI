@@ -431,6 +431,40 @@ Forced dry-run (debug a single user):
 PYTHONPATH=/opt/FantraxAPI /opt/FantraxAPI/.venv/bin/python scripts/conditional_runner.py --user-id <USER_ID> --dry-run --force-trigger
 ```
 
+## Repo ownership on the VPS (`Permission denied` / `chown: Operation not permitted`)
+
+If `/opt/FantraxAPI` was cloned or updated **as root**, files are `root:root` and your deploy user (e.g. `hogan`) **cannot** overwrite `players.csv`, run exports to the repo root, or `chown` anything away from root.
+
+**Symptoms**
+
+- `PermissionError` writing `players.csv`
+- As non-root: `chown: ... Operation not permitted` on almost every path
+
+**Fix (run as root, once)**
+
+From your Mac:
+
+```bash
+ssh fantrax-vps-root
+```
+
+On the server as **root**:
+
+```bash
+chown -R hogan:hogan /opt/FantraxAPI
+```
+
+Verify as `hogan`:
+
+```bash
+ssh hogan@5.78.118.108   # or: ssh fantrax-vps
+ls -la /opt/FantraxAPI/players.csv
+```
+
+**Rare:** if `chown` still fails even as root, check immutable flags: `lsattr -R /opt/FantraxAPI | head -20` and clear with `chattr -R -i -a /opt/FantraxAPI` (only if you see `i`/`a` bits).
+
+**Note:** `systemd` / `pull_restart` may still create **new** files as root depending on unit configuration; if root-owned files reappear, set `User=` in the service unit to `hogan` or run deploy scripts as `hogan`.
+
 ## Syncthing
 
 ### Mac
