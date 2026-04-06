@@ -2,6 +2,36 @@
 
 Purpose: a concise, repeatable guide for maintaining the repo, the VPS app, and the background jobs.
 
+## Quick resume: open the VPS app at http://127.0.0.1:8511
+
+Port **8511** on your Mac is **not** where you run Streamlit locally. It is the **local end of an SSH tunnel** to the VPS, where Streamlit binds **127.0.0.1:8501**. Nothing listens on 8511 until the tunnel is up.
+
+**Every time you come back to development:**
+
+1. Open a terminal on your Mac and start the tunnel; **leave this window open** (it will look idle; that is normal):
+   ```bash
+   ssh -N -o ExitOnForwardFailure=yes -L 8511:127.0.0.1:8501 fantrax-vps-root
+   ```
+2. In the browser, go to [http://127.0.0.1:8511/](http://127.0.0.1:8511/).
+
+### Tunnel shows `channel X: open failed: connect failed: Connection refused`
+
+That message is **normal to see once** if you opened the URL before Streamlit was up; it is **the main symptom** when the tunnel is working but **nothing on the VPS is listening on `127.0.0.1:8501`**. SSH is forwarding your browser’s traffic to the VPS; the refusal comes from the VPS because Streamlit is stopped, crashed, or bound to another port.
+
+**Fix (from your Mac, does not require a separate VPS login):**
+
+```bash
+ssh fantrax-vps-root "systemctl restart fantrax-pull-restart.service && sleep 2 && ss -ltnp | grep -E ':8501\\b' || true; tail -n 60 /opt/FantraxAPI/logs/streamlit.out 2>/dev/null || true"
+```
+
+You want `ss` to show something listening on `8501`. Then reload [http://127.0.0.1:8511/](http://127.0.0.1:8511/) (the tunnel terminal can stay open).
+
+If `8501` still has no listener, use the full checklist: [Streamlit tunnel fails (connection refused / browser reset)](#streamlit-tunnel-refused).
+
+If the tunnel command itself fails to start (not the repeating `channel` lines), or the browser says the site cannot be reached before you ever get `Connection refused`, see [VPS Quick Start (After Shutdown / Reconnect)](#vps-quick-start-after-shutdown--reconnect).
+
+**Running the app from your local clone** (different URL): use port **8502** on localhost, not 8511. See [Port Policy](#port-policy-use-this-everywhere) and [Three-Terminal Workflow](#three-terminal-workflow-local--vps-side-by-side).
+
 ## Conditional Swaps Deprecations
 
 - Sidebar controls `Late KOS coverage` and `Do not move unless confirmed out` are deprecated.
@@ -517,6 +547,8 @@ ssh -G fantrax-vps
 ```
 ssh 5.78.118.108
 ```
+
+<a id="streamlit-tunnel-refused"></a>
 
 ### Streamlit Tunnel Fails (Connection Refused / Browser Reset)
 
