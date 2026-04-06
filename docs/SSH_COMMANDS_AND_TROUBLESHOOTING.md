@@ -208,24 +208,92 @@ bin/push_and_deploy_vps.sh -H fantrax-vps-root -s fantrax-pull-restart.service
 bin/push_and_deploy_vps.sh --skip-status
 ```
 
-### VPS deploy: `error: not a git repository`
+### VPS deploy: `pull_restart` / git check fails (was “not a git repository”)
 
 Symptoms:
 
-- `logs/pull_restart.log` or `journalctl` shows `error: not a git repository` right after `Starting pull_restart`.
-- `bin/push_and_deploy_vps.sh` may now exit non-zero and print journal output (the service fails before Streamlit starts).
+- `logs/pull_restart.log` or `journalctl` shows a git-related error right after `Starting pull_restart`.
+- `bin/push_and_deploy_vps.sh` may exit non-zero and print journal output (the service fails before Streamlit starts).
 - Browser: tunnel to `8511` shows connection refused or “site can’t be reached,” because **nothing listens on `127.0.0.1:8501`** on the VPS.
+
+#### What caused this, and is it because the tree is owned by `hogan` instead of `root`?
+
+**Most likely:** nothing is “corrupt” in your app. **Git 2.35+** refuses to run commands in a repo when the **process user** (here **root**, via `fantrax-pull-restart.service`) does not match the **directory owner** (e.g. **`hogan:hogan`**). That is a **security rule**, not a mistake you made by using `hogan`.
+
+**Why it feels brand new:** the rule has been in Git for a while; you only see it when **root** runs `git` in that tree **and** ownership differs. If you used to run deploys or Streamlit as `hogan`, or had not restarted this service path, you would not have hit it. A **Ubuntu / `git` package update** can also make behavior stricter. Your logs also show a moment when full `git fetch` / `pip` runs stopped and only the first-line check failed — that pattern matches **dubious ownership** (or missing `HOME` for systemd), not a missing `.git` folder.
+
+**Do you need to “undo” `hogan` ownership?** Usually **no**. Pick one approach:
+
+| Approach | Idea |
+|----------|------|
+| **Recommended** | Keep **`hogan`** (or whatever user owns `/opt/FantraxAPI`) and make **root’s Git** trust the path: `git config --global --add safe.directory /opt/FantraxAPI` **and** ensure the service sees **`HOME=/root`** (see `deploy/systemd/fantrax-pull-restart.service` and `bin/pull_restart.sh` in this repo). |
+| **Alternative** | `chown -R root:root /opt/FantraxAPI` so root owns the tree — dubious ownership goes away, but **you may not want** root-owned files if `hogan` routinely edits there without `sudo`. |
+| **Heavier** | Run the systemd unit as **`User=hogan`** so Git runs as the same user as the files (requires path/venv permissions to be consistent). |
+
+#### Next steps on the VPS (do in order)
+
+1. **SSH as root** (`ssh fantrax-vps-root`).
+2. **One-time Git trust** (safe if the path is your real repo):
+   ```bash
+   git config --global --add safe.directory /opt/FantraxAPI
+   ```
+3. **Ship the repo fixes** so systemd sets `HOME` and the script exports it: deploy **`bin/pull_restart.sh`** and **`deploy/systemd/fantrax-pull-restart.service`** to the server (e.g. `git pull` in `/opt/FantraxAPI` after pushing from your Mac, or copy the two files by hand).
+4. **Install the updated unit file** (if you edited it):
+   ```bash
+   cp /opt/FantraxAPI/deploy/systemd/fantrax-pull-restart.service /etc/systemd/system/
+   systemctl daemon-reload
+   ```
+5. **Clear the failed state** (needed after many restart loops):
+   ```bash
+   systemctl reset-failed fantrax-pull-restart.service
+   ```
+6. **Start the app** and verify:
+   ```bash
+   systemctl restart fantrax-pull-restart.service
+   sleep 3
+   systemctl status fantrax-pull-restart.service --no-pager -l
+   ss -ltnp | grep -E ':8501\b' || true
+   tail -n 40 /opt/FantraxAPI/logs/pull_restart.log
+   ```
+   You want log lines past **`Starting pull_restart`** such as **`Fetching origin`**, **`Installing requirements`**, **`Launching Streamlit`**, and **`ss`** showing a listener on **8501**.
+7. **On your Mac:** start the tunnel, then open `http://127.0.0.1:8511/`:
+   ```bash
+   ssh -N -o ExitOnForwardFailure=yes -L 8511:127.0.0.1:8501 fantrax-vps-root
+   ```
+
+If step 6 still fails, read the **full** message from `git` (updated `pull_restart.sh` logs it) and `journalctl -u fantrax-pull-restart.service -n 80 --no-pager`.
+
+#### A) `dubious ownership` (common when `.git` exists but is owned by another user)
+
+`fantrax-pull-restart.service` runs as **root**, but **`/opt/FantraxAPI` is often owned by a normal user** (e.g. `hogan:hogan`). Git 2.35+ treats that as unsafe and refuses to run; the old script text only said “not a git repository” because stderr was hidden.
+
+**Check as root:**
+
+```bash
+cd /opt/FantraxAPI && git rev-parse --is-inside-work-tree
+```
+
+If you see `fatal: detected dubious ownership in repository at '/opt/FantraxAPI'`, fix with:
+
+```bash
+git config --global --add safe.directory /opt/FantraxAPI
+```
+
+Then reload the unit if you updated it from the repo (`Environment=HOME=/root`), run **`systemctl reset-failed fantrax-pull-restart.service`** (required after bursts of failures — see **“Start request repeated too quickly”** in `journalctl`), then `systemctl restart fantrax-pull-restart.service` and confirm `ss -ltnp | grep 8501`.
+
+**Why interactive `git rev-parse` worked but the service still logged “not a git repository”:** an interactive root login has `HOME=/root`, so Git reads `/root/.gitconfig`. **systemd often starts services with `HOME` unset**, so Git ignored your `safe.directory` until `HOME` is set (now done in `deploy/systemd/fantrax-pull-restart.service` and `bin/pull_restart.sh`).
+
+#### B) Missing or broken `.git`
 
 Meaning: **`/opt/FantraxAPI` is not a git working tree** (missing or broken `.git`). `bin/pull_restart.sh` runs `git fetch` / `git reset` first; if that check fails, it exits and **never launches Streamlit**.
 
-Fix on the VPS (pick one path):
+**Confirm:**
 
-1. **Confirm:**
-   ```bash
-   ssh fantrax-vps-root "test -d /opt/FantraxAPI/.git && echo OK || echo MISSING_DOT_GIT"
-   ```
+```bash
+ssh fantrax-vps-root "test -d /opt/FantraxAPI/.git && echo OK || echo MISSING_DOT_GIT"
+```
 
-2. **Restore a proper clone** (use your real `origin` URL if different, e.g. same as `git remote get-url origin` on your Mac):
+**Restore a proper clone** (use your real `origin` URL if different, e.g. same as `git remote get-url origin` on your Mac):
    ```bash
    ssh fantrax-vps-root
    cd /opt
@@ -241,7 +309,9 @@ Fix on the VPS (pick one path):
    ss -ltnp | grep -E ':8501\b' || true
    ```
 
-3. **In-place repair** (if you must keep the current tree and only restore git metadata): from `/opt/FantraxAPI`, `git init`, add `origin`, `git fetch`, and check out `testing` to match GitHub (resolve conflicts carefully; `git checkout -f` overwrites tracked files).
+#### C) In-place repair (only if you must keep the current tree and only restore git metadata)
+
+From `/opt/FantraxAPI`, `git init`, add `origin`, `git fetch`, and check out `testing` to match GitHub (resolve conflicts carefully; `git checkout -f` overwrites tracked files).
 
 ## VPS Quick Start (After Shutdown / Reconnect)
 

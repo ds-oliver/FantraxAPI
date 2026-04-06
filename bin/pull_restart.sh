@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# systemd often runs services without HOME set; git then ignores /root/.gitconfig (e.g. safe.directory for dubious ownership).
+export HOME="${HOME:-/root}"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG_DIR="$REPO_ROOT/logs"
@@ -18,8 +21,9 @@ log "Starting pull_restart (${BRANCH})"
 cd "$REPO_ROOT"
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  log "error: not a git repository (REPO_ROOT=${REPO_ROOT})"
-  log "hint: /opt/FantraxAPI must be a clone with a .git directory, or Streamlit never starts. See docs/SSH_COMMANDS_AND_TROUBLESHOOTING.md (VPS deploy: not a git repository)."
+  log "error: git check failed in ${REPO_ROOT}: $(git rev-parse --is-inside-work-tree 2>&1 | tr '\n' ' ')"
+  log "hint: if you see 'dubious ownership', run as root: git config --global --add safe.directory ${REPO_ROOT}"
+  log "hint: if .git is missing, see docs/SSH_COMMANDS_AND_TROUBLESHOOTING.md (VPS deploy: git / pull_restart fails)."
   exit 1
 fi
 
