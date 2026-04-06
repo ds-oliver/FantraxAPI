@@ -208,6 +208,41 @@ bin/push_and_deploy_vps.sh -H fantrax-vps-root -s fantrax-pull-restart.service
 bin/push_and_deploy_vps.sh --skip-status
 ```
 
+### VPS deploy: `error: not a git repository`
+
+Symptoms:
+
+- `logs/pull_restart.log` or `journalctl` shows `error: not a git repository` right after `Starting pull_restart`.
+- `bin/push_and_deploy_vps.sh` may now exit non-zero and print journal output (the service fails before Streamlit starts).
+- Browser: tunnel to `8511` shows connection refused or “site can’t be reached,” because **nothing listens on `127.0.0.1:8501`** on the VPS.
+
+Meaning: **`/opt/FantraxAPI` is not a git working tree** (missing or broken `.git`). `bin/pull_restart.sh` runs `git fetch` / `git reset` first; if that check fails, it exits and **never launches Streamlit**.
+
+Fix on the VPS (pick one path):
+
+1. **Confirm:**
+   ```bash
+   ssh fantrax-vps-root "test -d /opt/FantraxAPI/.git && echo OK || echo MISSING_DOT_GIT"
+   ```
+
+2. **Restore a proper clone** (use your real `origin` URL if different, e.g. same as `git remote get-url origin` on your Mac):
+   ```bash
+   ssh fantrax-vps-root
+   cd /opt
+   mv FantraxAPI "FantraxAPI.bak.$(date +%s)"
+   git clone https://github.com/ds-oliver/FantraxAPI.git FantraxAPI
+   cd FantraxAPI && git checkout testing
+   python3 -m venv .venv
+   .venv/bin/pip install -r requirements.txt
+   ```
+   Copy back any **secrets or local-only files** from the backup (e.g. under `data/`, env files) if you rely on them, then:
+   ```bash
+   systemctl restart fantrax-pull-restart.service
+   ss -ltnp | grep -E ':8501\b' || true
+   ```
+
+3. **In-place repair** (if you must keep the current tree and only restore git metadata): from `/opt/FantraxAPI`, `git init`, add `origin`, `git fetch`, and check out `testing` to match GitHub (resolve conflicts carefully; `git checkout -f` overwrites tracked files).
+
 ## VPS Quick Start (After Shutdown / Reconnect)
 
 Use this exact sequence when your machine/processes were interrupted and you need everything back up quickly.

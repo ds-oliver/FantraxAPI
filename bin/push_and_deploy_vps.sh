@@ -119,8 +119,17 @@ if [[ "$SKIP_STATUS" -eq 1 ]]; then
   ssh "$SSH_HOST" "sudo systemctl restart '$SERVICE_NAME'"
 else
   ssh "$SSH_HOST" \
-    "sudo systemctl restart '$SERVICE_NAME' && \
-     sudo systemctl status '$SERVICE_NAME' --no-pager -l && \
+    "set -e; \
+     sudo systemctl restart '$SERVICE_NAME'; \
+     sleep 2; \
+     if sudo systemctl is-failed --quiet '$SERVICE_NAME' 2>/dev/null; then \
+       echo 'error: service entered failed state after restart (Streamlit did not stay up).' >&2; \
+       sudo systemctl status '$SERVICE_NAME' --no-pager -l || true; \
+       sudo journalctl -u '$SERVICE_NAME' -n 60 --no-pager; \
+       tail -n 80 /opt/FantraxAPI/logs/pull_restart.log 2>/dev/null || true; \
+       exit 1; \
+     fi; \
+     sudo systemctl status '$SERVICE_NAME' --no-pager -l; \
      tail -n 40 /opt/FantraxAPI/logs/pull_restart.log 2>/dev/null || true"
 fi
 

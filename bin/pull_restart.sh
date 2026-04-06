@@ -18,7 +18,8 @@ log "Starting pull_restart (${BRANCH})"
 cd "$REPO_ROOT"
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  log "error: not a git repository"
+  log "error: not a git repository (REPO_ROOT=${REPO_ROOT})"
+  log "hint: /opt/FantraxAPI must be a clone with a .git directory, or Streamlit never starts. See docs/SSH_COMMANDS_AND_TROUBLESHOOTING.md (VPS deploy: not a git repository)."
   exit 1
 fi
 
