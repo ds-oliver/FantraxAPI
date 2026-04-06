@@ -4726,10 +4726,11 @@
   display_name: Luis Eduardo Soares da Silva
 - fantrax_id: 06v0x
   fantrax_name: Tymur Tutierov
-  sofascore_id: null
-  sofascore_name: null
+  sofascore_id: 1432254
+  sofascore_name: Timur Tutierov
   ffscout_name: null
-  other_names: []
+  other_names:
+  - Timur Tutierov
   display_name: Tymur Tutierov
 - fantrax_id: 06uzs
   fantrax_name: Tom Tweedy
@@ -5949,3 +5950,19 @@
   ffscout_name: null
   other_names: []
   display_name: Luke Rawlings
+- fantrax_id: 072o9
+  fantrax_name: Djiamgone Jocelin Ta Bi
+  sofascore_id: 2138729
+  sofascore_name: Jocelin Ta Bi
+  ffscout_name: null
+  other_names:
+  - Djiamgone Jocelin Ta Bi
+  display_name: Djiamgone Jocelin Ta Bi
+- fantrax_id: 06l53
+  fantrax_name: Temple Ojinnaka
+  sofascore_id: 1409108
+  sofascore_name: Ojinnaka Temple
+  ffscout_name: null
+  other_names:
+  - Ojinnaka Temple
+  display_name: Temple Ojinnaka

@@ -1,4 +1,10 @@
 requests>=2.31.0
+# EasySoccerData: setup.py imports esd during install — install these first (import chain needs playwright + lxml).
+playwright>=1.40.0
+lxml>=5.0.0
+# EasySoccerData (`import esd`) — used by services/sofascore_lineup_service.py and lineup export scripts
+git+https://github.com/manucabral/EasySoccerData.git
+curl_cffi>=0.11.1  # SofaScore raw HTTP (browser-like TLS); required by services/sofascore_lineup_service.py
 setuptools>=69.0.0
 httpx>=0.25.0
 python-dateutil>=2.8.2

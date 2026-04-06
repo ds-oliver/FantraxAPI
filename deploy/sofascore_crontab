@@ -14,8 +14,9 @@ LOG_DIR=/opt/FantraxAPI/logs
 PYTHON_BIN=/opt/FantraxAPI/.venv/bin/python
 
 # Chrome/Chromium binary for ESD/Playwright when it needs a real browser.
-# Update if your VPS uses a different path.
-CHROME_BIN=/usr/bin/google-chrome
+# Ubuntu/Hetzner images often have Chromium (snap wrapper), not Google Chrome:
+#   command -v chromium-browser || command -v google-chrome-stable
+CHROME_BIN=/usr/bin/chromium-browser
 
 # Daily predictions + mappings (refreshes schedule/lineups + cached schedule).
 # Run at minute 2 (02:02 UTC), not :00, so we do not race the */5 kickoff watcher for
