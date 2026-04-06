@@ -8,6 +8,7 @@ Type=simple
 WorkingDirectory=/opt/FantraxAPI
 ExecStart=/opt/FantraxAPI/bin/pull_restart.sh
 Restart=on-failure
+RestartSec=30
 StandardOutput=journal
 StandardError=journal
 Environment=PATH=/opt/FantraxAPI/.venv/bin:/usr/local/bin:/usr/bin:/bin

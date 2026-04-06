@@ -1,5 +1,6 @@
 requests>=2.31.0
 # EasySoccerData: setup.py imports esd during install — install these first (import chain needs playwright + lxml).
+# VPS deploy: bin/pull_restart.sh uses `pip install -r requirements.txt --no-build-isolation` so the wheel build can import them.
 playwright>=1.40.0
 lxml>=5.0.0
 # EasySoccerData (`import esd`) — used by services/sofascore_lineup_service.py and lineup export scripts
@@ -20,3 +21,4 @@ passlib>=1.7.4  # For password hashing
 bcrypt>=4.0.0  # Backend for passlib password hashing
 apscheduler>=3.10.0  # For background job scheduling
 gspread>=6.0.0  # For reading projections from Google Sheets
+streamlit>=1.31.0  # apps/auth_login/overview.py (VPS systemd)

@@ -263,6 +263,32 @@ Symptoms:
 
 If step 6 still fails, read the **full** message from `git` (updated `pull_restart.sh` logs it) and `journalctl -u fantrax-pull-restart.service -n 80 --no-pager`.
 
+#### Stuck in a loop: the VPS never pulls the fix
+
+`pull_restart.sh` runs **`git fetch` / `git reset` after** the initial git check. If the copy of the script **on the server** is still old (or fails before fetch), **deploying from your Mac pushes to GitHub but the VPS does not update itself** — a chicken-and-egg problem.
+
+**One-time bootstrap** (pick one, from your Mac):
+
+1. **Pull the whole branch** using explicit `safe.directory` (no config files required):
+
+   ```bash
+   ssh fantrax-vps-root "cd /opt/FantraxAPI && git -c safe.directory=/opt/FantraxAPI fetch origin testing && git -c safe.directory=/opt/FantraxAPI reset --hard origin/testing"
+   ```
+
+2. **Or** overwrite only the script from GitHub raw (adjust branch name `testing` if needed):
+
+   ```bash
+   ssh fantrax-vps-root "curl -fsSL -o /opt/FantraxAPI/bin/pull_restart.sh 'https://raw.githubusercontent.com/ds-oliver/FantraxAPI/testing/bin/pull_restart.sh' && chmod +x /opt/FantraxAPI/bin/pull_restart.sh"
+   ```
+
+Then clear the failed state and start:
+
+```bash
+ssh fantrax-vps-root "systemctl reset-failed fantrax-pull-restart.service && systemctl restart fantrax-pull-restart.service && sleep 3 && tail -n 30 /opt/FantraxAPI/logs/pull_restart.log"
+```
+
+Current `bin/pull_restart.sh` in the repo wraps `git` with `-c safe.directory=...` so **future** runs do not depend on `~/.gitconfig` or `HOME`.
+
 #### A) `dubious ownership` (common when `.git` exists but is owned by another user)
 
 `fantrax-pull-restart.service` runs as **root**, but **`/opt/FantraxAPI` is often owned by a normal user** (e.g. `hogan:hogan`). Git 2.35+ treats that as unsafe and refuses to run; the old script text only said “not a git repository” because stderr was hidden.

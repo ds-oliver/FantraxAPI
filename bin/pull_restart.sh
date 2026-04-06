@@ -20,10 +20,16 @@ log() {
 log "Starting pull_restart (${BRANCH})"
 cd "$REPO_ROOT"
 
+# Git 2.35+ "dubious ownership" when root runs git on a tree owned by another user. Passing safe.directory here
+# avoids relying on ~/.gitconfig (systemd often has no HOME) and lets this script bootstrap: a broken deploy
+# could not git-pull a fix; this works on the first run after copying only this file.
+git() {
+  command git -c "safe.directory=${REPO_ROOT}" "$@"
+}
+
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   log "error: git check failed in ${REPO_ROOT}: $(git rev-parse --is-inside-work-tree 2>&1 | tr '\n' ' ')"
-  log "hint: if you see 'dubious ownership', run as root: git config --global --add safe.directory ${REPO_ROOT}"
-  log "hint: if .git is missing, see docs/SSH_COMMANDS_AND_TROUBLESHOOTING.md (VPS deploy: git / pull_restart fails)."
+  log "hint: dubious ownership is handled in-script; if this persists, see docs/SSH_COMMANDS_AND_TROUBLESHOOTING.md (VPS deploy: git / pull_restart fails)."
   exit 1
 fi
 
@@ -40,7 +46,11 @@ if [ ! -d ".venv" ]; then
 fi
 
 log "Installing requirements"
-.venv/bin/pip install -r requirements.txt
+# EasySoccerData (git) runs setup that imports esd → playwright. Pip's default PEP 517 build isolation
+# uses a clean env without playwright, so the wheel build fails with ModuleNotFoundError: playwright.
+# --no-build-isolation uses the venv so packages listed earlier in requirements.txt are importable.
+.venv/bin/pip install -U pip setuptools wheel
+.venv/bin/pip install -r requirements.txt --no-build-isolation
 
 log "Restarting Streamlit"
 pkill -f "streamlit run" >/dev/null 2>&1 || true
