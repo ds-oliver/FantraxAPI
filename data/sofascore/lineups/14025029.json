@@ -102,15 +102,15 @@
         "reason": 1
       },
       {
-        "id": 945217,
-        "name": "Jean-Clair Todibo",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 917005,
         "name": "Crysencio Summerville",
         "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 945217,
+        "name": "Jean-Clair Todibo",
+        "position": "D",
         "reason": 1
       }
     ]
@@ -223,5 +223,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-04-06 02:44:02+0000"
+  "fetched_at_utc": "2026-04-09 19:00:13+0000"
 }

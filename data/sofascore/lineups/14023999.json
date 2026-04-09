@@ -96,21 +96,15 @@
     "subs": [],
     "missing": [
       {
-        "id": 858194,
-        "name": "Edward Nketiah",
-        "position": "F",
-        "reason": 1
-      },
-      {
         "id": 906047,
         "name": "Cheick Doucouré",
         "position": "M",
         "reason": 1
       },
       {
-        "id": 1109771,
-        "name": "Adam Wharton",
-        "position": "M",
+        "id": 858194,
+        "name": "Edward Nketiah",
+        "position": "F",
         "reason": 1
       }
     ]
@@ -210,18 +204,18 @@
     "subs": [],
     "missing": [
       {
-        "id": 101882,
-        "name": "Fabian Schär",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 866469,
         "name": "Bruno Guimarães",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 101882,
+        "name": "Fabian Schär",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-04-06 02:44:08+0000"
+  "fetched_at_utc": "2026-04-09 19:00:21+0000"
 }

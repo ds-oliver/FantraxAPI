@@ -29,8 +29,8 @@
         "captain": false
       },
       {
-        "id": 1144630,
-        "name": "Cristhian Mosquera",
+        "id": 869792,
+        "name": "Gabriel Magalhães",
         "position": "D",
         "team_id": 42,
         "substitute": false,
@@ -61,9 +61,9 @@
         "captain": false
       },
       {
-        "id": 934235,
-        "name": "Bukayo Saka",
-        "position": "F",
+        "id": 966547,
+        "name": "Noni Madueke",
+        "position": "M",
         "team_id": 42,
         "substitute": false,
         "captain": false
@@ -96,21 +96,15 @@
     "subs": [],
     "missing": [
       {
-        "id": 864921,
-        "name": "Eberechi Eze",
-        "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 856714,
-        "name": "Declan Rice",
-        "position": "M",
-        "reason": 1
-      },
-      {
         "id": 934235,
         "name": "Bukayo Saka",
         "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 958959,
+        "name": "Jurriën Timber",
+        "position": "D",
         "reason": 1
       },
       {
@@ -120,15 +114,9 @@
         "reason": 1
       },
       {
-        "id": 966547,
-        "name": "Noni Madueke",
+        "id": 864921,
+        "name": "Eberechi Eze",
         "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 958959,
-        "name": "Jurriën Timber",
-        "position": "D",
         "reason": 1
       }
     ]
@@ -234,18 +222,18 @@
         "reason": 1
       },
       {
-        "id": 1201520,
-        "name": "Julio Soler",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 548188,
         "name": "Lewis Cook",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 1201520,
+        "name": "Julio Soler",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-04-06 02:44:03+0000"
+  "fetched_at_utc": "2026-04-09 19:00:14+0000"
 }

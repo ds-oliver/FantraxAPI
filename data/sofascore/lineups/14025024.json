@@ -102,12 +102,6 @@
         "reason": 13
       },
       {
-        "id": 859999,
-        "name": "Lisandro Martínez",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 986397,
         "name": "Benjamin Šeško",
         "position": "F",
@@ -117,6 +111,12 @@
         "id": 927083,
         "name": "Bryan Mbeumo",
         "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 859999,
+        "name": "Lisandro Martínez",
+        "position": "D",
         "reason": 1
       }
     ]
@@ -216,5 +216,5 @@
     "subs": [],
     "missing": []
   },
-  "fetched_at_utc": "2026-04-06 02:44:09+0000"
+  "fetched_at_utc": "2026-04-09 19:00:22+0000"
 }

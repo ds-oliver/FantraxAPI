@@ -2,6 +2,18 @@
 
 Purpose: a concise, repeatable guide for maintaining the repo, the VPS app, and the background jobs.
 
+## At a glance (happy path)
+
+| Step | Action |
+|------|--------|
+| 1 | **Mac:** `ssh -N -o ExitOnForwardFailure=yes -L 8511:127.0.0.1:8501 fantrax-vps-root` — leave this terminal open. |
+| 2 | **Browser:** [http://127.0.0.1:8511/](http://127.0.0.1:8511/) (VPS app). Local dev from your clone uses **8502**, not 8511. |
+| 3 | **Deploy code to VPS:** `bin/push_and_deploy_vps.sh -m "your message"` (or push `testing`, then restart the service on the VPS). |
+| 4 | **If the app is down:** `ssh fantrax-vps-root "systemctl restart fantrax-pull-restart.service"` then check `ss` on **8501** and `tail /opt/FantraxAPI/logs/pull_restart.log` for **`Launching Streamlit`**. |
+| 5 | **If deploy or `pip` is stuck:** see [VPS deploy / `pull_restart`](#vps-deploy-pull-restart) and [Stuck in a loop](#vps-stuck-loop). Use **`scp`** to copy `bin/pull_restart.sh` to the server if Git cannot self-update. |
+
+Everything below is detail, alternatives, and failure modes.
+
 ## Quick resume: open the VPS app at http://127.0.0.1:8511
 
 Port **8511** on your Mac is **not** where you run Streamlit locally. It is the **local end of an SSH tunnel** to the VPS, where Streamlit binds **127.0.0.1:8501**. Nothing listens on 8511 until the tunnel is up.
@@ -208,6 +220,8 @@ bin/push_and_deploy_vps.sh -H fantrax-vps-root -s fantrax-pull-restart.service
 bin/push_and_deploy_vps.sh --skip-status
 ```
 
+<a id="vps-deploy-pull-restart"></a>
+
 ### VPS deploy: `pull_restart` / git check fails (was “not a git repository”)
 
 Symptoms:
@@ -262,6 +276,8 @@ Symptoms:
    ```
 
 If step 6 still fails, read the **full** message from `git` (updated `pull_restart.sh` logs it) and `journalctl -u fantrax-pull-restart.service -n 80 --no-pager`.
+
+<a id="vps-stuck-loop"></a>
 
 #### Stuck in a loop: the VPS never pulls the fix
 

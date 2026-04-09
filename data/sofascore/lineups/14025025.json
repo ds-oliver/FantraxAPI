@@ -102,15 +102,21 @@
         "reason": 1
       },
       {
-        "id": 1090963,
-        "name": "Omari Hutchinson",
-        "position": "M",
+        "id": 50480,
+        "name": "Chris Wood",
+        "position": "F",
         "reason": 1
       },
       {
         "id": 800417,
         "name": "Ola Aina",
         "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1090963,
+        "name": "Omari Hutchinson",
+        "position": "M",
         "reason": 1
       }
     ]
@@ -159,14 +165,6 @@
         "captain": false
       },
       {
-        "id": 331737,
-        "name": "Youri Tielemans",
-        "position": "M",
-        "team_id": 40,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 923973,
         "name": "Amadou Onana",
         "position": "M",
@@ -175,16 +173,8 @@
         "captain": false
       },
       {
-        "id": 851100,
-        "name": "Jadon Sancho",
-        "position": "M",
-        "team_id": 40,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 948261,
-        "name": "Morgan Rogers",
+        "id": 867887,
+        "name": "Douglas Luiz",
         "position": "M",
         "team_id": 40,
         "substitute": false,
@@ -193,6 +183,22 @@
       {
         "id": 250223,
         "name": "John McGinn",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 331737,
+        "name": "Youri Tielemans",
+        "position": "M",
+        "team_id": 40,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 948261,
+        "name": "Morgan Rogers",
         "position": "M",
         "team_id": 40,
         "substitute": false,
@@ -220,8 +226,14 @@
         "name": "Boubacar Kamara",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 851100,
+        "name": "Jadon Sancho",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-04-06 02:44:07+0000"
+  "fetched_at_utc": "2026-04-09 19:00:20+0000"
 }

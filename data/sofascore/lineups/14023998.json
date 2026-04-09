@@ -96,6 +96,12 @@
     "subs": [],
     "missing": [
       {
+        "id": 974505,
+        "name": "Enzo Fernández",
+        "position": "M",
+        "reason": 4
+      },
+      {
         "id": 958966,
         "name": "Mykhaylo Mudryk",
         "position": "M",
@@ -105,18 +111,6 @@
         "id": 962053,
         "name": "Filip Jørgensen",
         "position": "G",
-        "reason": 1
-      },
-      {
-        "id": 974505,
-        "name": "Enzo Fernández",
-        "position": "M",
-        "reason": 4
-      },
-      {
-        "id": 1140599,
-        "name": "Jamie Gittens",
-        "position": "M",
         "reason": 1
       }
     ]
@@ -216,12 +210,6 @@
     "subs": [],
     "missing": [
       {
-        "id": 318941,
-        "name": "Rúben Dias",
-        "position": "D",
-        "reason": 1
-      },
-      {
         "id": 152077,
         "name": "John Stones",
         "position": "D",
@@ -232,8 +220,14 @@
         "name": "Joško Gvardiol",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 318941,
+        "name": "Rúben Dias",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-04-06 02:44:09+0000"
+  "fetched_at_utc": "2026-04-09 19:00:22+0000"
 }

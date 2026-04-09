@@ -108,15 +108,15 @@
         "reason": 1
       },
       {
-        "id": 826139,
-        "name": "Reiss Nelson",
-        "position": "M",
-        "reason": 1
-      },
-      {
         "id": 966869,
         "name": "Aaron Hickey",
         "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 826139,
+        "name": "Reiss Nelson",
+        "position": "M",
         "reason": 1
       },
       {
@@ -229,5 +229,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-04-06 02:44:04+0000"
+  "fetched_at_utc": "2026-04-09 19:00:15+0000"
 }
