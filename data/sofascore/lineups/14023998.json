@@ -29,8 +29,8 @@
         "captain": false
       },
       {
-        "id": 1153079,
-        "name": "Jorrel Hato",
+        "id": 352668,
+        "name": "Tosin Adarabioyo",
         "position": "D",
         "team_id": 38,
         "substitute": false,
@@ -112,6 +112,24 @@
         "name": "Filip Jørgensen",
         "position": "G",
         "reason": 1
+      },
+      {
+        "id": 996911,
+        "name": "Levi Colwill",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1140599,
+        "name": "Jamie Gittens",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 885908,
+        "name": "Reece James",
+        "position": "D",
+        "reason": 1
       }
     ]
   },
@@ -151,8 +169,8 @@
         "captain": false
       },
       {
-        "id": 931278,
-        "name": "Rayan Aït-Nouri",
+        "id": 1142703,
+        "name": "Nico O'Reilly",
         "position": "D",
         "team_id": 17,
         "substitute": false,
@@ -229,5 +247,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-04-09 19:00:22+0000"
+  "fetched_at_utc": "2026-04-12 01:00:33+0000"
 }

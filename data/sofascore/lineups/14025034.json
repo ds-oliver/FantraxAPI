@@ -2,15 +2,220 @@
   "event_id": 14025034,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "3-4-3",
+    "starters": [
+      {
+        "id": 788134,
+        "name": "Dean Henderson",
+        "position": "G",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 931844,
+        "name": "Chris Richards",
+        "position": "D",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 879674,
+        "name": "Maxence Lacroix",
+        "position": "D",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1471671,
+        "name": "Jaydee Canvot",
+        "position": "D",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 870360,
+        "name": "Daniel Muñoz",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 355796,
+        "name": "Jefferson Lerma",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 193554,
+        "name": "Will Hughes",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 988275,
+        "name": "Tyrick Mitchell",
+        "position": "M",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1085180,
+        "name": "Brennan Johnson",
+        "position": "F",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 876599,
+        "name": "Jørgen Strand Larsen",
+        "position": "F",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 984624,
+        "name": "Yéremy Pino",
+        "position": "F",
+        "team_id": 7,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 906047,
+        "name": "Cheick Doucouré",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 858194,
+        "name": "Edward Nketiah",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 930245,
+        "name": "Evann Guessand",
+        "position": "F",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 856640,
+        "name": "Mads Hermansen",
+        "position": "G",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 823085,
+        "name": "Kyle Walker-Peters",
+        "position": "D",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 829022,
+        "name": "Konstantinos Mavropanos",
+        "position": "D",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 827243,
+        "name": "Axel Disasi",
+        "position": "D",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1471764,
+        "name": "El Hadji Malick Diouf",
+        "position": "D",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 799041,
+        "name": "Tomáš Souček",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1142562,
+        "name": "Mateus Fernandes",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 552884,
+        "name": "Jarrod Bowen",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1101174,
+        "name": "Pablo Felipe",
+        "position": "F",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 917005,
+        "name": "Crysencio Summerville",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 877013,
+        "name": "Valentín Castellanos",
+        "position": "F",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 15479,
+        "name": "Łukasz Fabiański",
+        "position": "G",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-04-16 19:00:17+0000"
 }

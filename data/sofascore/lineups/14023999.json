@@ -45,16 +45,16 @@
         "captain": false
       },
       {
-        "id": 355796,
-        "name": "Jefferson Lerma",
+        "id": 1109771,
+        "name": "Adam Wharton",
         "position": "M",
         "team_id": 7,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 193554,
-        "name": "Will Hughes",
+        "id": 794338,
+        "name": "Daichi Kamada",
         "position": "M",
         "team_id": 7,
         "substitute": false,
@@ -85,8 +85,8 @@
         "captain": false
       },
       {
-        "id": 930245,
-        "name": "Evann Guessand",
+        "id": 984624,
+        "name": "Yéremy Pino",
         "position": "F",
         "team_id": 7,
         "substitute": false,
@@ -96,14 +96,20 @@
     "subs": [],
     "missing": [
       {
+        "id": 858194,
+        "name": "Edward Nketiah",
+        "position": "F",
+        "reason": 1
+      },
+      {
         "id": 906047,
         "name": "Cheick Doucouré",
         "position": "M",
         "reason": 1
       },
       {
-        "id": 858194,
-        "name": "Edward Nketiah",
+        "id": 930245,
+        "name": "Evann Guessand",
         "position": "F",
         "reason": 1
       }
@@ -169,22 +175,6 @@
         "captain": false
       },
       {
-        "id": 979232,
-        "name": "Anthony Elanga",
-        "position": "F",
-        "team_id": 39,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 980623,
-        "name": "Nick Woltemade",
-        "position": "F",
-        "team_id": 39,
-        "substitute": false,
-        "captain": false
-      },
-      {
         "id": 855647,
         "name": "Harvey Barnes",
         "position": "F",
@@ -193,8 +183,24 @@
         "captain": false
       },
       {
+        "id": 975937,
+        "name": "Jacob Ramsey",
+        "position": "M",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
         "id": 914902,
         "name": "Anthony Gordon",
+        "position": "F",
+        "team_id": 39,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 980623,
+        "name": "Nick Woltemade",
         "position": "F",
         "team_id": 39,
         "substitute": false,
@@ -210,12 +216,30 @@
         "reason": 1
       },
       {
+        "id": 150396,
+        "name": "Emil Krafth",
+        "position": "D",
+        "reason": 1
+      },
+      {
         "id": 101882,
         "name": "Fabian Schär",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1400650,
+        "name": "Lewis Miley",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 910046,
+        "name": "Sven Botman",
         "position": "D",
         "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-04-09 19:00:21+0000"
+  "fetched_at_utc": "2026-04-12 01:00:32+0000"
 }

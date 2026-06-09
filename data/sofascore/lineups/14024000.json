@@ -13,9 +13,9 @@
         "captain": false
       },
       {
-        "id": 318927,
-        "name": "Joe Gomez",
-        "position": "D",
+        "id": 869856,
+        "name": "Dominik Szoboszlai",
+        "position": "M",
         "team_id": 44,
         "substitute": false,
         "captain": false
@@ -37,8 +37,8 @@
         "captain": false
       },
       {
-        "id": 1097425,
-        "name": "Miloš Kerkez",
+        "id": 262911,
+        "name": "Andrew Robertson",
         "position": "D",
         "team_id": 44,
         "substitute": false,
@@ -61,8 +61,8 @@
         "captain": false
       },
       {
-        "id": 869856,
-        "name": "Dominik Szoboszlai",
+        "id": 159665,
+        "name": "Mohamed Salah",
         "position": "M",
         "team_id": 44,
         "substitute": false,
@@ -77,17 +77,17 @@
         "captain": false
       },
       {
-        "id": 862967,
-        "name": "Cody Gakpo",
-        "position": "M",
+        "id": 1881902,
+        "name": "Rio Ngumoha",
+        "position": "F",
         "team_id": 44,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 1048422,
-        "name": "Hugo Ekitiké",
-        "position": "F",
+        "id": 862967,
+        "name": "Cody Gakpo",
+        "position": "M",
         "team_id": 44,
         "substitute": false,
         "captain": false
@@ -99,6 +99,30 @@
         "id": 243609,
         "name": "Alisson",
         "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 1008402,
+        "name": "Conor Bradley",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1473137,
+        "name": "Giovanni Leoni",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1142636,
+        "name": "Stefan Bajčetić",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 143040,
+        "name": "Wataru Endo",
+        "position": "M",
         "reason": 1
       }
     ]
@@ -198,6 +222,18 @@
     "subs": [],
     "missing": [
       {
+        "id": 365802,
+        "name": "Harrison Reed",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 190877,
+        "name": "Kenny Tete",
+        "position": "D",
+        "reason": 1
+      },
+      {
         "id": 1112879,
         "name": "Kevin",
         "position": "M",
@@ -205,5 +241,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-04-09 19:00:17+0000"
+  "fetched_at_utc": "2026-04-11 02:00:47+0000"
 }

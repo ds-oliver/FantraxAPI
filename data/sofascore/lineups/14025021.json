@@ -5,8 +5,8 @@
     "formation": "4-2-3-1",
     "starters": [
       {
-        "id": 232422,
-        "name": "Kepa Arrizabalaga",
+        "id": 581310,
+        "name": "David Raya",
         "position": "G",
         "team_id": 42,
         "substitute": false,
@@ -37,8 +37,8 @@
         "captain": false
       },
       {
-        "id": 957602,
-        "name": "Riccardo Calafiori",
+        "id": 1423711,
+        "name": "Myles Lewis-Skelly",
         "position": "D",
         "team_id": 42,
         "substitute": false,
@@ -96,6 +96,12 @@
     "subs": [],
     "missing": [
       {
+        "id": 592010,
+        "name": "Mikel Merino",
+        "position": "M",
+        "reason": 1
+      },
+      {
         "id": 934235,
         "name": "Bukayo Saka",
         "position": "F",
@@ -108,15 +114,15 @@
         "reason": 1
       },
       {
-        "id": 1002837,
-        "name": "Piero Hincapié",
-        "position": "D",
+        "id": 547410,
+        "name": "Martin Ødegaard",
+        "position": "M",
         "reason": 1
       },
       {
-        "id": 864921,
-        "name": "Eberechi Eze",
-        "position": "M",
+        "id": 957602,
+        "name": "Riccardo Calafiori",
+        "position": "D",
         "reason": 1
       }
     ]
@@ -173,8 +179,8 @@
         "captain": false
       },
       {
-        "id": 322391,
-        "name": "Ryan Christie",
+        "id": 800419,
+        "name": "Tyler Adams",
         "position": "M",
         "team_id": 60,
         "substitute": false,
@@ -232,8 +238,14 @@
         "name": "Julio Soler",
         "position": "D",
         "reason": 1
+      },
+      {
+        "id": 800419,
+        "name": "Tyler Adams",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-04-09 19:00:14+0000"
+  "fetched_at_utc": "2026-04-11 02:00:44+0000"
 }

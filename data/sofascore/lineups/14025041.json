@@ -2,15 +2,244 @@
   "event_id": 14025041,
   "confirmed": false,
   "home": {
-    "formation": "",
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 78152,
+        "name": "Matz Sels",
+        "position": "G",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 800417,
+        "name": "Ola Aina",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1199282,
+        "name": "Murillo",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 836168,
+        "name": "Nikola Milenković",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 927356,
+        "name": "Neco Williams",
+        "position": "D",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 843754,
+        "name": "Ibrahim Sangaré",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 994546,
+        "name": "Elliot Anderson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1090963,
+        "name": "Omari Hutchinson",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 865912,
+        "name": "Morgan Gibbs-White",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 867442,
+        "name": "Callum Hudson-Odoi",
+        "position": "M",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 981619,
+        "name": "Igor Jesus",
+        "position": "F",
+        "team_id": 14,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
+    "missing": [
+      {
+        "id": 994546,
+        "name": "Elliot Anderson",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 1170722,
+        "name": "Jair",
+        "position": "D",
+        "reason": 1
+      }
+    ]
   },
   "away": {
-    "formation": null,
-    "starters": [],
+    "formation": "4-2-3-1",
+    "starters": [
+      {
+        "id": 42209,
+        "name": "Martin Dúbravka",
+        "position": "G",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 996910,
+        "name": "Bashir Humphreys",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 875360,
+        "name": "Hjalmar Ekdal",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1117223,
+        "name": "Maxime Estève",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1392044,
+        "name": "Quilindschy Hartman",
+        "position": "D",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 161717,
+        "name": "James Ward-Prowse",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 855845,
+        "name": "Florentino Luís",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 795066,
+        "name": "Marcus Edwards",
+        "position": "F",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1048916,
+        "name": "Lesley Ugochukwu",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1020680,
+        "name": "Jaidon Anthony",
+        "position": "M",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 875137,
+        "name": "Zian Flemming",
+        "position": "F",
+        "team_id": 6,
+        "substitute": false,
+        "captain": false
+      }
+    ],
     "subs": [],
-    "missing": []
-  }
+    "missing": [
+      {
+        "id": 804613,
+        "name": "Connor Roberts",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 1009386,
+        "name": "Hannibal Mejbri",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 927175,
+        "name": "Jordan Beyer",
+        "position": "D",
+        "reason": 1
+      },
+      {
+        "id": 792122,
+        "name": "Josh Cullen",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 990550,
+        "name": "Zeki Amdouni",
+        "position": "F",
+        "reason": 1
+      },
+      {
+        "id": 817979,
+        "name": "Axel Tuanzebe",
+        "position": "D",
+        "reason": 1
+      }
+    ]
+  },
+  "fetched_at_utc": "2026-04-16 19:00:15+0000"
 }

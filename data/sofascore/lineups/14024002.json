@@ -2,19 +2,19 @@
   "event_id": 14024002,
   "confirmed": false,
   "home": {
-    "formation": "4-2-3-1",
+    "formation": "3-4-2-1",
     "starters": [
       {
         "id": 42209,
-        "name": "Martin Dúbravka",
+        "name": "Martin Dubravka",
         "position": "G",
         "team_id": 6,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 44614,
-        "name": "Kyle Walker",
+        "id": 817979,
+        "name": "Axel Tuanzebe",
         "position": "D",
         "team_id": 6,
         "substitute": false,
@@ -37,8 +37,8 @@
         "captain": false
       },
       {
-        "id": 1392044,
-        "name": "Quilindschy Hartman",
+        "id": 44614,
+        "name": "Kyle Walker",
         "position": "D",
         "team_id": 6,
         "substitute": false,
@@ -61,17 +61,17 @@
         "captain": false
       },
       {
-        "id": 901907,
-        "name": "Lyle Foster",
-        "position": "F",
+        "id": 1392044,
+        "name": "Quilindschy Hartman",
+        "position": "D",
         "team_id": 6,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 1009386,
-        "name": "Hannibal Mejbri",
-        "position": "M",
+        "id": 795066,
+        "name": "Marcus Edwards",
+        "position": "F",
         "team_id": 6,
         "substitute": false,
         "captain": false
@@ -102,14 +102,20 @@
         "reason": 13
       },
       {
-        "id": 817979,
-        "name": "Axel Tuanzebe",
+        "id": 804613,
+        "name": "Connor Roberts",
         "position": "D",
         "reason": 1
       },
       {
-        "id": 804613,
-        "name": "Connor Roberts",
+        "id": 1009386,
+        "name": "Hannibal Mejbri",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 927175,
+        "name": "Jordan Beyer",
         "position": "D",
         "reason": 1
       },
@@ -120,21 +126,21 @@
         "reason": 1
       },
       {
+        "id": 826183,
+        "name": "Mike Trésor",
+        "position": "M",
+        "reason": 1
+      },
+      {
         "id": 990550,
         "name": "Zeki Amdouni",
         "position": "F",
         "reason": 1
       },
       {
-        "id": 927175,
-        "name": "Jordan Beyer",
+        "id": 817979,
+        "name": "Axel Tuanzebe",
         "position": "D",
-        "reason": 1
-      },
-      {
-        "id": 826183,
-        "name": "Mike Trésor",
-        "position": "M",
         "reason": 1
       }
     ]
@@ -192,7 +198,7 @@
       },
       {
         "id": 48480,
-        "name": "Pascal Groß",
+        "name": "Pascal Gross",
         "position": "M",
         "team_id": 30,
         "substitute": false,
@@ -253,5 +259,5 @@
       }
     ]
   },
-  "fetched_at_utc": "2026-04-09 19:00:16+0000"
+  "fetched_at_utc": "2026-04-11 02:00:46+0000"
 }

@@ -1,94 +1,94 @@
 {
-  "event_id": 14025036,
+  "event_id": 14025029,
   "confirmed": false,
   "home": {
-    "formation": "3-4-2-1",
+    "formation": "4-4-1-1",
     "starters": [
       {
-        "id": 123689,
-        "name": "Karl Darlow",
+        "id": 856640,
+        "name": "Mads Hermansen",
         "position": "G",
-        "team_id": 34,
+        "team_id": 37,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 827681,
-        "name": "James Justin",
+        "id": 863653,
+        "name": "Aaron Wan-Bissaka",
         "position": "D",
-        "team_id": 34,
+        "team_id": 37,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 886930,
-        "name": "Jaka Bijol",
+        "id": 829022,
+        "name": "Konstantinos Mavropanos",
         "position": "D",
-        "team_id": 34,
+        "team_id": 37,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 836675,
-        "name": "Pascal Struijk",
+        "id": 827243,
+        "name": "Axel Disasi",
         "position": "D",
-        "team_id": 34,
+        "team_id": 37,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 929132,
-        "name": "Jayden Bogle",
+        "id": 1471764,
+        "name": "El Hadji Malick Diouf",
         "position": "D",
-        "team_id": 34,
+        "team_id": 37,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 847097,
-        "name": "Ethan Ampadu",
+        "id": 552884,
+        "name": "Jarrod Bowen",
         "position": "M",
-        "team_id": 34,
+        "team_id": 37,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 911679,
-        "name": "Ilia Gruev",
+        "id": 799041,
+        "name": "Tomáš Souček",
         "position": "M",
-        "team_id": 34,
+        "team_id": 37,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 834308,
-        "name": "Gabriel Gudmundsson",
+        "id": 1142562,
+        "name": "Mateus Fernandes",
+        "position": "M",
+        "team_id": 37,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1150952,
+        "name": "Oliver Scarles",
         "position": "D",
-        "team_id": 34,
+        "team_id": 37,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 973431,
-        "name": "Brenden Aaronson",
-        "position": "M",
-        "team_id": 34,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 865523,
-        "name": "Noah Okafor",
+        "id": 1101174,
+        "name": "Pablo Felipe",
         "position": "F",
-        "team_id": 34,
+        "team_id": 37,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 372344,
-        "name": "Dominic Calvert-Lewin",
+        "id": 877013,
+        "name": "Valentín Castellanos",
         "position": "F",
-        "team_id": 34,
+        "team_id": 37,
         "substitute": false,
         "captain": false
       }
@@ -96,27 +96,21 @@
     "subs": [],
     "missing": [
       {
-        "id": 889861,
-        "name": "Anton Stach",
+        "id": 15479,
+        "name": "Łukasz Fabiański",
+        "position": "G",
+        "reason": 1
+      },
+      {
+        "id": 917005,
+        "name": "Crysencio Summerville",
         "position": "M",
         "reason": 1
       },
       {
-        "id": 828639,
-        "name": "Daniel James",
-        "position": "M",
-        "reason": 1
-      },
-      {
-        "id": 828640,
-        "name": "Joe Rodon",
+        "id": 945217,
+        "name": "Jean-Clair Todibo",
         "position": "D",
-        "reason": 1
-      },
-      {
-        "id": 871886,
-        "name": "Ao Tanaka",
-        "position": "M",
         "reason": 1
       }
     ]
@@ -126,15 +120,15 @@
     "starters": [
       {
         "id": 252669,
-        "name": "Jose Sa",
+        "name": "José Sá",
         "position": "G",
         "team_id": 3,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 856250,
-        "name": "Ladislav Krejčí",
+        "id": 1014835,
+        "name": "Yerson Mosquera",
         "position": "D",
         "team_id": 3,
         "substitute": false,
@@ -149,8 +143,8 @@
         "captain": false
       },
       {
-        "id": 973418,
-        "name": "Toti Gomes",
+        "id": 856250,
+        "name": "Ladislav Krejčí",
         "position": "D",
         "team_id": 3,
         "substitute": false,
@@ -197,16 +191,16 @@
         "captain": false
       },
       {
-        "id": 867441,
-        "name": "Angel Gomes",
-        "position": "M",
+        "id": 361352,
+        "name": "Adam Armstrong",
+        "position": "F",
         "team_id": 3,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 361352,
-        "name": "Adam Armstrong",
+        "id": 1899647,
+        "name": "Mateus Mané",
         "position": "F",
         "team_id": 3,
         "substitute": false,
@@ -216,30 +210,18 @@
     "subs": [],
     "missing": [
       {
-        "id": 1014835,
-        "name": "Yerson Mosquera",
-        "position": "D",
-        "reason": 11
+        "id": 1400646,
+        "name": "Leon Chiwome",
+        "position": "F",
+        "reason": 1
       },
       {
         "id": 1402232,
         "name": "Enso González",
         "position": "F",
         "reason": 1
-      },
-      {
-        "id": 143047,
-        "name": "Matt Doherty",
-        "position": "D",
-        "reason": 1
-      },
-      {
-        "id": 98427,
-        "name": "Sam Johnstone",
-        "position": "G",
-        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-04-16 19:00:12+0000"
+  "fetched_at_utc": "2026-04-10 04:00:20+0000"
 }

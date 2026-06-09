@@ -2,7 +2,7 @@
   "event_id": 14025022,
   "confirmed": false,
   "home": {
-    "formation": "3-4-3",
+    "formation": "4-2-3-1",
     "starters": [
       {
         "id": 827362,
@@ -13,16 +13,16 @@
         "captain": false
       },
       {
-        "id": 924378,
-        "name": "Sepp van den Berg",
+        "id": 1137431,
+        "name": "Michael Kayode",
         "position": "D",
         "team_id": 50,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 855864,
-        "name": "Ethan Pinnock",
+        "id": 924378,
+        "name": "Sepp van den Berg",
         "position": "D",
         "team_id": 50,
         "substitute": false,
@@ -37,8 +37,8 @@
         "captain": false
       },
       {
-        "id": 1137431,
-        "name": "Michael Kayode",
+        "id": 972421,
+        "name": "Keane Lewis-Potter",
         "position": "D",
         "team_id": 50,
         "substitute": false,
@@ -61,16 +61,24 @@
         "captain": false
       },
       {
-        "id": 972421,
-        "name": "Keane Lewis-Potter",
-        "position": "D",
+        "id": 1106451,
+        "name": "Dango Ouattara",
+        "position": "M",
         "team_id": 50,
         "substitute": false,
         "captain": false
       },
       {
-        "id": 1106451,
-        "name": "Dango Ouattara",
+        "id": 907072,
+        "name": "Mikkel Damsgaard",
+        "position": "M",
+        "team_id": 50,
+        "substitute": false,
+        "captain": false
+      },
+      {
+        "id": 1006387,
+        "name": "Kevin Schade",
         "position": "M",
         "team_id": 50,
         "substitute": false,
@@ -80,14 +88,6 @@
         "id": 1016907,
         "name": "Igor Thiago",
         "position": "F",
-        "team_id": 50,
-        "substitute": false,
-        "captain": false
-      },
-      {
-        "id": 1006387,
-        "name": "Kevin Schade",
-        "position": "M",
         "team_id": 50,
         "substitute": false,
         "captain": false
@@ -108,6 +108,12 @@
         "reason": 1
       },
       {
+        "id": 599128,
+        "name": "Rico Henry",
+        "position": "D",
+        "reason": 1
+      },
+      {
         "id": 966869,
         "name": "Aaron Hickey",
         "position": "D",
@@ -120,9 +126,9 @@
         "reason": 1
       },
       {
-        "id": 599128,
-        "name": "Rico Henry",
-        "position": "D",
+        "id": 814873,
+        "name": "Vitaly Janelt",
+        "position": "M",
         "reason": 1
       }
     ]
@@ -226,8 +232,20 @@
         "name": "Jack Grealish",
         "position": "M",
         "reason": 1
+      },
+      {
+        "id": 1017392,
+        "name": "Carlos Alcaraz",
+        "position": "M",
+        "reason": 1
+      },
+      {
+        "id": 914309,
+        "name": "Iliman Ndiaye",
+        "position": "M",
+        "reason": 1
       }
     ]
   },
-  "fetched_at_utc": "2026-04-09 19:00:15+0000"
+  "fetched_at_utc": "2026-04-11 02:00:45+0000"
 }
