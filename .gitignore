@@ -130,7 +130,21 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Custom exclusions
-fantraxloggedin.cookie
 # Private example responses
 private_examples/**
+
+# Local secrets and session state (never commit)
+*.cookie
+*.cook
+config.ini
+.env
+deploy/
+
+# Generated data and caches (bronze/silver outputs, reports, logs)
+data/
+archive/
+*.sqlite
+*.parquet
+
+# macOS
+.DS_Store
