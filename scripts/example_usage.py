@@ -20,13 +20,13 @@ def show_example_usage():
 	print("=" * 80)
 	
 	print("\n📋 WORKFLOW OVERVIEW:")
-	print("1. Export SofaScore schedules and lineups using esd_export_schedule_and_lineups_v2.py")
+	print("1. Export SofaScore schedules and lineups using pipelines/export_schedule_and_lineups.py")
 	print("2. Map the lineups to Fantrax players using map_lineups_to_fantrax.py")
 	print("3. Get team-specific lineups for specific events")
 	
 	print("\n🚀 STEP 1: EXPORT SOFASCORE DATA")
 	print("First, export the schedule and lineups from SofaScore:")
-	print("python esd_export_schedule_and_lineups_v2.py --tournament-id 17 --season '2024/2025' --with-lineups --limit 10")
+	print("python pipelines/export_schedule_and_lineups.py --tournament-id 17 --season '2024/2025' --with-lineups --limit 10")
 	
 	print("\n🔍 STEP 2: MAP LINEUPS TO FANTRAX")
 	print("Then map the lineups to Fantrax players:")

@@ -8,7 +8,7 @@ Keeps original auth/cookie practices:
 - Cookie debug expander, soft validation via fxpa, profile card
 
 Lineup changes:
-- Ultra-simplified, same as substitutions_v2.py (FantraxAPI.swap_players)
+- Ultra-simplified, same as cli/substitutions.py (FantraxAPI.swap_players)
 - Supports dropdown pick OR "get player by name" text fields
 - Brief verify loop (eventual consistency)
 
@@ -572,7 +572,7 @@ def ui_login_section():
 		st.caption(f"localStorage keys: {len(loc)}; sessionStorage keys: {len(ses)}")
 
 
-# ---------- UI: Simple substitutions (exact substitutions_v2 flow in GUI) ----------
+# ---------- UI: Simple substitutions (exact cli/substitutions flow in GUI) ----------
 def ui_simple_subs_section():
 	st.header("Your Leagues and Rosters")
 
@@ -665,7 +665,7 @@ def ui_simple_subs_section():
 	st.divider()
 	st.subheader("Actions")
 				
-	# --- Make a substitution (SIMPLE: just swap_players, like substitutions_v2) ---
+	# --- Make a substitution (SIMPLE: just swap_players, like cli/substitutions) ---
 	st.markdown("### Make a Substitution (simple swap)")
 	with st.form("simple_swap_form", clear_on_submit=False):
 		st.caption("Pick any current starter to bench and any bench player to start. "
@@ -683,7 +683,7 @@ def ui_simple_subs_section():
 									options=list(bench_opts.keys()) or ["—"],
 									index=0 if bench_opts else None)
 
-		# Optional name inputs (exact match), mirroring substitutions_v2
+		# Optional name inputs (exact match), mirroring cli/substitutions
 		st.write("Or pick by name (overrides the dropdowns):")
 		coln1, coln2 = st.columns(2)
 		with coln1:
@@ -708,7 +708,7 @@ def ui_simple_subs_section():
 			starter_sel = starter_by_name.strip() if starter_by_name.strip() else _label_to_index_str(starter_choice, starter_opts)
 			bench_sel   = bench_by_name.strip()   if bench_by_name.strip()   else _label_to_index_str(bench_choice,   bench_opts)
 
-			# call the BYOC-auth aware substitutions_v2 equivalent
+			# call the BYOC-auth aware cli/substitutions equivalent
 			res = make_substitution_example(
 				league_id=league_id,
 				team_id=team_id,
@@ -740,7 +740,7 @@ def ui_simple_subs_section():
 			logger.exception("Error during substitution")
 			st.error(f"Error making substitution: {e}")
 			st.info("Make sure both players are eligible for the swap and not locked.")
-	# --- Roster analysis (same spirit as substitutions_v2) ---
+	# --- Roster analysis (same spirit as cli/substitutions) ---
 	st.markdown("### Roster Analysis")
 	if st.button("Compute Position Breakdown & Top-5 Starters by FPPG"):
 		try:

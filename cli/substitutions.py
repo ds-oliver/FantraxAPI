@@ -4,6 +4,8 @@ Example script showing how to make lineup substitutions using FantraxAPI.
 This demonstrates the actual substitution functionality.
 """
 
+# cli/substitutions.py
+
 import os
 import sys
 import pickle
@@ -33,7 +35,7 @@ def _load_authenticated_session(cookie_path: str) -> Optional[Session]:
 
 		if cookie_file_to_use is None:
 			print("❌ Cookie file not found! Please run the bootstrap script first:")
-			print("	 python bootstrap_cookie.py")
+			print("	 python cli/bootstrap_cookie.py")
 			print(f"Expected at '{primary_path}' or '{fallback_path}'")
 			return None
 
@@ -151,9 +153,11 @@ def make_substitution_example(league_id: str, team_id: Optional[str] = None, coo
 		print("Substitution cancelled.")
 		return
 	
-	# Make the substitution
+	# Make the substitution using the simple swap approach
 	try:
 		print("\nExecuting substitution...")
+		
+		# First move bench player to active (may temporarily have 12 active)
 		success = api.swap_players(my_team.team_id, starter_row.player.id, bench_row.player.id)
 		
 		if success:
@@ -176,6 +180,7 @@ def make_substitution_example(league_id: str, team_id: Optional[str] = None, coo
 			
 	except Exception as e:
 		print(f"❌ Error making substitution: {e}")
+		print("Make sure both players are eligible for the swap and not locked.")
 
 def show_roster_analysis(league_id: str, team_id: Optional[str] = None, cookie_path: Optional[str] = None):
 	"""Show detailed roster analysis."""
@@ -263,8 +268,8 @@ def main():
 		print("❌ Error: League ID is required!")
 		print("Provide it as --league-id argument or set LEAGUE_ID environment variable")
 		print("\nExample usage:")
-		print("	 python subs_v1.py --league-id o90qdw15mc719reh")
-		print("	 LEAGUE_ID=o90qdw15mc719reh python subs_v1.py")
+		print("	 python substitutions.py --league-id o90qdw15mc719reh")
+		print("	 LEAGUE_ID=o90qdw15mc719reh python substitutions.py")
 		sys.exit(1)
 	
 	try:
