@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "fantraxapi"
 dynamic = ["version"]
 description = "Fantrax API client plus a SofaScore lineup-ingestion and player-mapping pipeline"
-readme = "README.rst"
+readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dependencies = [
@@ -24,7 +24,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio", "pytest-cov", "python-dotenv", "ruff"]
+scrapers = ["beautifulsoup4>=4.12", "requests-cache>=1.1"]
+pipelines = ["fantraxapi[scrapers]", "thefuzz>=0.22", "EasySoccerData", "playwright", "rich>=13"]
+apps = ["streamlit>=1.31", "selenium>=4.20", "webdriver-manager>=4.0.1", "certifi"]
+dev = ["fantraxapi[scrapers]", "pytest", "pytest-asyncio", "pytest-cov", "python-dotenv", "ruff"]
 
 [project.urls]
 Source = "https://github.com/ds-oliver/FantraxAPI"

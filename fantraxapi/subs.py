@@ -1,4 +1,3 @@
-# /Users/hogan/FantraxAPI/fantraxapi/subs.py
 from __future__ import annotations
 
 import logging

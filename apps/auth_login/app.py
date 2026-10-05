@@ -60,7 +60,7 @@ from utils.roster_ops import DropService  # ONLY using DropService; no LineupSer
 try:
 	from utils.auth_helpers import configure_logging  # type: ignore
 except Exception:
-	def configure_logging(default_path: str = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log") -> None:
+	def configure_logging(default_path: str = "data/logs/auth_workflow.log") -> None:
 		Path(default_path).parent.mkdir(parents=True, exist_ok=True)
 		root = logging.getLogger()
 		root.setLevel(logging.INFO)
@@ -76,7 +76,7 @@ except Exception:
 
 st.set_page_config(page_title="Fantrax (BYOC) — Simple Subs", page_icon="🔁", layout="wide")
 
-LOG_PATH = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log"
+LOG_PATH = "data/logs/auth_workflow.log"
 configure_logging(LOG_PATH)
 logger = logging.getLogger(__name__)
 logger.info("=" * 100)

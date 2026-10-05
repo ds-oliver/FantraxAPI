@@ -518,7 +518,7 @@ def json_dumps_safe(obj) -> str:
 def _ensure_log_dir(path: str) -> None:
 	Path(path).mkdir(parents=True, exist_ok=True)
 
-def configure_logging(default_path: str = "/Users/hogan/FantraxAPI/data/logs/auth_workflow.log") -> None:
+def configure_logging(default_path: str = "data/logs/auth_workflow.log") -> None:
 	"""Configure logging with separate files for different components.
 	
 	Creates:

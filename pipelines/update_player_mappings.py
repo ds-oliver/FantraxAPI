@@ -1671,7 +1671,7 @@ def main():
 						help="Only update display names for existing mappings (skip full mapping process)")
 	parser.add_argument("--export-player-data-only", action="store_true",
 						help="Only export all players data from existing mappings (skip full mapping process)")
-	parser.add_argument("--data-dir", type=str, default="/Users/hogan/FantraxAPI/data", help="Directory containing data files")
+	parser.add_argument("--data-dir", type=str, default="data", help="Directory containing data files")
 	parser.add_argument("--output", type=str, default="config/player_mappings.yaml", help="Output YAML file for mappings")
 	parser.add_argument("--config-dir", type=str, default="config", help="Directory containing config files")
 	parser.add_argument("--cookie-file", type=str, default="fantraxloggedin.cookie", help="Path to cookie file")
