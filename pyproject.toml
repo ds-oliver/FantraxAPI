@@ -25,7 +25,7 @@ dependencies = [
 
 [project.optional-dependencies]
 scrapers = ["beautifulsoup4>=4.12", "requests-cache>=1.1"]
-pipelines = ["fantraxapi[scrapers]", "thefuzz>=0.22", "EasySoccerData", "playwright", "rich>=13"]
+pipelines = ["fantraxapi[scrapers]", "thefuzz>=0.22", "EasySoccerData", "playwright", "lxml", "rich>=13"]
 apps = ["streamlit>=1.31", "selenium>=4.20", "webdriver-manager>=4.0.1", "certifi"]
 dev = ["fantraxapi[scrapers]", "pytest", "pytest-asyncio", "pytest-cov", "python-dotenv", "ruff"]
 
