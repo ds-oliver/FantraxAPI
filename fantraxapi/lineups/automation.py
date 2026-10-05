@@ -3,13 +3,13 @@ Main lineup automation functionality.
 """
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 import logging
 import asyncio
 
-from ..fantrax import Fantrax
+from ..fantrax import FantraxAPI
 from ..player_mapping import PlayerMappingManager
-from .models import LineupRecord, LineupStatus
+from .models import LineupRecord
 from .normalize import normalize_lineup_data
 from .fantrax_sync import LineupSynchronizer
 from .testing import LineupTester
@@ -30,7 +30,7 @@ class LineupAutomation:
 	
 	def __init__(
 		self,
-		fantrax: Fantrax,
+		fantrax: FantraxAPI,
 		player_mapping: PlayerMappingManager,
 		output_dir: Path,
 		dry_run: bool = False,

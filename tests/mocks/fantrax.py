@@ -1,8 +1,7 @@
 """
 Mock Fantrax client for testing.
 """
-from typing import Dict, List, Optional
-from datetime import datetime
+from typing import Dict
 
 class MockFantrax:
 	"""Mock Fantrax client that simulates API behavior."""

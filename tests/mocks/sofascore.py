@@ -4,7 +4,6 @@ Mock SofaScore client for testing.
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
-from fantraxapi.providers.sofascore.models import Event, LineupResponse, TeamLineup
 
 class MockSofaScore:
 	"""Mock SofaScore client that simulates API behavior."""

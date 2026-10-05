@@ -71,7 +71,7 @@ def main():
 		input()
 
 		# Visit league homepage to ensure cookies are properly scoped
-		print(f"\nVisiting your league homepage to validate cookies...")
+		print("\nVisiting your league homepage to validate cookies...")
 		driver.get(f"https://www.fantrax.com/fantasy/league/{league_id}/home")
 		time.sleep(2)  # Brief pause to ensure page loads
 

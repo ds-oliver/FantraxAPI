@@ -1,8 +1,7 @@
 """
 SofaScore API client focused on Premier League lineups.
 """
-import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import logging
 from typing import Dict, List, Optional
 

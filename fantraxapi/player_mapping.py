@@ -9,7 +9,6 @@ This module provides functionality to:
 """
 from pathlib import Path
 from typing import Dict, List, Optional
-import re
 import yaml
 import logging
 from pydantic import BaseModel, Field

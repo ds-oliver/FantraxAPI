@@ -144,7 +144,7 @@ def make_substitution_example(league_id: str, team_id: Optional[str] = None, coo
 			return
 	
 	# Confirm the swap
-	print(f"\nAbout to swap:")
+	print("\nAbout to swap:")
 	print(f"  OUT: {starter_row.player.name} ({starter_row.pos.short_name}) → Bench")
 	print(f"  IN:  {bench_row.player.name} ({starter_row.pos.short_name}) → Starters")
 	
@@ -229,7 +229,7 @@ def show_roster_analysis(league_id: str, team_id: Optional[str] = None, cookie_p
 	starters_with_fppg.sort(key=lambda x: x.fppg, reverse=True)
 	
 	if starters_with_fppg:
-		print(f"\nTop 5 starters by FPPG:")
+		print("\nTop 5 starters by FPPG:")
 		for i, row in enumerate(starters_with_fppg[:5]):
 			print(f"  {i+1}. {row.player.name}: {row.fppg:.1f} FPPG")
 

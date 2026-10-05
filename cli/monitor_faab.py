@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import pickle
 from datetime import datetime
 from fantraxapi import FantraxAPI
@@ -64,7 +63,7 @@ def format_tables(api, budgets):
 	detail_rows.append("=" * 50)
 	
 	claim_types = first_team['claims']['claimTypes']
-	detail_rows.append(f"Claim Types:")
+	detail_rows.append("Claim Types:")
 	for code, name in claim_types.items():
 		detail_rows.append(f"  - {name}")
 	

@@ -4,15 +4,13 @@ Script to automatically optimize lineups based on confirmed starting players.
 Checks Fantrax starting players page and adjusts lineups accordingly.
 """
 
-import os
 import time
-import json
 import pickle
 import logging
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from configparser import ConfigParser
-from typing import Dict, List, Set, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from requests import Session
 from fantraxapi import FantraxAPI
@@ -376,11 +374,11 @@ class LineupOptimizer:
 						if can_swap:
 							if starter.pos.short_name == bench.pos.short_name:
 								best_bench = bench
-								best_reason = f"Direct position match - replacing non-starter with confirmed starter"
+								best_reason = "Direct position match - replacing non-starter with confirmed starter"
 								break
 							elif not best_bench:
 								best_bench = bench
-								best_reason = f"Position flexible swap - replacing non-starter with confirmed starter"
+								best_reason = "Position flexible swap - replacing non-starter with confirmed starter"
 				
 				if best_bench:
 					swaps.append((starter, best_bench, best_reason))

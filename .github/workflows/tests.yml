@@ -1,58 +1,21 @@
-name: Run Tests
+name: Tests
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [master]
   pull_request:
 
 jobs:
-  run-tests:
-    runs-on: ubuntu-20.04
+  test:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Install Requirements
-        run: |
-          python -c "import sys; print(sys.version)"
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
-          python setup.py install
-
-      - name: Run tests
-        env:
-          LEAGUE_ID: ${{ secrets.LEAGUE_ID }}
-          LOCAL: False
-        run: coverage run -m pytest -s --cov fantraxapi --cov-report xml tests/test*
-
-      - name: Codecov coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-
-  tag-new-versions:
-    runs-on: ubuntu-latest
-    if: ${{ success() }}
-    needs: [run-tests]
-    steps:
-
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT }}
-          fetch-depth: 2
-
-      - uses: salsify/action-detect-and-tag-new-version@v1.0.3
-        with:
-          version-command: |
-            cat VERSION
+      - run: pip install -e ".[dev]"
+      - run: ruff check fantraxapi tests cli pipelines
+      - run: pytest --cov fantraxapi

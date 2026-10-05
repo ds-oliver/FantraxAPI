@@ -1,12 +1,12 @@
 """
 Framework for testing lineup automation with preliminary lineups.
 """
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 import pandas as pd
 
-from .models import LineupRecord, LineupStatus
+from .models import LineupRecord
 from .normalize import normalize_lineup_data
 from ..player_mapping import PlayerMappingManager
 

@@ -4,12 +4,11 @@ Script to display all rosters from multiple Fantrax leagues side by side.
 """
 
 import yaml
-from typing import Dict, List
+from typing import Dict
 from fantraxapi import FantraxAPI
 from fantraxapi.objs import Roster, RosterRow
 from rich.console import Console
 from rich.table import Table
-from rich.panel import Panel
 from rich import box
 
 def load_league_config() -> dict:

@@ -33,7 +33,7 @@ import pandas as pd
 import requests
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 import pytz
 from thefuzz import fuzz
 from unidecode import unidecode
@@ -1279,7 +1279,7 @@ def update_mappings(
 					stats["ffscout_matches"] += 1
 					stats["ffscout_exact_matches"] += 1
 					stats["no_ffscout_match"] -= 1
-					player_log.debug(f"Found exact FFScout match:")
+					player_log.debug("Found exact FFScout match:")
 					player_log.debug(f"	 - Name: {matches[0][0]}")
 					player_log.debug(f"	 - Team: {matches[0][3]}")
 					player_log.debug(f"	 - Match Score: {matches[0][1]}")
@@ -1287,7 +1287,7 @@ def update_mappings(
 				else:
 					matches_for_review = [m for m in matches if m[1] >= 75]
 					if matches_for_review:
-						player_log.debug(f"Found potential FFScout matches (score >= 75):")
+						player_log.debug("Found potential FFScout matches (score >= 75):")
 						for m in matches_for_review:
 							player_log.debug(f"	 - {m[0]} ({m[3]}) [score: {m[1]}]")
 						unmatched_players.append((player, mapping, ("ffscout", matches_for_review)))
@@ -1328,7 +1328,7 @@ def update_mappings(
 						stats["sofascore_matches"] += 1
 						stats["sofascore_exact_matches"] += 1
 						stats["no_sofascore_match"] -= 1
-						player_log.debug(f"Found exact SofaScore match:")
+						player_log.debug("Found exact SofaScore match:")
 						player_log.debug(f"	 - Name: {match_name}")
 						player_log.debug(f"	 - Team: {matches[0][3]}")
 						player_log.debug(f"	 - ID: {pid}")
@@ -1337,7 +1337,7 @@ def update_mappings(
 				else:
 					matches_for_review = [m for m in matches if m[1] >= 75]
 					if matches_for_review:
-						player_log.debug(f"Found potential SofaScore matches (score >= 75):")
+						player_log.debug("Found potential SofaScore matches (score >= 75):")
 						for m in matches_for_review:
 							player_log.debug(f"	 - {m[0]} ({m[3]}) [score: {m[1]}]")
 						unmatched_players.append((player, mapping, ("sofascore", matches_for_review)))
@@ -1504,7 +1504,7 @@ def update_mappings(
 		logging.info("Player data export complete:")
 		logging.info(f"	 Fantrax all players: {player_data_files['fantrax_all']}")
 		logging.info(f"	 Summary statistics: {player_data_files['summary']}")
-		logging.info(f"	 Parquet files also saved for better performance")
+		logging.info("	 Parquet files also saved for better performance")
 	elif skip_player_data_export:
 		logging.info("\nSkipping player data export as requested")
 	elif fast_mode:

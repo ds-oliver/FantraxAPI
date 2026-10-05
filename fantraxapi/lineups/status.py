@@ -46,17 +46,18 @@ def determine_lineup_status(
 	# Outside confirmation window
 	return LineupStatus.PRELIMINARY
 
-def validate_lineup_status(lineup: LineupRecord) -> bool:
+def validate_lineup_status(lineup: LineupRecord, current_time: Optional[datetime] = None) -> bool:
 	"""
 	Validate that a lineup's current status is appropriate.
 	
 	Args:
 		lineup: Lineup record to validate
+		current_time: Time to evaluate against (defaults to now)
 	
 	Returns:
 		True if status is valid, False otherwise
 	"""
-	expected_status = determine_lineup_status(lineup)
+	expected_status = determine_lineup_status(lineup, current_time)
 	
 	# Status is valid if it matches expected or is FINAL/INVALID
 	return (

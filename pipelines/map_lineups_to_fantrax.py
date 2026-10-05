@@ -1,10 +1,12 @@
 # map_lineups_to_fantrax.py
-import os, json, csv, unicodedata, argparse
+import json
+import unicodedata
+import argparse
 from pathlib import Path
 from rapidfuzz import fuzz, process
 from fantraxapi import FantraxAPI
 import pandas as pd
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 import yaml
 
 def canon(s: str) -> str:
@@ -559,7 +561,7 @@ def main():
 		is_valid, validation_info = validate_lineup_counts(sofa_df, good_matches)
 		
 		if is_valid:
-			print(f"  ✓ Lineup validation passed")
+			print("  ✓ Lineup validation passed")
 		else:
 			print(f"  ✗ Lineup validation failed: {validation_info.get('error', 'Unknown error')}")
 		

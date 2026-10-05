@@ -4,8 +4,7 @@ Async watcher for SofaScore lineups.
 import asyncio
 from datetime import datetime, timedelta, timezone
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from ..providers.sofascore.client import get_matches, get_match_lineups
 

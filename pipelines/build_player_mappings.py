@@ -6,7 +6,6 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
-import yaml
 
 from fantraxapi.player_mapping import PlayerMapping, PlayerMappingManager
 

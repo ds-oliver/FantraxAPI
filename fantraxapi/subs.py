@@ -432,7 +432,7 @@ class SubsService:
 			if not success:
 				log.error(f"[swap] Execute failed: {execute_resp}")
 			return success
-		except Exception as e:
+		except Exception:
 			log.exception("[swap] Exception during swap")
 			return False
 
@@ -588,7 +588,8 @@ class SubsService:
 				do_finalize=do_finalize,
 			)
 
-		import time, random
+		import time
+		import random
 		results: List[Dict[str, Any]] = []
 		warnings: List[str] = []
 		errors: List[str] = []

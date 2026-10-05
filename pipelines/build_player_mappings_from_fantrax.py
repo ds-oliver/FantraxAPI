@@ -4,7 +4,6 @@ Script to build player mappings starting from Fantrax data.
 """
 import argparse
 from pathlib import Path
-import yaml
 
 import pandas as pd
 

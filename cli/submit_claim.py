@@ -35,7 +35,7 @@ def choose_team_interactively(api: FantraxAPI, prefer_id: str = "", prefer_name:
 	if prefer_id:
 		try:
 			t = api.get_team_by_id(prefer_id)
-			print(f"Found team (from config team_id):")
+			print("Found team (from config team_id):")
 			print(f"  {t.name} ({getattr(t, 'short_name', '')}) - {t.team_id}")
 			yn = input("\nUse this team? [Y/n]: ").strip().lower()
 			if yn in ("", "y", "yes"):
@@ -46,7 +46,7 @@ def choose_team_interactively(api: FantraxAPI, prefer_id: str = "", prefer_name:
 	if prefer_name:
 		t = api.find_team_by_name(prefer_name)
 		if t:
-			print(f"Found team (from config team_name):")
+			print("Found team (from config team_name):")
 			print(f"  {t.name} ({getattr(t, 'short_name', '')}) - {t.team_id}")
 			yn = input("\nUse this team? [Y/n]: ").strip().lower()
 			if yn in ("", "y", "yes"):

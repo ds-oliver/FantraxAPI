@@ -143,7 +143,7 @@ async def get_scheduled_events(
 				result.append(Event(**e))
 	
 	if verbose and result:
-		print(f"- Premier League games:")
+		print("- Premier League games:")
 		for e in result:
 			print(f"  • {e.kickoff_utc.strftime('%H:%M')} {e.home_team['name']} vs {e.away_team['name']}")
 	
@@ -243,7 +243,7 @@ def validate_schedule(df: pd.DataFrame) -> bool:
 	# Count total games
 	total_games = len(df)
 	games_per_team = total_games / 20  # 20 teams in Premier League
-	print(f"\nSchedule stats:")
+	print("\nSchedule stats:")
 	print(f"- Total games: {total_games}")
 	print(f"- Games per team: {games_per_team:.1f}")
 	if total_games != 380:	# 20 teams * 38 games / 2 (each game counts for 2 teams)

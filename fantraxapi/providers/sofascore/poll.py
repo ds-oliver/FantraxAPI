@@ -57,7 +57,7 @@ async def poll_event(
 		try:
 			data = await get_json(client, url)
 			if xi_is_confirmed(data):
-				print(f"✓ Found confirmed lineups!")
+				print("✓ Found confirmed lineups!")
 				# Add metadata to lineup data
 				data.update({
 					"event_id": event.event_id,

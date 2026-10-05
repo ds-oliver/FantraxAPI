@@ -3,10 +3,8 @@ Test the complete lineup workflow from Sofascore to Fantrax.
 """
 import asyncio
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import httpx
-import pandas as pd
 
 from fantraxapi.providers.sofascore.discover import get_json, API_BASE, get_scheduled_events
 from fantraxapi.providers.sofascore.normalize import normalize_lineup_data, summarize_lineup
@@ -79,7 +77,7 @@ async def test_lineup_workflow(tournament_ids=[17]):  # Default to Premier Leagu
 				# Print mapping stats
 				mapped_players = [r for r in records if r.fantrax_id]
 				unmapped_players = [r for r in records if not r.fantrax_id]
-				print(f"\nPlayer Mapping Stats:")
+				print("\nPlayer Mapping Stats:")
 				print(f"- Mapped players: {len(mapped_players)}")
 				print(f"- Unmapped players: {len(unmapped_players)}")
 				if unmapped_players:

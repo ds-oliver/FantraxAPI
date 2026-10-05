@@ -1,6 +1,5 @@
 from typing import List
 
-from .exceptions import FantraxException
 from .objs import Roster
 
 

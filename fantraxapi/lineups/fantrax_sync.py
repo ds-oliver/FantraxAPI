@@ -1,12 +1,11 @@
 """
 Fantrax lineup synchronization functionality.
 """
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional
 import logging
 
-from ..fantrax import Fantrax
-from .models import LineupRecord, LineupStatus, PlayerRecord
+from ..fantrax import FantraxAPI
+from .models import LineupRecord, PlayerRecord
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class LineupSynchronizer:
 	
 	def __init__(
 		self,
-		fantrax: Fantrax,
+		fantrax: FantraxAPI,
 		dry_run: bool = False,
 		logger: Optional[logging.Logger] = None
 	):

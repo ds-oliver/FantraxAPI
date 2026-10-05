@@ -1,13 +1,11 @@
 """
 Tests for lineup automation system.
 """
-import asyncio
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 import pytest
 from unittest.mock import Mock, AsyncMock
 
-from ..mocks.fantrax import MockFantrax as Fantrax
+from tests.mocks.fantrax import MockFantrax as Fantrax
 from fantraxapi.player_mapping import PlayerMappingManager
 from fantraxapi.lineups.models import LineupStatus
 from fantraxapi.lineups.automation import LineupAutomation

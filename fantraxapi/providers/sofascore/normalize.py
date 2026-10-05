@@ -1,10 +1,9 @@
 """
 Normalize SofaScore lineup data into tidy records.
 """
-from datetime import datetime, timezone
 from typing import Dict, List
 
-from .models import LineupResponse, LineupRecord
+from .models import LineupRecord
 
 def normalize_lineup_data(data: Dict) -> List[LineupRecord]:
 	"""

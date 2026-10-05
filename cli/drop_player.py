@@ -4,7 +4,6 @@
 import argparse
 import configparser
 import logging
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -123,7 +122,7 @@ def choose_league_and_team_interactively(api: FantraxAPI, prefer_id: str = "", p
 	if prefer_id:
 		for lt in active_leagues:
 			if lt["teamId"] == prefer_id:
-				print(f"Found team (from config team_id):")
+				print("Found team (from config team_id):")
 				print(f"  {lt['team']} - {lt['league']} ({lt['teamId']})")
 				yn = input("\nUse this team? [Y/n]: ").strip().lower()
 				if yn in ("", "y", "yes"):
@@ -132,7 +131,7 @@ def choose_league_and_team_interactively(api: FantraxAPI, prefer_id: str = "", p
 	if prefer_name:
 		for lt in active_leagues:
 			if prefer_name.lower() in lt["team"].lower():
-				print(f"Found team (from config team_name):")
+				print("Found team (from config team_name):")
 				print(f"  {lt['team']} - {lt['league']} ({lt['teamId']})")
 				yn = input("\nUse this team? [Y/n]: ").strip().lower()
 				if yn in ("", "y", "yes"):

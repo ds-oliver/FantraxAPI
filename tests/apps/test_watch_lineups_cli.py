@@ -1,8 +1,6 @@
 """
 Tests for lineup watcher CLI.
 """
-import pytest
-from pathlib import Path
 
 from apps.lineup_watcher.watch_lineups import parse_args
 

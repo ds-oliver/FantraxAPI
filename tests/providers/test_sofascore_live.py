@@ -11,7 +11,6 @@ import pytest
 
 from fantraxapi.providers.sofascore.discover import get_json, API_BASE, get_scheduled_events
 from fantraxapi.providers.sofascore.normalize import normalize_lineup_data, summarize_lineup
-from fantraxapi.providers.sofascore.upsert import save_lineups
 
 async def test_discover_and_fetch_future():
 	"""Test discovering upcoming games and fetching lineups."""

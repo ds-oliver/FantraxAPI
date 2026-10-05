@@ -2,7 +2,7 @@
 Normalize lineup data from various sources into standardized format.
 """
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 from ..player_mapping import PlayerMappingManager
 from .models import LineupRecord, LineupStatus, TeamLineup, PlayerRecord
@@ -126,15 +126,9 @@ def normalize_lineup_data(
 		player_mapping
 	)
 	
-	# Determine status
+	# Create full record; status is seeded from the source's confirmed flag
+	# and then refined against kickoff timing.
 	current_time = datetime.now(timezone.utc)
-	status = determine_lineup_status(
-		kickoff_utc=data["kickoff_utc"],
-		is_confirmed=data.get("confirmed", False),
-		current_time=current_time
-	)
-	
-	# Create full record
 	record = LineupRecord(
 		# Event metadata
 		event_id=data["event_id"],
@@ -146,11 +140,12 @@ def normalize_lineup_data(
 		# Timing and status
 		kickoff_utc=data["kickoff_utc"],
 		captured_at_utc=current_time,
-		status=status,
+		status=LineupStatus.CONFIRMED if data.get("confirmed", False) else LineupStatus.PRELIMINARY,
 		
 		# Team data
 		home_team=home_team,
 		away_team=away_team
 	)
+	record.update_status(determine_lineup_status(record, current_time))
 	
 	return record

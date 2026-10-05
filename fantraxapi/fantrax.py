@@ -7,7 +7,7 @@ from requests.exceptions import RequestException
 
 from fantraxapi.exceptions import FantraxException, Unauthorized
 from fantraxapi.objs import (
-	ScoringPeriod, Team, Standings, Trade, TradeBlock, Position,
+	ScoringPeriod, Team, Standings, Trade, Position,
 	Transaction, Roster, Player
 )
 from fantraxapi.trades import TradesService

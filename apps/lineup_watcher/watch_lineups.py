@@ -11,7 +11,7 @@ from fantraxapi.providers.sofascore.poll import poll_events
 from fantraxapi.providers.sofascore.normalize import normalize_lineup_data
 from fantraxapi.providers.sofascore.upsert import save_lineups
 
-def parse_args():
+def parse_args(argv=None):
 	parser = argparse.ArgumentParser(description="Watch SofaScore lineups")
 	parser.add_argument(
 		"--window",
@@ -31,7 +31,7 @@ def parse_args():
 		default="data/lineups",
 		help="Directory to save lineup data (default: data/lineups)"
 	)
-	return parser.parse_args()
+	return parser.parse_args(argv)
 
 async def main():
 	args = parse_args()
